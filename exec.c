@@ -318,7 +318,7 @@ void execute_loop()
           val0 |= 0xFFFF0000;
         else
           val0 &= 0x0000FFFF;
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst.desttype, inst.value[1], val0);
         break;
       case op_sexb:
         val0 = inst.value[0];
@@ -326,7 +326,7 @@ void execute_loop()
           val0 |= 0xFFFFFF00;
         else
           val0 &= 0x000000FF;
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst.desttype, inst.value[1], val0);
         break;
 
       case op_aload:

@@ -510,10 +510,13 @@ void dump_ram()
 	  case 1:
 	  case 5:
 	  case 9:
+	  case 13:
 	    if ((opmodes[jx] & 0x0C) == 4)
 	      printf("*");
-	    if ((opmodes[jx] & 0x0C) == 8)
+	    else if ((opmodes[jx] & 0x0C) == 8)
 	      printf("Fr:");
+	    else if ((opmodes[jx] & 0x0C) == 12)
+	      printf("*R:");
 	    ch = Mem1(pos); pos++;
 	    val = ch;
 	    if (val & 0x80)
@@ -523,10 +526,13 @@ void dump_ram()
 	  case 2:
 	  case 6:
 	  case 10:
+	  case 14:
 	    if ((opmodes[jx] & 0x0C) == 4)
 	      printf("*");
-	    if ((opmodes[jx] & 0x0C) == 8)
+	    else if ((opmodes[jx] & 0x0C) == 8)
 	      printf("Fr:");
+	    else if ((opmodes[jx] & 0x0C) == 12)
+	      printf("*R:");
 	    ch = Mem1(pos); pos++;
 	    val = ch;
 	    if (val & 0x80)
@@ -538,10 +544,13 @@ void dump_ram()
 	  case 3:
 	  case 7:
 	  case 11:
+	  case 15:
 	    if ((opmodes[jx] & 0x0C) == 4)
 	      printf("*");
-	    if ((opmodes[jx] & 0x0C) == 8)
+	    else if ((opmodes[jx] & 0x0C) == 8)
 	      printf("Fr:");
+	    else if ((opmodes[jx] & 0x0C) == 12)
+	      printf("*R:");
 	    ch = Mem1(pos); pos++;
 	    val = ch;
 	    ch = Mem1(pos); pos++;

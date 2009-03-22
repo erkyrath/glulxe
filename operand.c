@@ -96,6 +96,10 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_tailcall:
     return &list_LL;
 
+  case op_sexb:
+  case op_sexs:
+    return &list_LS;
+
   case op_copy:
     return &list_LS;
   case op_copys:
