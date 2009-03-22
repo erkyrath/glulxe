@@ -24,6 +24,7 @@ void execute_loop()
 
   while (!done_executing) {
 
+    profile_tick();
     /* Do OS-specific processing, if appropriate. */
     glk_tick();
 
@@ -322,6 +323,7 @@ void execute_loop()
         goto PerformJump;
         break;
       case op_throw:
+        profile_fail("throw");
         value = inst.value[0];
         stackptr = inst.value[1];
         pop_callstub(value);
@@ -496,19 +498,27 @@ void execute_loop()
         break;
 
       case op_streamchar:
+        profile_in(2);
         value = inst.value[0] & 0xFF;
         (*stream_char_handler)(value);
+        profile_out();
         break;
       case op_streamunichar:
+        profile_in(2);
         value = inst.value[0];
         (*stream_unichar_handler)(value);
+        profile_out();
         break;
       case op_streamnum:
+        profile_in(2);
         vals0 = inst.value[0];
         stream_num(vals0, FALSE, 0);
+        profile_out();
         break;
       case op_streamstr:
+        profile_in(2);
         stream_string(inst.value[0], 0, 0);
+        profile_out();
         break;
 
       default:
@@ -580,10 +590,12 @@ void execute_loop()
         break;
 
       case op_glk:
+        profile_in(1);
         value = inst.value[1];
         arglist = pop_arguments(value, 0);
         val0 = perform_glk(inst.value[0], value, arglist);
         store_operand(inst.desttype, inst.value[2], val0);
+        profile_out();
         break;
 
       case op_random:
@@ -606,6 +618,7 @@ void execute_loop()
         break;
 
       case op_restart:
+        profile_fail("restart");
         vm_restart();
         break;
 
@@ -627,6 +640,7 @@ void execute_loop()
         break;
 
       case op_restore:
+        profile_fail("restore");
         value = perform_restore(find_stream_by_id(inst.value[0]));
         if (value == 0) {
           /* We've succeeded, and the stack now contains the callstub
@@ -648,6 +662,7 @@ void execute_loop()
         break;
 
       case op_restoreundo:
+        profile_fail("restoreundo");
         value = perform_restoreundo();
         if (value == 0) {
           /* We've succeeded, and the stack now contains the callstub

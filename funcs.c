@@ -19,6 +19,8 @@ void enter_function(glui32 addr, glui32 argc, glui32 *argv)
   int functype;
   glui32 modeaddr, opaddr, val;
   int loctype, locnum;
+
+  profile_in(addr);
     
   /* Check the Glulx type identifier byte. */
   functype = Mem1(addr);
@@ -179,6 +181,7 @@ void enter_function(glui32 addr, glui32 argc, glui32 *argv)
 void leave_function()
 {
   stackptr = frameptr;
+  profile_out();
 }
 
 /* push_callstub():

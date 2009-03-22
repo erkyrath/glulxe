@@ -238,4 +238,13 @@ extern int init_dispatch(void);
 extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
 extern strid_t find_stream_by_id(glui32 objid);
 
+/* profile.c */
+extern glui32 profile_opcount;
+#define profile_tick() (profile_opcount++)
+extern int init_profile(void);
+extern void profile_in(glui32 addr);
+extern void profile_out(void);
+extern void profile_fail(char *reason);
+extern void profile_quit(void);
+
 #endif /* _GLULXE_H */
