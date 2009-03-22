@@ -4,6 +4,7 @@
 #include "glk.h"
 #include "gi_dispa.h"
 #include "gi_blorb.h"
+#include "glulxe.h"
 
 #include "macglk_startup.h" /* This comes with the MacGlk library. */
 

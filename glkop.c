@@ -509,6 +509,7 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
           break;
         case 'S':
           garglist[gargnum].charstr = DecodeVMString(thisval);
+	  gargnum++;
           break;
         default:
           fatal_error("Illegal format string.");
@@ -684,6 +685,7 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 	case 'S':
 	  if (garglist[gargnum].charstr)
 	    ReleaseVMString(garglist[gargnum].charstr);
+	  gargnum++;
 	  break;
 	default:
 	  fatal_error("Illegal format string.");

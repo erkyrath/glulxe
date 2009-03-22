@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.3.3
+Version 0.3.4
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
@@ -26,10 +26,14 @@ where "filename.ulx" is a Glulx game file to execute.
 
 To build this program on a Macintosh, you'll need the MacGlk library.
 See the instructions that come with that. It's fairly straightforward;
-compile the library, the source code, and the "macglk_startup.c" file.
-(NOTE: Except that I haven't written a "macglk_startup.c" file yet.)
+compile the library, the source code, and the "macstart.c" file.
+
+Ditto for Windows, using "winstart.c".
 
 * Version
+
+0.3.4:
+    Finally supports string arguments to Glk calls.
 
 0.3.3:
     Added setiosys, getiosys opcodes.

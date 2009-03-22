@@ -647,12 +647,41 @@ static void dropcache(cacheblock_t *cablist)
   glulx_free(cablist);
 }
 
+/* This misbehaves if a Glk function has more than one S argument. */
+
+#define STATIC_TEMP_BUFSIZE (127)
+static char temp_buf[STATIC_TEMP_BUFSIZE+1];
+
 char *make_temp_string(glui32 addr)
 {
-  return "###string args not yet implemented###";
+  int ix, len;
+  glui32 addr2;
+  char *res, *cx;
+
+  if (Mem1(addr) != 0xE0)
+    fatal_error("String argument to a Glk call must be unencoded.");
+  addr++;
+  for (addr2=addr; Mem1(addr2); addr2++) { };
+  len = (addr2 - addr);
+  if (len < STATIC_TEMP_BUFSIZE) {
+    res = temp_buf;
+  }
+  else {
+    res = (char *)glulx_malloc(len+1);
+    if (!res) 
+      fatal_error("Unable to allocate space for string argument to Glk call.");
+  }
+  
+  for (ix=0, addr2=addr; ix<len; ix++, addr2++) {
+    res[ix] = Mem1(addr2);
+  }
+  res[len] = '\0';
+
+  return res;
 }
 
 void free_temp_string(char *str)
 {
-
+  if (str && str != temp_buf) 
+    glulx_free(str);
 }
