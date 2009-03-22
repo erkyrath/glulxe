@@ -118,6 +118,7 @@ extern glui32 stringtable;
 extern glui32 valstackbase;
 extern glui32 localsbase;
 extern glui32 endmem;
+extern glui32 protectstart, protectend;
 
 /* main.c */
 extern void fatal_error_handler(char *str, char *arg, int useval, glsi32 val);

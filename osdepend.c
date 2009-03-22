@@ -25,7 +25,9 @@ void *glulx_malloc(glui32 len)
   return malloc(len);
 }
 
-/* Resize a chunk of memory. */
+/* Resize a chunk of memory. This must follow ANSI rules: if the
+   size-change fails, this must return NULL, but the original chunk 
+   must remain unchanged. */
 void *glulx_realloc(void *ptr, glui32 len)
 {
   return realloc(ptr, len);
@@ -65,7 +67,9 @@ void *glulx_malloc(glui32 len)
   return malloc(len);
 }
 
-/* Resize a chunk of memory. */
+/* Resize a chunk of memory. This must follow ANSI rules: if the
+   size-change fails, this must return NULL, but the original chunk 
+   must remain unchanged. */
 void *glulx_realloc(void *ptr, glui32 len)
 {
   return realloc(ptr, len);

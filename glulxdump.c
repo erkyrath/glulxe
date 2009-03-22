@@ -179,7 +179,7 @@ static opcode_t opcodes_table[] =
   { (uchar *) "return",		0x31, Rf, 0, 1 },
   { (uchar *) "catch", 		0x32, Br|St, 0, 2 },
   { (uchar *) "throw", 		0x33, Rf, 0, 2 },
-  { (uchar *) "tailcall",	0x34, 0, 0, 2 },
+  { (uchar *) "tailcall",	0x34, Rf, 0, 2 },
   { (uchar *) "copy",		0x40, St, 0, 2 },
   { (uchar *) "copys",		0x41, St, 0, 2 },
   { (uchar *) "copyb",		0x42, St, 0, 2 },

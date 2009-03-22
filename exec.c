@@ -280,7 +280,10 @@ void execute_loop()
         pop_callstub(inst.value[0]);
         break;
       case op_tailcall:
-        fatal_error("Tailcall not implemented"); /* ### */
+	value = inst.value[1];
+	arglist = pop_arguments(value);
+	leave_function();
+	enter_function(inst.value[0], value, arglist);
         break;
 
       case op_catch:
@@ -492,8 +495,11 @@ void execute_loop()
         fatal_error_i("user debugtrap encountered.", inst.value[0]);
 
       case op_getmemsize:
+	store_operand(inst.desttype, inst.value[0], endmem);
+	break;
       case op_setmemsize:
-        fatal_error("Memsize not implemented"); /* ### */
+	value = change_memsize(inst.value[0]);
+	store_operand(inst.desttype, inst.value[1], value);
         break;
 
       case op_getstringtbl:
@@ -532,8 +538,15 @@ void execute_loop()
         break;
 
       case op_protect:
-        /* ### */
-        fatal_error("game-state opcodes not yet implemented.");
+	val0 = inst.value[0];
+	val1 = val0 + inst.value[1];
+	if (val0 == val1) {
+	  val0 = 0;
+	  val1 = 0;
+	}
+	protectstart = val0;
+	protectend = val1;
+	break;
 
       case op_save:
         push_callstub(inst.desttype, inst.value[1]);

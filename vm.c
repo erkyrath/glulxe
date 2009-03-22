@@ -27,6 +27,7 @@ glui32 stringtable;
 glui32 valstackbase;
 glui32 localsbase;
 glui32 endmem;
+glui32 protectstart, protectend;
 
 /* setup_vm():
    Read in the game file and build the machine, allocating all the memory
@@ -52,6 +53,10 @@ void setup_vm()
   stringtable = Read4(buf+20);
   checksum = Read4(buf+24);
 
+  /* Set the protection range to (0, 0), meaning "off". */
+  protectstart = 0;
+  protectend = 0;
+
   /* Do a few sanity checks. */
 
   if ((ramstart & 0xFF)
@@ -72,7 +77,6 @@ void setup_vm()
   
   /* Allocate main memory and the stack. This is where memory allocation
      errors are most likely to occur. */
-
   endmem = origendmem;
   memmap = (unsigned char *)glulx_malloc(origendmem);
   if (!memmap) {
@@ -123,13 +127,15 @@ void vm_restart()
   if (lx)
     fatal_error("Memory could not be reset to its original size.");
 
-  /* Load in all of main memory */ /* ###protect */
+  /* Load in all of main memory */
   glk_stream_set_position(gamefile, 0, seekmode_Start);
   for (lx=0; lx<endgamefile; lx++) {
     res = glk_get_char_stream(gamefile);
     if (res == -1) {
       fatal_error("The game file ended unexpectedly.");
     }
+    if (lx >= protectstart && lx < protectend)
+      continue;
     memmap[lx] = res;
   }
   for (lx=endgamefile; lx<origendmem; lx++) {
@@ -143,6 +149,8 @@ void vm_restart()
   /* ### stringtable? */
   valstackbase = 0;
   localsbase = 0;
+
+  /* Note that we do not reset the protection range. */
 
   /* Push the first function call. (No arguments.) */
   enter_function(startfuncaddr, 0, NULL);
@@ -159,6 +167,7 @@ void vm_restart()
 glui32 change_memsize(glui32 newlen)
 {
   long lx;
+  unsigned char *newmemmap;
 
   if (newlen == endmem)
     return 0;
@@ -169,11 +178,16 @@ glui32 change_memsize(glui32 newlen)
 
   if (newlen < origendmem)
     fatal_error("Cannot resize Glulx memory space smaller than it started.");
+
+  if (newlen & 0xFF)
+    fatal_error("Can only resize Glulx memory space to a 256-byte boundary.");
   
-  memmap = (unsigned char *)glulx_realloc(memmap, newlen);
-  if (!memmap) {
-    fatal_error("Unable to resize Glulx memory space.");
+  newmemmap = (unsigned char *)glulx_realloc(memmap, newlen);
+  if (!newmemmap) {
+    /* The old block is still in place, unchanged. */
+    return 1;
   }
+  memmap = newmemmap;
 
   if (newlen > endmem) {
     for (lx=endmem; lx<newlen; lx++) {
@@ -190,23 +204,49 @@ glui32 change_memsize(glui32 newlen)
 
 /* pop_arguments():
    Pop N arguments off the stack, and put them in an array. 
-   At the moment, we have a fixed-size array of 32 elements. Really
-   it should be dynamically expandable. 
+   This has to dynamically allocate if there are more than 32 arguments,
+   but that shouldn't be a problem.
 */
 glui32 *pop_arguments(glui32 count)
 {
   int ix;
   glui32 argptr;
+  glui32 *array;
 
   #define MAXARGS (32)
-  static glui32 array[MAXARGS];
-
-  if (count > MAXARGS)
-    fatal_error("Interpreter bug -- unable to handle more than 32 "
-      "function arguments.");
+  static glui32 statarray[MAXARGS];
+  static glui32 *dynarray = NULL;
+  static glui32 dynarray_size = 0;
 
   if (stackptr < valstackbase+4*count) 
     fatal_error("Stack underflow in arguments.");
+
+  if (count <= MAXARGS) {
+    /* Store in the static array. */
+    array = statarray;
+  }
+  else {
+    if (!dynarray) {
+      dynarray_size = count+8;
+      dynarray = glulx_malloc(sizeof(glui32) * dynarray_size);
+      if (!dynarray)
+	fatal_error("Unable to allocate function arguments.");
+      array = dynarray;
+    }
+    else {
+      if (dynarray_size >= count) {
+	/* It fits. */
+	array = dynarray;
+      }
+      else {
+	dynarray_size = count+8;
+	dynarray = glulx_realloc(dynarray, sizeof(glui32) * dynarray_size);
+	if (!dynarray)
+	  fatal_error("Unable to reallocate function arguments.");
+	array = dynarray;
+      }
+    }
+  }
 
   stackptr -= 4*count;
 

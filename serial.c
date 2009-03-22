@@ -604,6 +604,9 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
       }
     }
 
+    if (pos >= protectstart && pos < protectend)
+      continue;
+
     MemW1(pos, ch);
   }
 

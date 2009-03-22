@@ -596,50 +596,63 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
       else {
         /* a plain value or a reference to one. */
 
-        switch (typeclass) {
-        case 'I':
-          if (*cx == 'u')
-            thisval = (glui32)garglist[gargnum].uint;
-          else if (*cx == 's')
-            thisval = (glui32)garglist[gargnum].sint;
-          else
-            fatal_error("Illegal format string.");
-          gargnum++;
-          cx++;
-          break;
-        case 'Q':
-          opref = garglist[gargnum].opaqueref;
-          if (opref) {
-            gidispatch_rock_t objrock = 
-              gidispatch_get_objrock(opref, *cx-'a');
-            thisval = ((classref_t *)objrock.ptr)->id;
-          }
-          else {
-            thisval = 0;
-          }
-          gargnum++;
-          cx++;
-          break;
-        case 'C':
-          if (*cx == 'u') 
-            thisval = (glui32)garglist[gargnum].uch;
-          else if (*cx == 's')
-            thisval = (glui32)garglist[gargnum].sch;
-          else if (*cx == 'n')
-            thisval = (glui32)garglist[gargnum].ch;
-          else
-            fatal_error("Illegal format string.");
-          gargnum++;
-          cx++;
-          break;
-        case 'S':
-          if (garglist[gargnum].charstr)
-            ReleaseVMString(garglist[gargnum].charstr);
-          break;
-        default:
-          fatal_error("Illegal format string.");
-          break;
-        }
+	if (isreturn || (depth > 0 && subpassout) || (isref && passout)) {
+	  skipval = FALSE;
+	}
+	else {
+	  skipval = TRUE;
+	}
+
+	switch (typeclass) {
+	case 'I':
+	  if (!skipval) {
+	    if (*cx == 'u')
+	      thisval = (glui32)garglist[gargnum].uint;
+	    else if (*cx == 's')
+	      thisval = (glui32)garglist[gargnum].sint;
+	    else
+	      fatal_error("Illegal format string.");
+	  }
+	  gargnum++;
+	  cx++;
+	  break;
+	case 'Q':
+	  if (!skipval) {
+	    opref = garglist[gargnum].opaqueref;
+	    if (opref) {
+	      gidispatch_rock_t objrock = 
+		gidispatch_get_objrock(opref, *cx-'a');
+	      thisval = ((classref_t *)objrock.ptr)->id;
+	    }
+	    else {
+	      thisval = 0;
+	    }
+	  }
+	  gargnum++;
+	  cx++;
+	  break;
+	case 'C':
+	  if (!skipval) {
+	    if (*cx == 'u') 
+	      thisval = (glui32)garglist[gargnum].uch;
+	    else if (*cx == 's')
+	      thisval = (glui32)garglist[gargnum].sch;
+	    else if (*cx == 'n')
+	      thisval = (glui32)garglist[gargnum].ch;
+	    else
+	      fatal_error("Illegal format string.");
+	  }
+	  gargnum++;
+	  cx++;
+	  break;
+	case 'S':
+	  if (garglist[gargnum].charstr)
+	    ReleaseVMString(garglist[gargnum].charstr);
+	  break;
+	default:
+	  fatal_error("Illegal format string.");
+	  break;
+	}
 
         if (isreturn) {
           *(splot->retval) = thisval;
