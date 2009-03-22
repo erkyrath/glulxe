@@ -34,7 +34,7 @@ int is_gamefile_valid()
     fatal_error("This Glulx file is too old a version to execute.");
     return FALSE;
   }
-  if (version >= 0x30000) {
+  if (version >= 0x30100) {
     fatal_error("This Glulx file is too new a version to execute.");
     return FALSE;
   }

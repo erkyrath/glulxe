@@ -65,6 +65,7 @@
 #define op_streamchar   (0x70)
 #define op_streamnum    (0x71)
 #define op_streamstr    (0x72)
+#define op_streamunichar (0x73)
 
 #define op_gestalt      (0x100)
 #define op_debugtrap    (0x101)

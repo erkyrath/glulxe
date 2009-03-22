@@ -31,8 +31,7 @@ glui32 endmem;
 glui32 protectstart, protectend;
 
 void (*stream_char_handler)(unsigned char ch);
-void (*stream_num_handler)(glsi32 ch);
-void (*stream_string_handler)(glui32 ch);
+void (*stream_unichar_handler)(glui32 ch);
 
 /* setup_vm():
    Read in the game file and build the machine, allocating all the memory
@@ -46,6 +45,9 @@ void setup_vm()
   pc = 0; /* Clear this, so that error messages are cleaner. */
 
   /* Read in all the size constants from the game file header. */
+
+  stream_char_handler = NULL;
+  stream_unichar_handler = NULL;
 
   glk_stream_set_position(gamefile, gamefile_start+8, seekmode_Start);
   res = glk_get_buffer_stream(gamefile, (char *)buf, 4 * 7);
@@ -238,20 +240,20 @@ glui32 *pop_arguments(glui32 count, glui32 addr)
       dynarray_size = count+8;
       dynarray = glulx_malloc(sizeof(glui32) * dynarray_size);
       if (!dynarray)
-	fatal_error("Unable to allocate function arguments.");
+        fatal_error("Unable to allocate function arguments.");
       array = dynarray;
     }
     else {
       if (dynarray_size >= count) {
-	/* It fits. */
-	array = dynarray;
+        /* It fits. */
+        array = dynarray;
       }
       else {
-	dynarray_size = count+8;
-	dynarray = glulx_realloc(dynarray, sizeof(glui32) * dynarray_size);
-	if (!dynarray)
-	  fatal_error("Unable to reallocate function arguments.");
-	array = dynarray;
+        dynarray_size = count+8;
+        dynarray = glulx_realloc(dynarray, sizeof(glui32) * dynarray_size);
+        if (!dynarray)
+          fatal_error("Unable to reallocate function arguments.");
+        array = dynarray;
       }
     }
   }

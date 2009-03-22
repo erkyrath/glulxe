@@ -12,10 +12,10 @@ glui32 do_gestalt(glui32 val, glui32 val2)
   switch (val) {
 
   case gestulx_GlulxVersion:
-    return 0x00020000; /* Glulx spec version 2.0 */
+    return 0x00030000; /* Glulx spec version 3.0 */
 
   case gestulx_TerpVersion:
-    return 0x00000305; /* Glulxe version 0.3.5 */
+    return 0x00000400; /* Glulxe version 0.4.0 */
 
   case gestulx_ResizeMem:
     return 1; /* We can handle setmemsize. */
@@ -34,6 +34,9 @@ glui32 do_gestalt(glui32 val, glui32 val2)
     default:
       return 0;
     }
+
+  case gestulx_Unicode:
+    return 1; /* We can handle Unicode. */
 
   default:
     return 0;

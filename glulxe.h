@@ -125,6 +125,7 @@ extern glui32 endmem;
 extern glui32 protectstart, protectend;
 
 extern void (*stream_char_handler)(unsigned char ch);
+extern void (*stream_unichar_handler)(glui32 ch);
 
 /* main.c */
 extern void fatal_error_handler(char *str, char *arg, int useval, glsi32 val);
@@ -174,7 +175,9 @@ extern void stream_set_table(glui32 addr);
 extern void stream_get_iosys(glui32 *mode, glui32 *rock);
 extern void stream_set_iosys(glui32 mode, glui32 rock);
 extern char *make_temp_string(glui32 addr);
+extern glui32 *make_temp_ustring(glui32 addr);
 extern void free_temp_string(char *str);
+extern void free_temp_ustring(glui32 *str);
 
 /* serial.c */
 extern int init_serial(void);

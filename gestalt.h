@@ -11,6 +11,7 @@
 #define gestulx_ResizeMem (2)
 #define gestulx_Undo (3)
 #define gestulx_IOSystem (4)
+#define gestulx_Unicode (5)
 
 #endif /* _GESTALT_H */
 
