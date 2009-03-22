@@ -31,7 +31,7 @@ CFLAGS = $(OPTIONS) -I$(GLKINCLUDEDIR)
 LIBS = -L$(GLKLIBDIR) $(GLKLIB) $(LINKLIBS) 
 
 OBJS = main.o files.o vm.o exec.o funcs.o operand.o string.o glkop.o \
-  heap.o serial.o search.o gestalt.o osdepend.o profile.o
+  heap.o serial.o search.o accel.o gestalt.o osdepend.o profile.o
 
 all: glulxe
 
@@ -47,5 +47,5 @@ exec.o operand.o: opcodes.h
 gestalt.o: gestalt.h
 
 clean:
-	rm -f *~ *.o glulxe glulxdump
+	rm -f *~ *.o glulxe glulxdump profile-raw
 

@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.4.3 PROFILING
+Version 0.4.4
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://eblong.com/zarf/glulx/index.html
@@ -32,9 +32,11 @@ Ditto for Windows, using "winstart.c".
 
 * Version
 
-PROFILING:
-    (### see comments in profile.c)
-    (Jan-2-2009: added memset calls to zero out profiling mallocs)
+0.4.4:
+    Added profiling code, which is turned off by default. To compile it 
+    in, define VM_PROFILING in Makefile or in glulxe.h.
+    Added function-accleration feature.
+    Fixed bug where @random 0 was returning only positive numbers.
 
 0.4.3:
     Verify the presence of Unicode calls in the Glk library at runtime.

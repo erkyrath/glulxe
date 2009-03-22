@@ -26,6 +26,8 @@ program's run. Each function tag includes the following attributes:
  
   addr=HEX:         The VM address of the function (in hex).
   call_count=INT:   The number of times the function was called.
+  accel_count=INT:  The number of times the function was called with
+    acceleration.
   total_time=FLOAT: The amount of time spent during all calls to the
     function (in seconds, as a floating-point value).
   total_ops=INT:    The number of opcodes executed during all calls to
@@ -57,17 +59,20 @@ is the running time of the entire program.
 
  */
 
-#include <sys/time.h>
 #include "glk.h"
 #include "glulxe.h"
 
+#if VM_PROFILING
+
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 typedef struct function_struct {
   glui32 addr;
 
   glui32 call_count;
+  glui32 accel_count;
   glui32 entry_depth;
   struct timeval entry_start_time;
   glui32 entry_start_op;
@@ -131,6 +136,7 @@ static function_t *get_function(glui32 addr)
 
     func->addr = addr;
     func->call_count = 0;
+    func->accel_count = 0;
     timerclear(&func->entry_start_time);
     func->entry_start_op = 0;
     timerclear(&func->total_time);
@@ -148,18 +154,20 @@ static char *timeprint(struct timeval *tv, char *buf)
   return buf;
 }
 
-void profile_in(glui32 addr)
+void profile_in(glui32 addr, int accel)
 {
   frame_t *fra;
   function_t *func;
   struct timeval now;
 
-  /* printf("### IN: %lx\n", addr); */
+  /* printf("### IN: %lx%s\n", addr, (accel?" accel":"")); */
 
   gettimeofday(&now, NULL);
 
   func = get_function(addr);
   func->call_count += 1;
+  if (accel)
+    func->accel_count += 1;
   if (!func->entry_depth) {
     func->entry_start_time = now;
     func->entry_start_op = profile_opcount;
@@ -272,8 +280,8 @@ void profile_quit()
         func->self_ops,
         timeprint(&func->self_time, self_buf));
       ### */
-      sprintf(linebuf, "  <function addr=\"%lx\" call_count=\"%ld\" total_ops=\"%ld\" total_time=\"%s\" self_ops=\"%ld\" self_time=\"%s\" />\n",
-        func->addr, func->call_count,
+      sprintf(linebuf, "  <function addr=\"%lx\" call_count=\"%ld\" accel_count=\"%ld\" total_ops=\"%ld\" total_time=\"%s\" self_ops=\"%ld\" self_time=\"%s\" />\n",
+        func->addr, func->call_count, func->accel_count,
         func->total_ops,
         timeprint(&func->total_time, total_buf),
         func->self_ops,
@@ -290,3 +298,12 @@ void profile_quit()
   functions = NULL;
 }
 
+#else /* VM_PROFILING */
+
+int init_profile()
+{
+    /* Profiling is not compiled in. Do nothing. */
+    return TRUE;
+}
+
+#endif /* VM_PROFILING */

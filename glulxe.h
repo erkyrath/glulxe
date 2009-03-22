@@ -30,6 +30,11 @@ typedef signed short glsi16;
    game files from crashing the interpreter. */
 /* #define VERIFY_MEMORY_ACCESS (1) */
 
+/* Uncomment this definition to turn on Glulx VM profiling. In this
+   mode, all function calls are timed, and the timing information is
+   written to a data file called "profile-raw". */
+/* #define VM_PROFILING (1) */
+
 /* Some macros to read and write integers to memory, always in big-endian
    format. */
 #define Read4(ptr)    \
@@ -239,12 +244,28 @@ extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
 extern strid_t find_stream_by_id(glui32 objid);
 
 /* profile.c */
+extern int init_profile(void);
+#if VM_PROFILING
 extern glui32 profile_opcount;
 #define profile_tick() (profile_opcount++)
-extern int init_profile(void);
-extern void profile_in(glui32 addr);
+extern void profile_in(glui32 addr, int accel);
 extern void profile_out(void);
 extern void profile_fail(char *reason);
 extern void profile_quit(void);
+#else /* VM_PROFILING */
+#define profile_tick()       (0)
+#define profile_in(addr, accel)  (0)
+#define profile_out()        (0)
+#define profile_fail(reason) (0)
+#define profile_quit()       (0)
+#endif /* VM_PROFILING */
+
+/* accel.c */
+typedef glui32 (*acceleration_func)(glui32 argc, glui32 *argv);
+extern void init_accel(void);
+extern acceleration_func accel_find_func(glui32 index);
+extern acceleration_func accel_get_func(glui32 addr);
+extern void accel_set_func(glui32 index, glui32 addr);
+extern void accel_set_param(glui32 index, glui32 val);
 
 #endif /* _GLULXE_H */

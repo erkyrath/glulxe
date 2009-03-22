@@ -498,25 +498,25 @@ void execute_loop()
         break;
 
       case op_streamchar:
-        profile_in(2);
+        profile_in(2, FALSE);
         value = inst.value[0] & 0xFF;
         (*stream_char_handler)(value);
         profile_out();
         break;
       case op_streamunichar:
-        profile_in(2);
+        profile_in(2, FALSE);
         value = inst.value[0];
         (*stream_unichar_handler)(value);
         profile_out();
         break;
       case op_streamnum:
-        profile_in(2);
+        profile_in(2, FALSE);
         vals0 = inst.value[0];
         stream_num(vals0, FALSE, 0);
         profile_out();
         break;
       case op_streamstr:
-        profile_in(2);
+        profile_in(2, FALSE);
         stream_string(inst.value[0], 0, 0);
         profile_out();
         break;
@@ -590,7 +590,7 @@ void execute_loop()
         break;
 
       case op_glk:
-        profile_in(1);
+        profile_in(1, FALSE);
         value = inst.value[1];
         arglist = pop_arguments(value, 0);
         val0 = perform_glk(inst.value[0], value, arglist);
@@ -601,7 +601,7 @@ void execute_loop()
       case op_random:
         vals0 = inst.value[0];
         if (vals0 == 0)
-          value = glulx_random();
+          value = glulx_random() ^ (glulx_random() << 16);
         else if (vals0 >= 1)
           value = glulx_random() % (glui32)(vals0);
         else 
@@ -733,6 +733,13 @@ void execute_loop()
         break;
       case op_mfree:
         heap_free(inst.value[0]);
+        break;
+
+      case op_accelfunc:
+        accel_set_func(inst.value[0], inst.value[1]);
+        break;
+      case op_accelparam:
+        accel_set_param(inst.value[0], inst.value[1]);
         break;
 
       default:
