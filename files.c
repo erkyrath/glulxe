@@ -4,6 +4,7 @@
 */
 
 #include "glk.h"
+#include "gi_blorb.h"
 #include "glulxe.h"
 
 /* is_gamefile_valid():
@@ -15,7 +16,7 @@ int is_gamefile_valid()
   int res;
   glui32 version;
 
-  glk_stream_set_position(gamefile, 0, seekmode_Start);
+  glk_stream_set_position(gamefile, gamefile_start, seekmode_Start);
   res = glk_get_buffer_stream(gamefile, (char *)buf, 8);
 
   if (res != 8) {
@@ -39,5 +40,48 @@ int is_gamefile_valid()
   }
 
   return TRUE;
+}
+
+/* locate_gamefile: 
+   Given that gamefile contains a Glk stream, which may be a Glulx
+   file or a Blorb archive containing one, locate the beginning and
+   end of the Glulx data.
+*/
+int locate_gamefile(int isblorb)
+{
+  if (!isblorb) {
+    /* The simple case. A bare Glulx file was opened, so we don't use
+       Blorb at all. */
+    gamefile_start = 0;
+    glk_stream_set_position(gamefile, 0, seekmode_End);
+    gamefile_len = glk_stream_get_position(gamefile);
+    return TRUE;
+  }
+  else {
+    /* A Blorb file. We now have to open it and find the Glulx chunk. */
+    giblorb_err_t err;
+    giblorb_result_t blorbres;
+    giblorb_map_t *map;
+
+    err = giblorb_set_resource_map(gamefile);
+    if (err) {
+      init_err = "This Blorb file seems to be invalid.";
+      return FALSE;
+    }
+    map = giblorb_get_resource_map();
+    err = giblorb_load_resource(map, giblorb_method_FilePos, 
+      &blorbres, giblorb_ID_Exec, 0);
+    if (err) {
+      init_err = "This Blorb file does not contain an executable Glulx chunk.";
+      return FALSE;
+    }
+    if (blorbres.chunktype != giblorb_make_id('G', 'L', 'U', 'L')) {
+      init_err = "This Blorb file contains an executable chunk, but it is not a Glulx file.";
+      return FALSE;
+    }
+    gamefile_start = blorbres.data.startpos;
+    gamefile_len = blorbres.length;
+    return TRUE;
+  }
 }
 

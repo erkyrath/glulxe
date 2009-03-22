@@ -511,7 +511,7 @@ static glui32 write_memstate(dest_t *dest)
     return res;
 
   runlen = 0;
-  glk_stream_set_position(gamefile, ramstart, seekmode_Start);
+  glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
 
   for (pos=ramstart; pos<endmem; pos++) {
     ch = Mem1(pos);
@@ -569,7 +569,7 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
     return res;
 
   runlen = 0;
-  glk_stream_set_position(gamefile, ramstart, seekmode_Start);
+  glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
 
   for (pos=ramstart; pos<endmem; pos++) {
     if (pos < endgamefile) {
@@ -649,7 +649,7 @@ static glui32 write_stackstate(dest_t *dest, int portable)
        array, which requires dynamic allocation. */
     for (frm = stackptr, frameend = stackptr;
          frm != 0 && (frm2 = Stk4(frm-4)) != lastframe;
-         frameend = frm, frm = frm2);
+         frameend = frm, frm = frm2) { };
 
     /* Write out the frame. */
     frm2 = frm;
@@ -912,13 +912,12 @@ glui32 perform_verify()
   unsigned char buf[4];
   glui32 val, newsum, ix;
 
-  glk_stream_set_position(gamefile, 0, seekmode_End);
-  len = glk_stream_get_position(gamefile);
+  len = gamefile_len;
 
   if (len < 256 || (len & 0xFF) != 0)
     return 1;
 
-  glk_stream_set_position(gamefile, 0, seekmode_Start);
+  glk_stream_set_position(gamefile, gamefile_start, seekmode_Start);
   newsum = 0;
 
   /* Read the header */

@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.3.0
+Version 0.3.1
 
     Designed by Andrew Plotkin <erkyrath@netcom.com>
     http://www.eblong.com/zarf/glulx/index.html
@@ -30,6 +30,9 @@ compile the library, the source code, and the "macglk_startup.c" file.
 (NOTE: Except that I haven't written a "macglk_startup.c" file yet.)
 
 * Version
+
+0.3.1:
+    Startup code now handles Blorb files correctly.
 
 0.3.0:
     Added support for compressed strings.

@@ -140,7 +140,7 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
   switch (funcnum) {
     /* To speed life up, we could implement commonly-used Glk functions
        directly -- instead of bothering with the whole prototype mess.
-       But I haven't written those shortcuts yet. */
+       But I haven't written those shortcuts yet. ### */
 
   default: {
     /* Go through the full dispatcher prototype foo. */

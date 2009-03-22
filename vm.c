@@ -43,7 +43,7 @@ void setup_vm()
 
   /* Read in all the size constants from the game file header. */
 
-  glk_stream_set_position(gamefile, 8, seekmode_Start);
+  glk_stream_set_position(gamefile, gamefile_start+8, seekmode_Start);
   res = glk_get_buffer_stream(gamefile, (char *)buf, 4 * 7);
   
   ramstart = Read4(buf+0);
@@ -130,7 +130,7 @@ void vm_restart()
     fatal_error("Memory could not be reset to its original size.");
 
   /* Load in all of main memory */
-  glk_stream_set_position(gamefile, 0, seekmode_Start);
+  glk_stream_set_position(gamefile, gamefile_start, seekmode_Start);
   for (lx=0; lx<endgamefile; lx++) {
     res = glk_get_char_stream(gamefile);
     if (res == -1) {

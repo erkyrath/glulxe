@@ -6,7 +6,12 @@
 #include "glk.h"
 #include "glulxe.h"
 
-strid_t gamefile = NULL;
+strid_t gamefile = NULL; /* The stream containing the Glulx file. */
+glui32 gamefile_start = 0; /* The position within the stream. (This will not 
+    be zero if the Glulx file is a chunk inside a Blorb archive.) */
+glui32 gamefile_len = 0; /* The length within the stream. */
+char *init_err = NULL;
+char *init_err2 = NULL;
 
 /* glk_main():
    The top-level routine. This does everything, and consequently is
@@ -14,7 +19,13 @@ strid_t gamefile = NULL;
 */
 void glk_main()
 {
+  if (init_err) {
+    fatal_error_2(init_err, init_err2);
+    return;
+  }
+
   if (!is_gamefile_valid()) {
+    /* The fatal error has already been displayed. */
     return;
   }
 

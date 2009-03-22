@@ -102,6 +102,9 @@ typedef struct operandlist_struct {
 /* Some useful globals */
 
 extern strid_t gamefile;
+extern glui32 gamefile_start, gamefile_len;
+extern char *init_err, *init_err2;
+
 extern unsigned char *memmap;
 extern unsigned char *stack;
 
@@ -133,6 +136,7 @@ extern void nonfatal_warning_handler(char *str, char *arg, int useval, glsi32 va
 
 /* files.c */
 extern int is_gamefile_valid(void);
+extern int locate_gamefile(int isblorb);
 
 /* vm.c */
 extern void setup_vm(void);
