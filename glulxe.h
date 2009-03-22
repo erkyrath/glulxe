@@ -114,6 +114,7 @@ extern glui32 checksum;
 extern glui32 stackptr;
 extern glui32 frameptr;
 extern glui32 pc;
+extern glui32 origstringtable;
 extern glui32 stringtable;
 extern glui32 valstackbase;
 extern glui32 localsbase;
@@ -138,7 +139,7 @@ extern void setup_vm(void);
 extern void finalize_vm(void);
 extern void vm_restart(void);
 extern glui32 change_memsize(glui32 newlen);
-extern glui32 *pop_arguments(glui32 count);
+extern glui32 *pop_arguments(glui32 count, glui32 addr);
 
 /* exec.c */
 extern void execute_loop(void);
@@ -157,11 +158,14 @@ extern void enter_function(glui32 addr, glui32 argc, glui32 *argv);
 extern void leave_function(void);
 extern void push_callstub(glui32 desttype, glui32 destaddr);
 extern void pop_callstub(glui32 returnvalue);
+extern glui32 pop_callstub_string(int *bitnum);
 
 /* string.c */
 extern void stream_num(glsi32 val);
 extern void stream_hexnum(glsi32 val);
-extern void stream_string(glui32 addr);
+extern void stream_string(glui32 addr, int inmiddle, int bitnum);
+extern glui32 stream_get_table(void);
+extern void stream_set_table(glui32 addr);
 extern char *make_temp_string(glui32 addr);
 extern void free_temp_string(char *str);
 

@@ -187,15 +187,17 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
   int argsize = oplist->arg_size;
   glui32 modeaddr = pc;
   int modeval;
+  unsigned char *ppc;
 
   inst->desttype = 0;
 
   pc += (numops+1) / 2;
+  ppc = memmap+pc;
 
   for (ix=0; ix<numops; ix++) {
     int mode;
     glui32 value;
-    glui32 addr = 0;
+    glui32 addr;
 
     if ((ix & 1) == 0) {
       modeval = Mem1(modeaddr);
@@ -224,47 +226,46 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
 
       case 1: /* one-byte constant */
         /* Sign-extend from 8 bits to 32 */
-        value = (glsi32)(signed char)(Mem1(pc));
-        pc++;
+        value = (glsi32)(((signed char *)ppc)[0]);
+        ppc++;
         break;
 
       case 2: /* two-byte constant */
         /* Sign-extend the first byte from 8 bits to 32; the subsequent
            byte must not be sign-extended. */
-        value = (glsi32)(signed char)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
+        value = (glsi32)(((signed char *)ppc)[0]);
+        value = (value << 8) | (glui32)(ppc[1]);
+        ppc+=2;
         break;
 
       case 3: /* four-byte constant */
         /* Bytes must not be sign-extended. */
-        value = (glui32)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
+        value = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
         break;
 
-      /* We do a bit of clever code interweaving here. Each of these
-         cases falls through to the bottom. Note that one- and two-byte
-         values must not be sign-extended in these modes. */
       case 7: /* main memory, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
+	goto MainMemAddr;
+
       case 6: /* main memory, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 8)
+	  | ((glui32)(ppc[1]));
+        ppc+=2;
+	goto MainMemAddr;
+
       case 5: /* main memory, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
+        addr = (glui32)(ppc[0]);
+        ppc++;
+
+      MainMemAddr:
         /* cases 5, 6, 7 all wind up here. */
         if (argsize == 4) {
           value = Mem4(addr);
@@ -278,18 +279,24 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         break;
 
       case 11: /* locals, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
+	goto LocalsAddr;
+
       case 10: /* locals, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 8)
+	  | ((glui32)(ppc[1]));
+        ppc+=2;
+	goto LocalsAddr;
+
       case 9: /* locals, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
+        addr = (glui32)(ppc[0]);
+        ppc++;
+
+      LocalsAddr:
         /* cases 9, 10, 11 all wind up here. It's illegal for addr to not
            be four-byte aligned, but we don't check this explicitly. 
            A "strict mode" interpreter probably should. It's also illegal
@@ -308,18 +315,24 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         break;
 
       case 15: /* main memory RAM, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
+	goto RAMAddr;
+
       case 14: /* main memory RAM, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 8)
+	  | ((glui32)(ppc[1]));
+        ppc+=2;
+	goto RAMAddr;
+
       case 13: /* main memory RAM, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
+        addr = (glui32)(ppc[0]);
+        ppc++;
+
+      RAMAddr:
         /* cases 13, 14, 15 all wind up here. */
         addr += ramstart;
         if (argsize == 4) {
@@ -354,36 +367,48 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         break;
 
       case 7: /* main memory, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
+	goto MemWriteAddr;
+
       case 6: /* main memory, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 8)
+	  | ((glui32)(ppc[1]));
+        ppc+=2;
+	goto MemWriteAddr;
+
       case 5: /* main memory, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
+        addr = (glui32)(ppc[0]);
+        ppc++;
+
+      MemWriteAddr:
         /* cases 5, 6, 7 all wind up here. */
         inst->desttype = 1;
         inst->value[ix] = addr;
         break;
 
       case 11: /* locals, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
+	goto LocalsWriteAddr;
+
       case 10: /* locals, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 8)
+	  | ((glui32)(ppc[1]));
+        ppc+=2;
+	goto LocalsWriteAddr;
+
       case 9: /* locals, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
+        addr = (glui32)(ppc[0]);
+        ppc++;
+
+      LocalsWriteAddr:
         /* cases 9, 10, 11 all wind up here. It's illegal for addr to not
            be four-byte aligned, but we don't check this explicitly. 
            A "strict mode" interpreter probably should. It's also illegal
@@ -397,18 +422,24 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         break;
 
       case 15: /* main memory RAM, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 24)
+	  | ((glui32)(ppc[1]) << 16)
+	  | ((glui32)(ppc[2]) << 8)
+	  | ((glui32)(ppc[3]));
+        ppc+=4;
+	goto RAMWriteAddr;
+
       case 14: /* main memory RAM, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+        addr = ((glui32)(ppc[0]) << 8)
+	  | ((glui32)(ppc[1]));
+        ppc+=2;
+	goto RAMWriteAddr;
+
       case 13: /* main memory RAM, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
+        addr = (glui32)(ppc[0]);
+        ppc++;
+
+      RAMWriteAddr:
         /* cases 13, 14, 15 all wind up here. */
         inst->desttype = 1;
         addr += ramstart;
@@ -425,6 +456,8 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
       }
     }
   }
+
+  pc = (ppc - memmap);
 }
 
 /* store_operand():

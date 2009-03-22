@@ -9,6 +9,8 @@
 /* enter_function():
    This writes a new call frame onto the stack, at stackptr. It leaves
    frameptr pointing to the frame (ie, the original stackptr value.) 
+   argc and argv are an array of arguments. Note that if argc is zero,
+   argv may be NULL.
 */
 void enter_function(glui32 addr, glui32 argc, glui32 *argv)
 {
@@ -220,8 +222,50 @@ void pop_callstub(glui32 returnvalue)
   valstackbase = frameptr + Stk4(frameptr);
   localsbase = frameptr + Stk4(frameptr+4);
 
+  if (desttype == 0x11)
+    fatal_error("String-terminator call stub at end of function call.");
+
+  if (desttype == 0x10) {
+    /* This call stub was pushed during a string-decoding operation!
+       We have to restart it. (Note that the return value is discarded.) */
+    stream_string(pc, TRUE, destaddr); 
+    return;
+  }
+
   /* We're back in the original frame, so we can store the returnvalue. 
      (If we tried to do this before resetting frameptr, a result
      destination on the stack would go astray.) */
   store_operand(desttype, destaddr, returnvalue);
 }
+
+/* pop_callstub_string():
+   Remove the magic four values, but interpret them as a string restart
+   state. Returns zero if it's a termination stub, or returns the
+   restart address. The bitnum is extra.
+*/
+glui32 pop_callstub_string(int *bitnum)
+{
+  glui32 desttype, destaddr, newpc;
+
+  if (stackptr < 16)
+    fatal_error("Stack underflow in callstub.");
+  stackptr -= 16;
+
+  newpc = Stk4(stackptr+8);
+  destaddr = Stk4(stackptr+4);
+  desttype = Stk4(stackptr+0);
+
+  pc = newpc;
+
+  if (desttype == 0x11) {
+    return 0;
+  }
+  if (desttype == 0x10) {
+    *bitnum = destaddr;
+    return pc;
+  }
+
+  fatal_error("Function-terminator call stub at end of string.");
+  return 0;
+}
+

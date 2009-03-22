@@ -50,11 +50,6 @@ void execute_loop()
     }
 
     /* Now we have an opcode number. */
-    /*###{
-      extern int printf (__const char* __format, ...);
-      printf("### pc=%04lx, fp=%04lx/%04lx, sp=%04lx: opcode %lx\n", 
-        pc, frameptr, valstackbase, stackptr, opcode);
-    }###*/
     
     /* Fetch the structure that describes how the operands for this
        opcode are arranged. This is a pointer to an immutable, 
@@ -267,7 +262,7 @@ void execute_loop()
 
       case op_call:
         value = inst.value[1];
-        arglist = pop_arguments(value);
+        arglist = pop_arguments(value, 0);
         push_callstub(inst.desttype, inst.value[2]);
         enter_function(inst.value[0], value, arglist);
         break;
@@ -281,7 +276,7 @@ void execute_loop()
         break;
       case op_tailcall:
 	value = inst.value[1];
-	arglist = pop_arguments(value);
+	arglist = pop_arguments(value, 0);
 	leave_function();
 	enter_function(inst.value[0], value, arglist);
         break;
@@ -476,7 +471,7 @@ void execute_loop()
         stream_num(vals0);
         break;
       case op_streamstr:
-        stream_string(inst.value[0]);
+        stream_string(inst.value[0], FALSE, 0);
         break;
 
       default:
@@ -503,13 +498,16 @@ void execute_loop()
         break;
 
       case op_getstringtbl:
+	value = stream_get_table();
+	store_operand(inst.desttype, inst.value[0], value);
+	break;
       case op_setstringtbl:
-        fatal_error("Stringtable not implemented"); /* ### */
+	stream_set_table(inst.value[0]);
         break;
 
       case op_glk:
         value = inst.value[1];
-        arglist = pop_arguments(value);
+        arglist = pop_arguments(value, 0);
         val0 = perform_glk(inst.value[0], value, arglist);
         store_operand(inst.desttype, inst.value[2], val0);
         break;

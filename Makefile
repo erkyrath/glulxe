@@ -7,9 +7,9 @@
 # sets of values appear below; uncomment one of them and change the
 # directories appropriately.
 
-GLKINCLUDEDIR = ../cheapglk
-GLKLIBDIR = ../cheapglk
-GLKMAKEFILE = Make.cheapglk
+#GLKINCLUDEDIR = ../cheapglk
+#GLKLIBDIR = ../cheapglk
+#GLKMAKEFILE = Make.cheapglk
 
 #GLKINCLUDEDIR = ../glkterm
 #GLKLIBDIR = ../glkterm

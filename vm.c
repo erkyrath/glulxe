@@ -17,6 +17,7 @@ glui32 endgamefile;
 glui32 origendmem;
 glui32 stacksize;
 glui32 startfuncaddr;
+glui32 origstringtable;
 glui32 checksum;
 
 /* The VM registers. */
@@ -50,7 +51,7 @@ void setup_vm()
   origendmem = Read4(buf+8);
   stacksize = Read4(buf+12);
   startfuncaddr = Read4(buf+16);
-  stringtable = Read4(buf+20);
+  origstringtable = Read4(buf+20);
   checksum = Read4(buf+24);
 
   /* Set the protection range to (0, 0), meaning "off". */
@@ -88,6 +89,7 @@ void setup_vm()
     memmap = NULL;
     fatal_error("Unable to allocate Glulx stack space.");
   }
+  stringtable = 0;
 
   /* Initialize various other things in the terp. */
   init_operands(); 
@@ -146,7 +148,7 @@ void vm_restart()
   stackptr = 0;
   frameptr = 0;
   pc = 0;
-  /* ### stringtable? */
+  stream_set_table(origstringtable);
   valstackbase = 0;
   localsbase = 0;
 
@@ -203,11 +205,12 @@ glui32 change_memsize(glui32 newlen)
 }
 
 /* pop_arguments():
-   Pop N arguments off the stack, and put them in an array. 
+   If addr is 0, pop N arguments off the stack, and put them in an array. 
+   If non-0, take N arguments from that main memory address instead.
    This has to dynamically allocate if there are more than 32 arguments,
    but that shouldn't be a problem.
 */
-glui32 *pop_arguments(glui32 count)
+glui32 *pop_arguments(glui32 count, glui32 addr)
 {
   int ix;
   glui32 argptr;
@@ -218,8 +221,8 @@ glui32 *pop_arguments(glui32 count)
   static glui32 *dynarray = NULL;
   static glui32 dynarray_size = 0;
 
-  if (stackptr < valstackbase+4*count) 
-    fatal_error("Stack underflow in arguments.");
+  if (count == 0)
+    return NULL;
 
   if (count <= MAXARGS) {
     /* Store in the static array. */
@@ -248,11 +251,20 @@ glui32 *pop_arguments(glui32 count)
     }
   }
 
-  stackptr -= 4*count;
-
-  for (ix=0; ix<count; ix++) {
-    argptr = stackptr+4*((count-1)-ix);
-    array[ix] = Stk4(argptr);
+  if (!addr) {
+    if (stackptr < valstackbase+4*count) 
+      fatal_error("Stack underflow in arguments.");
+    stackptr -= 4*count;
+    for (ix=0; ix<count; ix++) {
+      argptr = stackptr+4*((count-1)-ix);
+      array[ix] = Stk4(argptr);
+    }
+  }
+  else {
+    for (ix=0; ix<count; ix++) {
+      array[ix] = Mem4(addr);
+      addr += 4;
+    }
   }
 
   return array;
