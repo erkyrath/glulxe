@@ -39,6 +39,8 @@
       : (MemW4((addr), (val))))
 #define AddressOfArray(addr)  \
     (memmap + (addr))
+#define AddressOfIArray(addr)  \
+    (memmap + (addr))
 #define ReadStructField(addr, fieldnum)  \
     (((addr) == 0xffffffff) \
       ? (stackptr -= 4, Stk4(stackptr)) \
@@ -138,9 +140,34 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
   glui32 retval = 0;
 
   switch (funcnum) {
-    /* To speed life up, we could implement commonly-used Glk functions
-       directly -- instead of bothering with the whole prototype mess.
-       But I haven't written those shortcuts yet. ### */
+    /* To speed life up, we implement commonly-used Glk functions
+       directly -- instead of bothering with the whole prototype 
+       mess. */
+
+  case 0x0080: /* put_char */
+    if (numargs != 1)
+      goto WrongArgNum;
+    glk_put_char(arglist[0] & 0xFF);
+    break;
+  case 0x0081: /* put_char_stream */
+    if (numargs != 2)
+      goto WrongArgNum;
+    glk_put_char_stream(find_stream_by_id(arglist[0]), arglist[1] & 0xFF);
+    break;
+  case 0x00A0: /* char_to_lower */
+    if (numargs != 1)
+      goto WrongArgNum;
+    retval = glk_char_to_lower(arglist[0] & 0xFF);
+    break;
+  case 0x00A1: /* char_to_upper */
+    if (numargs != 1)
+      goto WrongArgNum;
+    retval = glk_char_to_upper(arglist[0] & 0xFF);
+    break;
+
+  WrongArgNum:
+    fatal_error("Wrong number of arguments to Glk function.");
+    break;
 
   default: {
     /* Go through the full dispatcher prototype foo. */
@@ -407,6 +434,14 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
           gargnum++;
           cx++;
           break;
+        case 'I':
+          garglist[gargnum].array = AddressOfIArray(varglist[ix]);
+          gargnum++;
+          ix++;
+          garglist[gargnum].uint = varglist[ix];
+          gargnum++;
+          cx++;
+          break;
         default:
           fatal_error("Illegal format string.");
           break;
@@ -583,6 +618,7 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 
         switch (typeclass) {
         case 'C':
+        case 'I':
           gargnum++;
           ix++;
           gargnum++;

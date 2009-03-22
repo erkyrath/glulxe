@@ -6,6 +6,13 @@
 #include "glk.h"
 #include "glulxe.h"
 
+static glui32 iosys_mode;
+static glui32 iosys_rock;
+/* These constants are defined in the Glulx spec. */
+#define iosys_None (0)
+#define iosys_Filter (1)
+#define iosys_Glk (2)
+
 #define CACHEBITS (4)
 #define CACHESIZE (1<<CACHEBITS) 
 #define CACHEMASK (15)
@@ -27,105 +34,147 @@ static int never_cache_stringtable = FALSE;
 static int tablecache_valid = FALSE;
 static cacheblock_t tablecache;
 
+static void nopio_char_han(unsigned char ch);
+static void filio_char_han(unsigned char ch);
+
 static void dropcache(cacheblock_t *cablist);
 static void buildcache(cacheblock_t *cablist, glui32 nodeaddr, int depth,
   int mask);
 static void dumpcache(cacheblock_t *cablist, int count, int indent);
 
+void stream_get_iosys(glui32 *mode, glui32 *rock)
+{
+  *mode = iosys_mode;
+  *rock = iosys_rock;
+}
+
+void stream_set_iosys(glui32 mode, glui32 rock)
+{
+  switch (mode) {
+  default:
+    mode = 0;
+    /* ...and fall through to next case (no-op I/O). */
+  case iosys_None:
+    rock = 0;
+    stream_char_handler = nopio_char_han;
+    break;
+  case iosys_Filter:
+    stream_char_handler = filio_char_han;
+    break;
+  case iosys_Glk:
+    rock = 0;
+    stream_char_handler = glk_put_char;
+    break;
+  }
+
+  iosys_mode = mode;
+  iosys_rock = rock;
+}
+
+static void nopio_char_han(unsigned char ch)
+{
+}
+
+static void filio_char_han(unsigned char ch)
+{
+  glui32 val = ch;
+  push_callstub(0, 0);
+  enter_function(iosys_rock, 1, &val);
+}
+
 /* stream_num():
    Write a signed integer to the current output stream.
 */
-void stream_num(glsi32 val)
+void stream_num(glsi32 val, int inmiddle, int charnum)
 {
+  int ix = 0;
+  int res, jx;
   char buf[16];
   glui32 ival;
-  int ix;
 
   if (val == 0) {
-    glk_put_char('0');
-    return;
-  }
-
-  if (val < 0) {
-    glk_put_char('-');
-    ival = -val;
+    buf[ix] = '0';
+    ix++;
   }
   else {
-    ival = val;
+    if (val < 0) 
+      ival = -val;
+    else 
+      ival = val;
+
+    while (ival != 0) {
+      buf[ix] = (ival % 10) + '0';
+      ix++;
+      ival /= 10;
+    }
+
+    if (val < 0) {
+      buf[ix] = '-';
+      ix++;
+    }
   }
 
-  ix = 0;
-  while (ival != 0) {
-    buf[ix] = (ival % 10) + '0';
-    ix++;
-    ival /= 10;
-  }
+  switch (iosys_mode) {
 
-  while (ix) {
-    ix--;
-    glk_put_char(buf[ix]);
-  }
-}
+  case iosys_Glk:
+    while (ix) {
+      ix--;
+      glk_put_char(buf[ix]);
+    }
+    break;
 
-/* stream_hexnum():
-   Write a signed integer to the current output stream.
-*/
-void stream_hexnum(glsi32 val)
-{
-  char buf[16];
-  glui32 ival;
-  int ix;
+  case iosys_Filter:
+    if (!inmiddle) {
+      push_callstub(0x11, 0);
+    }
+    if (charnum >= ix) {
+      res = pop_callstub_string(&jx);
+      if (res) 
+	fatal_error("String-on-string call stub while printing number.");
+    }
+    else {
+      ival = buf[(ix-1)-charnum] & 0xFF;
+      pc = val;
+      push_callstub(0x12, charnum+1);
+      enter_function(iosys_rock, 1, &ival);
+    }
+    break;
 
-  if (val == 0) {
-    glk_put_char('0');
-    return;
-  }
+  default:
+    break;
 
-  if (val < 0) {
-    glk_put_char('-');
-    ival = -val;
-  }
-  else {
-    ival = val;
-  }
-
-  ix = 0;
-  while (ival != 0) {
-    buf[ix] = (ival % 16) + '0';
-    if (buf[ix] > '9')
-      buf[ix] += ('A' - ('9' + 1));
-    ix++;
-    ival /= 16;
-  }
-
-  while (ix) {
-    ix--;
-    glk_put_char(buf[ix]);
   }
 }
 
 /* stream_string():
    Write a Glulx string object to the current output stream.
+   inmiddle is zero if we are beginning a new string, or
+   nonzero if restarting one (1/2 for uncompressed/compressed
+   strings).
 */
 void stream_string(glui32 addr, int inmiddle, int bitnum)
 {
   int ch;
   int type;
   int alldone = FALSE;
-  int substring = inmiddle;
+  int substring = (inmiddle != 0);
+  glui32 ival;
 
   if (!addr)
     fatal_error("Called stream_string with null address.");
   
   while (!alldone) {
 
-    if (!inmiddle) {
+    if (inmiddle == 0) {
       type = Mem1(addr);
       addr++;
       bitnum = 0;
     }
     else {
-      type = 0xE1;
+      if (inmiddle == 1)
+	type = 0xE0;
+      else
+	type = 0xE1;
     }
 
     if (type == 0xE1) {
@@ -188,13 +237,45 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
 	    done = 1;
 	    break;
 	  case 0x02: /* single character */
-	    glk_put_char(cab->u.ch);
+	    switch (iosys_mode) {
+	    case iosys_Glk:
+	      glk_put_char(cab->u.ch);
+	      break;
+	    case iosys_Filter: 
+	      ival = cab->u.ch & 0xFF;
+	      if (!substring) {
+		push_callstub(0x11, 0);
+		substring = TRUE;
+	      }
+	      pc = addr;
+	      push_callstub(0x10, bitnum);
+	      enter_function(iosys_rock, 1, &ival);
+	      return;
+	    }
 	    cablist = tablecache.u.branches;
 	    break;
 	  case 0x03: /* C string */
-	    for (tmpaddr=cab->u.addr; (ch=Mem1(tmpaddr)) != '\0'; tmpaddr++) 
-	      glk_put_char(ch);
-	    cablist = tablecache.u.branches; 
+	    switch (iosys_mode) {
+	    case iosys_Glk:
+	      for (tmpaddr=cab->u.addr; (ch=Mem1(tmpaddr)) != '\0'; tmpaddr++) 
+		glk_put_char(ch);
+	      cablist = tablecache.u.branches; 
+	      break;
+	    case iosys_Filter:
+	      if (!substring) {
+		push_callstub(0x11, 0);
+		substring = TRUE;
+	      }
+	      pc = addr;
+	      push_callstub(0x10, bitnum);
+	      inmiddle = 1;
+	      addr = cab->u.addr;
+	      done = 2;
+	      break;
+	    default:
+	      cablist = tablecache.u.branches; 
+	      break;
+	    }
 	    break;
 	  case 0x08:
 	  case 0x09:
@@ -216,7 +297,7 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
 	      if (otype >= 0xE0 && otype <= 0xFF) {
 		pc = addr;
 		push_callstub(0x10, bitnum);
-		inmiddle = FALSE;
+		inmiddle = 0;
 		addr = oaddr;
 		done = 2;
 	      }
@@ -250,7 +331,7 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
 	  continue; /* restart the top-level loop */
 	}
       }
-      else {
+      else { /* tablecache not valid */
 	glui32 node;
 	int byte;
 	int nodetype;
@@ -287,13 +368,45 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
 	    break;
 	  case 0x02: /* single character */
 	    ch = Mem1(node);
-	    glk_put_char(ch);
+	    switch (iosys_mode) {
+	    case iosys_Glk:
+	      glk_put_char(ch);
+	      break;
+	    case iosys_Filter: 
+	      ival = ch & 0xFF;
+	      if (!substring) {
+		push_callstub(0x11, 0);
+		substring = TRUE;
+	      }
+	      pc = addr;
+	      push_callstub(0x10, bitnum);
+	      enter_function(iosys_rock, 1, &ival);
+	      return;
+	    }
 	    node = Mem4(stringtable+8);
 	    break;
 	  case 0x03: /* C string */
-	    for (; (ch=Mem1(node)) != '\0'; node++) 
-	      glk_put_char(ch);
-	    node = Mem4(stringtable+8);
+	    switch (iosys_mode) {
+	    case iosys_Glk:
+	      for (; (ch=Mem1(node)) != '\0'; node++) 
+		glk_put_char(ch);
+	      node = Mem4(stringtable+8);
+	      break;
+	    case iosys_Filter:
+	      if (!substring) {
+		push_callstub(0x11, 0);
+		substring = TRUE;
+	      }
+	      pc = addr;
+	      push_callstub(0x10, bitnum);
+	      inmiddle = 1;
+	      addr = node;
+	      done = 2;
+	      break;
+	    default:
+	      node = Mem4(stringtable+8);
+	      break;
+	    }
 	    break;
 	  case 0x08:
 	  case 0x09:
@@ -313,7 +426,7 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
 	      if (otype >= 0xE0 && otype <= 0xFF) {
 		pc = addr;
 		push_callstub(0x10, bitnum);
-		inmiddle = FALSE;
+		inmiddle = 0;
 		addr = oaddr;
 		done = 2;
 	      }
@@ -349,12 +462,31 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
       }
     }
     else if (type == 0xE0) {
-      while (1) {
+      switch (iosys_mode) {
+      case iosys_Glk:
+	while (1) {
+	  ch = Mem1(addr);
+	  addr++;
+	  if (ch == '\0')
+	    break;
+	  glk_put_char(ch);
+	}
+	break;
+      case iosys_Filter:
+	if (!substring) {
+	  push_callstub(0x11, 0);
+	  substring = TRUE;
+	}
 	ch = Mem1(addr);
 	addr++;
-	if (ch == '\0')
-	  break;
-	glk_put_char(ch);
+	if (ch != '\0') {
+	  ival = ch & 0xFF;
+	  pc = addr;
+	  push_callstub(0x13, 0);
+	  enter_function(iosys_rock, 1, &ival);
+	  return;
+	}
+	break;
       }
     }
     else if (type >= 0xE0 && type <= 0xFF) {
@@ -375,7 +507,7 @@ void stream_string(glui32 addr, int inmiddle, int bitnum)
 	alldone = TRUE;
       }
       else {
-	inmiddle = TRUE;
+	inmiddle = 2;
       }
     }
   }

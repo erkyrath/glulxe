@@ -124,6 +124,8 @@ extern glui32 localsbase;
 extern glui32 endmem;
 extern glui32 protectstart, protectend;
 
+extern void (*stream_char_handler)(unsigned char ch);
+
 /* main.c */
 extern void fatal_error_handler(char *str, char *arg, int useval, glsi32 val);
 extern void nonfatal_warning_handler(char *str, char *arg, int useval, glsi32 val);
@@ -165,11 +167,12 @@ extern void pop_callstub(glui32 returnvalue);
 extern glui32 pop_callstub_string(int *bitnum);
 
 /* string.c */
-extern void stream_num(glsi32 val);
-extern void stream_hexnum(glsi32 val);
+extern void stream_num(glsi32 val, int inmiddle, int charnum);
 extern void stream_string(glui32 addr, int inmiddle, int bitnum);
 extern glui32 stream_get_table(void);
 extern void stream_set_table(glui32 addr);
+extern void stream_get_iosys(glui32 *mode, glui32 *rock);
+extern void stream_set_iosys(glui32 mode, glui32 rock);
 extern char *make_temp_string(glui32 addr);
 extern void free_temp_string(char *str);
 

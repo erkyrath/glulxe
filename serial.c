@@ -204,8 +204,15 @@ glui32 perform_save(strid_t str)
 {
   dest_t dest;
   int ix;
-  glui32 res;
+  glui32 res, lx, val;
   glui32 memstart, memlen, stackstart, stacklen, filestart, filelen;
+
+  stream_get_iosys(&val, &lx);
+  if (val != 2) {
+    /* Not using the Glk I/O system, so bail. This function only
+       knows how to write to a Glk stream. */
+    fatal_error("Streams are only available in Glk I/O system.");
+  }
 
   if (str == 0)
     return 1;
@@ -314,6 +321,13 @@ glui32 perform_restore(strid_t str)
   int ix;
   glui32 lx, res, val;
   glui32 filestart, filelen;
+
+  stream_get_iosys(&val, &lx);
+  if (val != 2) {
+    /* Not using the Glk I/O system, so bail. This function only
+       knows how to read from a Glk stream. */
+    fatal_error("Streams are only available in Glk I/O system.");
+  }
 
   if (str == 0)
     return 1;

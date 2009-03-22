@@ -45,6 +45,8 @@ static operandlist_t list_2LS = { 2, 2, array_LS };
 static operandlist_t list_1LS = { 2, 1, array_LS };
 static int array_SL[2] = { modeform_Store, modeform_Load };
 static operandlist_t list_SL = { 2, 4, array_SL };
+static int array_SS[2] = { modeform_Store, modeform_Store };
+static operandlist_t list_SS = { 2, 4, array_SS };
 
 /* init_operands():
    Set up the fast-lookup array of operandlists. This is called just
@@ -153,6 +155,10 @@ operandlist_t *lookup_operandlist(glui32 opcode)
     return &list_S;
   case op_setstringtbl:
     return &list_L;
+  case op_getiosys:
+    return &list_SS;
+  case op_setiosys:
+    return &list_LL;
 
   case op_random:
     return &list_LS;

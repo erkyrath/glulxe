@@ -12,10 +12,10 @@ glui32 do_gestalt(glui32 val, glui32 val2)
   switch (val) {
 
   case gestulx_GlulxVersion:
-    return 0x00010000; /* Glulx spec version 1.0 */
+    return 0x00020000; /* Glulx spec version 2.0 */
 
   case gestulx_TerpVersion:
-    return 0x00000302; /* Glulxe version 0.3.2 */
+    return 0x00000303; /* Glulxe version 0.3.3 */
 
   case gestulx_ResizeMem:
     return 1; /* We can handle setmemsize. */
@@ -23,9 +23,17 @@ glui32 do_gestalt(glui32 val, glui32 val2)
   case gestulx_Undo:
     return 1; /* We can handle saveundo and restoreundo. */
 
-  case gestulx_Glk:
-    return 1; /* A Glk library is hooked up. */
-
+  case gestulx_IOSystem:
+    switch (val2) {
+    case 0:
+      return 1; /* The "null" system always works. */
+    case 1:
+      return 1; /* The "filter" system always works. */
+    case 2:
+      return 1; /* A Glk library is hooked up. */
+    default:
+      return 0;
+    }
 
   default:
     return 0;

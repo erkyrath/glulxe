@@ -30,11 +30,11 @@ int is_gamefile_valid()
   }
 
   version = Read4(buf+4);
-  if (version < 0x10000) {
+  if (version < 0x20000) {
     fatal_error("This Glulx file is too old a version to execute.");
     return FALSE;
   }
-  if (version >= 0x20000) {
+  if (version >= 0x30000) {
     fatal_error("This Glulx file is too new a version to execute.");
     return FALSE;
   }

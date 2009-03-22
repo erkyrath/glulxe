@@ -497,11 +497,11 @@ void execute_loop()
 
       case op_streamchar:
         value = inst.value[0] & 0xFF;
-        glk_put_char(value);
+        (*stream_char_handler)(value);
         break;
       case op_streamnum:
         vals0 = inst.value[0];
-        stream_num(vals0);
+        stream_num(vals0, FALSE, 0);
         break;
       case op_streamstr:
         stream_string(inst.value[0], FALSE, 0);
@@ -564,6 +564,15 @@ void execute_loop()
 	break;
       case op_setstringtbl:
 	stream_set_table(inst.value[0]);
+        break;
+
+      case op_getiosys:
+	stream_get_iosys(&val0, &val1);
+	store_operand(inst.desttype, inst.value[0], val0);
+	store_operand(inst.desttype, inst.value[1], val1);
+	break;
+      case op_setiosys:
+	stream_set_iosys(inst.value[0], inst.value[1]);
         break;
 
       case op_glk:

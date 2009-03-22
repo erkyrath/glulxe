@@ -131,7 +131,7 @@ glui32 binary_search(glui32 key, glui32 keysize,
   
   bot = 0;
   top = numstructs;
-  while (1) {
+  while (bot < top) {
     int cmp = 0;
     val = (top+bot) / 2;
     addr = start + val * structsize;
@@ -164,9 +164,6 @@ glui32 binary_search(glui32 key, glui32 keysize,
 	return addr;
     }
 
-    if (bot+1 >= top) {
-      break;
-    }
     if (cmp < 0) {
       bot = val+1;
     }

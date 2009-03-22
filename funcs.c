@@ -222,20 +222,37 @@ void pop_callstub(glui32 returnvalue)
   valstackbase = frameptr + Stk4(frameptr);
   localsbase = frameptr + Stk4(frameptr+4);
 
-  if (desttype == 0x11)
-    fatal_error("String-terminator call stub at end of function call.");
+  switch (desttype) {
 
-  if (desttype == 0x10) {
+  case 0x11:
+    fatal_error("String-terminator call stub at end of function call.");
+    break;
+
+  case 0x10:
     /* This call stub was pushed during a string-decoding operation!
        We have to restart it. (Note that the return value is discarded.) */
-    stream_string(pc, TRUE, destaddr); 
-    return;
-  }
+    stream_string(pc, 2, destaddr); 
+    break;
 
-  /* We're back in the original frame, so we can store the returnvalue. 
-     (If we tried to do this before resetting frameptr, a result
-     destination on the stack would go astray.) */
-  store_operand(desttype, destaddr, returnvalue);
+  case 0x12:
+    /* This call stub was pushed during a number-printing operation.
+       Restart that. (Return value discarded.) */
+    stream_num(pc, TRUE, destaddr);
+    break;
+
+  case 0x13:
+    /* This call stub was pushed during a C-string printing operation.
+       We have to restart it. (Note that the return value is discarded.) */
+    stream_string(pc, 1, destaddr); 
+    break;
+
+  default:
+    /* We're back in the original frame, so we can store the returnvalue. 
+       (If we tried to do this before resetting frameptr, a result
+       destination on the stack would go astray.) */
+    store_operand(desttype, destaddr, returnvalue);
+    break;
+  }
 }
 
 /* pop_callstub_string():

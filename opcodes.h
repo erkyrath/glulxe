@@ -88,6 +88,8 @@
 
 #define op_getstringtbl (0x140)
 #define op_setstringtbl (0x141)
+#define op_getiosys     (0x148)
+#define op_setiosys     (0x149)
 
 #define op_linearsearch (0x150)
 #define op_binarysearch (0x151)

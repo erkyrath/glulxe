@@ -10,7 +10,7 @@
 #define gestulx_TerpVersion (1)
 #define gestulx_ResizeMem (2)
 #define gestulx_Undo (3)
-#define gestulx_Glk (4)
+#define gestulx_IOSystem (4)
 
 #endif /* _GESTALT_H */
 

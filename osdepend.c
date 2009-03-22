@@ -102,48 +102,6 @@ void glulx_setrandom(glui32 seed)
 
 #endif /* OS_MAC */
 
-#ifdef WIN32
-
-#include <time.h>
-#include <stdlib.h>
-
-/* Allocate a chunk of memory. */
-void *glulx_malloc(glui32 len)
-{
-  return malloc(len);
-}
-
-/* Resize a chunk of memory. This must follow ANSI rules: if the
-   size-change fails, this must return NULL, but the original chunk 
-   must remain unchanged. */
-void *glulx_realloc(void *ptr, glui32 len)
-{
-  return realloc(ptr, len);
-}
-
-/* Deallocate a chunk of memory. */
-void glulx_free(void *ptr)
-{
-  free(ptr);
-}
-
-/* Set the random-number seed; zero means use as random a source as
-   possible. */
-void glulx_setrandom(glui32 seed)
-{
-  if (seed == 0)
-    seed = time(NULL);
-  srand(seed);
-}
-
-/* Return a random number in the range 0 to 2^32-1. */
-glui32 glulx_random()
-{
-  return rand();
-}
-
-#endif
-
 #ifdef COMPILE_RANDOM_CODE
 
 /* Here is a pretty standard random-number generator and seed function. */

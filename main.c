@@ -14,6 +14,7 @@ char *init_err = NULL;
 char *init_err2 = NULL;
 
 static winid_t get_error_win(void);
+static void stream_hexnum(glsi32 val);
 
 /* glk_main():
    The top-level routine. This does everything, and consequently is
@@ -119,4 +120,40 @@ void nonfatal_warning_handler(char *str, char *arg, int useval, glsi32 val)
   }
 }
 
+/* stream_hexnum():
+   Write a signed integer to the current Glk output stream.
+*/
+static void stream_hexnum(glsi32 val)
+{
+  char buf[16];
+  glui32 ival;
+  int ix;
+
+  if (val == 0) {
+    glk_put_char('0');
+    return;
+  }
+
+  if (val < 0) {
+    glk_put_char('-');
+    ival = -val;
+  }
+  else {
+    ival = val;
+  }
+
+  ix = 0;
+  while (ival != 0) {
+    buf[ix] = (ival % 16) + '0';
+    if (buf[ix] > '9')
+      buf[ix] += ('A' - ('9' + 1));
+    ix++;
+    ival /= 16;
+  }
+
+  while (ix) {
+    ix--;
+    glk_put_char(buf[ix]);
+  }
+}
 

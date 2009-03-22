@@ -30,6 +30,10 @@ glui32 localsbase;
 glui32 endmem;
 glui32 protectstart, protectend;
 
+void (*stream_char_handler)(unsigned char ch);
+void (*stream_num_handler)(glsi32 ch);
+void (*stream_string_handler)(glui32 ch);
+
 /* setup_vm():
    Read in the game file and build the machine, allocating all the memory
    necessary.
@@ -148,6 +152,7 @@ void vm_restart()
   stackptr = 0;
   frameptr = 0;
   pc = 0;
+  stream_set_iosys(0, 0);
   stream_set_table(origstringtable);
   valstackbase = 0;
   localsbase = 0;
