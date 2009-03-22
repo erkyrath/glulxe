@@ -1,5 +1,5 @@
 /*
-   winglk_startup.c: Windows-specific code for the Glulxe interpreter.
+   winstart.c: Windows-specific code for the Glulxe interpreter.
 */
 
 #include <windows.h>
@@ -16,11 +16,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
   SetErrorMode(SEM_NOOPENFILEERRORBOX);
 
   /* Attempt to initialise Glk */
-  if (InitGlk(0x00000502) == 0)
+  if (InitGlk(0x00000601) == 0)
     exit(0);
 
   /* Call the Windows specific initialization routine */
-  if (winglk_startup_code() != 0)
+  if (winglk_startup_code(lpCmdLine) != 0)
   {
     /* Run the application */
     glk_main();
@@ -34,32 +34,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 extern strid_t gamefile; /* This is defined in glulxe.h */
 
-UINT APIENTRY OFNHookProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam);
-
-int winglk_startup_code(void)
+int winglk_startup_code(const char* cmdline)
 {
-	OPENFILENAME OpenInfo;
-	char strFileName[256];
+	char* pszFileName;
+	char* pszSep;
 	char Buffer[12];
 	int BufferCount;
-	char* pszSep;
-	char* pszExt;
 
 	winglk_app_set_name("Glulxe");
 	winglk_window_set_title("Glulxe Interpreter");
 
-	strFileName[0] = '\0';
-	ZeroMemory(&OpenInfo,sizeof(OPENFILENAME));
-	OpenInfo.lStructSize = sizeof(OPENFILENAME);
-	OpenInfo.lpstrFile = strFileName;
-	OpenInfo.nMaxFile = 256;
-	OpenInfo.lpstrFilter = "Glulx Files (.blb;.ulx)\0*.blb;*.ulx\0All Files (*.*)\0*.*\0";
-	OpenInfo.lpstrTitle = "Select a Glulx game to interpret";
-	OpenInfo.Flags = OFN_FILEMUSTEXIST|OFN_HIDEREADONLY|OFN_ENABLEHOOK|OFN_EXPLORER;
-	OpenInfo.lpfnHook = OFNHookProc;
-	if (GetOpenFileName(&OpenInfo) != 0)
+	pszFileName = winglk_get_initial_filename(cmdline,
+		"Select a Glulx game to interpret",
+		"Glulx Files (.blb;.ulx)|*.blb;*.ulx|All Files (*.*)|*.*||");
+
+	if (pszFileName != 0)
 	{
-		frefid_t gameref = glk_fileref_create_by_name(fileusage_BinaryMode|fileusage_Data,strFileName,0);
+		frefid_t gameref = glk_fileref_create_by_name(fileusage_BinaryMode|fileusage_Data,pszFileName,0);
 		if (gameref)
 		{
 			gamefile = glk_stream_open_file(gameref,filemode_Read,0);
@@ -92,40 +83,13 @@ int winglk_startup_code(void)
 		return 0;
 
 	/* Set up the resource directory. */
-	pszSep = strrchr(strFileName,'\\');
+	pszSep = strrchr(pszFileName,'\\');
 	if (pszSep)
 	{
 		*pszSep = '\0';
-		winglk_set_resource_directory(strFileName);
+		winglk_set_resource_directory(pszFileName);
 	}
 
 	return 1;
 }
 
-UINT APIENTRY OFNHookProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (uiMsg == WM_NOTIFY)
-	{
-		LPOFNOTIFY pNotify = (LPOFNOTIFY)lParam;
-		if (pNotify->hdr.code == CDN_INITDONE)
-		{
-			HWND hExplorer = GetParent(hdlg);
-
-			RECT ExplorerRect;
-			int iWidth = GetSystemMetrics(SM_CXSCREEN);
-			int iHeight = GetSystemMetrics(SM_CYSCREEN);
-			int iDlgWidth, iDlgHeight;
-			int iOffsetX, iOffsetY;
-
-			GetWindowRect(hExplorer,&ExplorerRect);
-			iDlgWidth = ExplorerRect.right - ExplorerRect.left;
-			iDlgHeight = ExplorerRect.bottom - ExplorerRect.top;
-			iOffsetX = (iWidth - iDlgWidth) / 2;
-			iOffsetY = (iHeight - iDlgHeight) / 2;
-
-			MoveWindow(hExplorer,iOffsetX,iOffsetY,iDlgWidth,iDlgHeight,1);
-			return 1;
-		}
-	}
-	return 0;
-}

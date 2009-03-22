@@ -116,7 +116,7 @@ void execute_loop()
         if (vals1 == 0)
           fatal_error("Division by zero doing remainder.");
         if (vals1 < 0) {
-          vals0 = (-vals0);
+          vals1 = (-vals1);
         }
         if (vals0 >= 0) {
           value = vals0 % vals1;
