@@ -1,5 +1,5 @@
 /* serial.c: Glulxe code for saving and restoring the VM state.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 
@@ -395,6 +395,9 @@ glui32 perform_restore(strid_t str)
       }
     }
   }
+
+  if (res)
+    return 1;
 
   return 0;
 }

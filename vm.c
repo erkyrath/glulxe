@@ -1,5 +1,5 @@
 /* vm.c: Glulxe code related to the VM overall. Also miscellaneous stuff.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 

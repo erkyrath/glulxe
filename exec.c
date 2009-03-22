@@ -1,5 +1,5 @@
 /* exec.c: Glulxe code for program execution. The main interpreter loop.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 
@@ -20,6 +20,7 @@ void execute_loop()
   glui32 value, addr, val0, val1;
   glsi32 vals0, vals1;
   glui32 *arglist;
+  glui32 arglistfix[3];
 
   while (!done_executing) {
 
@@ -259,6 +260,38 @@ void execute_loop()
           goto PerformJump;
         }
         break;
+      case op_jltu:
+        val0 = inst.value[0];
+        val1 = inst.value[1];
+        if (val0 < val1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
+      case op_jgtu:
+        val0 = inst.value[0];
+        val1 = inst.value[1];
+        if (val0 > val1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
+      case op_jleu:
+        val0 = inst.value[0];
+        val1 = inst.value[1];
+        if (val0 <= val1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
+      case op_jgeu:
+        val0 = inst.value[0];
+        val1 = inst.value[1];
+        if (val0 >= val1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
 
       case op_call:
         value = inst.value[1];
@@ -483,11 +516,39 @@ void execute_loop()
       switch (opcode) {
 
       case op_gestalt:
-        /* ### */
-        fatal_error("gestalt opcode not yet implemented.");
+	value = do_gestalt(inst.value[0], inst.value[1]);
+	store_operand(inst.desttype, inst.value[2], value);
+	break;
 
       case op_debugtrap:
         fatal_error_i("user debugtrap encountered.", inst.value[0]);
+
+      case op_jumpabs:
+	pc = inst.value[0];
+	break;
+
+      case op_callf:
+        push_callstub(inst.desttype, inst.value[1]);
+        enter_function(inst.value[0], 0, arglistfix);
+        break;
+      case op_callfi:
+	arglistfix[0] = inst.value[1];
+        push_callstub(inst.desttype, inst.value[2]);
+        enter_function(inst.value[0], 1, arglistfix);
+        break;
+      case op_callfii:
+	arglistfix[0] = inst.value[1];
+	arglistfix[1] = inst.value[2];
+        push_callstub(inst.desttype, inst.value[3]);
+        enter_function(inst.value[0], 2, arglistfix);
+        break;
+      case op_callfiii:
+	arglistfix[0] = inst.value[1];
+	arglistfix[1] = inst.value[2];
+	arglistfix[2] = inst.value[3];
+        push_callstub(inst.desttype, inst.value[4]);
+        enter_function(inst.value[0], 3, arglistfix);
+        break;
 
       case op_getmemsize:
 	store_operand(inst.desttype, inst.value[0], endmem);
@@ -591,6 +652,22 @@ void execute_loop()
       case op_quit:
         done_executing = TRUE;
         break;
+
+      case op_linearsearch:
+	value = linear_search(inst.value[0], inst.value[1], inst.value[2], 
+	  inst.value[3], inst.value[4], inst.value[5], inst.value[6]);
+	store_operand(inst.desttype, inst.value[7], value);
+	break;
+      case op_binarysearch:
+	value = binary_search(inst.value[0], inst.value[1], inst.value[2], 
+	  inst.value[3], inst.value[4], inst.value[5], inst.value[6]);
+	store_operand(inst.desttype, inst.value[7], value);
+	break;
+      case op_linkedsearch:
+	value = linked_search(inst.value[0], inst.value[1], inst.value[2], 
+	  inst.value[3], inst.value[4], inst.value[5]);
+	store_operand(inst.desttype, inst.value[6], value);
+	break;
 
       default:
         fatal_error_i("Executed unknown opcode.", opcode);

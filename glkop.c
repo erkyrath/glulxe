@@ -1,5 +1,5 @@
 /* glkop.c: Glulxe code for Glk API dispatching.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 

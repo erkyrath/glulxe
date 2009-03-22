@@ -1,5 +1,5 @@
 /* operand.c: Glulxe code for instruction operands, reading and writing.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 
@@ -17,12 +17,24 @@ operandlist_t *fast_operandlist[0x80];
 /* The actual immutable structures which lookup_operandlist()
    returns. */
 static operandlist_t list_none = { 0, 4, NULL };
+
 static int array_S[1] = { modeform_Store };
 static operandlist_t list_S = { 1, 4, array_S };
 static int array_LS[2] = { modeform_Load, modeform_Store };
 static operandlist_t list_LS = { 2, 4, array_LS };
 static int array_LLS[3] = { modeform_Load, modeform_Load, modeform_Store };
 static operandlist_t list_LLS = { 3, 4, array_LLS };
+static int array_LLLS[4] = { modeform_Load, modeform_Load, modeform_Load, modeform_Store };
+static operandlist_t list_LLLS = { 4, 4, array_LLLS };
+static int array_LLLLS[5] = { modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Store };
+static operandlist_t list_LLLLS = { 5, 4, array_LLLLS };
+static int array_LLLLLS[6] = { modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Store };
+static operandlist_t list_LLLLLS = { 6, 4, array_LLLLLS };
+static int array_LLLLLLS[7] = { modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Store };
+static operandlist_t list_LLLLLLS = { 7, 4, array_LLLLLLS };
+static int array_LLLLLLLS[8] = { modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Load, modeform_Store };
+static operandlist_t list_LLLLLLLS = { 8, 4, array_LLLLLLLS };
+
 static int array_L[1] = { modeform_Load };
 static operandlist_t list_L = { 1, 4, array_L };
 static int array_LL[2] = { modeform_Load, modeform_Load };
@@ -73,6 +85,7 @@ operandlist_t *lookup_operandlist(glui32 opcode)
     return &list_LS;
 
   case op_jump:
+  case op_jumpabs:
     return &list_L;
   case op_jz:
   case op_jnz:
@@ -83,6 +96,10 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_jge:
   case op_jgt:
   case op_jle:
+  case op_jltu:
+  case op_jgeu:
+  case op_jgtu:
+  case op_jleu:
     return &list_LLL;
 
   case op_call:
@@ -158,6 +175,9 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_quit:
     return &list_none;
 
+  case op_gestalt:
+    return &list_LLS;
+
   case op_debugtrap: 
     return &list_L;
 
@@ -166,8 +186,24 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_setmemsize:
     return &list_LS;
 
+  case op_linearsearch:
+    return &list_LLLLLLLS;
+  case op_binarysearch:
+    return &list_LLLLLLLS;
+  case op_linkedsearch:
+    return &list_LLLLLLS;
+
   case op_glk:
     return &list_LLS;
+
+  case op_callf:
+    return &list_LS;
+  case op_callfi:
+    return &list_LLS;
+  case op_callfii:
+    return &list_LLLS;
+  case op_callfiii:
+    return &list_LLLLS;
 
   default: 
     return NULL;
@@ -195,7 +231,7 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
   for (ix=0; ix<numops; ix++) {
     int mode;
     glui32 value;
-    glui32 addr = 0;
+    glui32 addr;
 
     if ((ix & 1) == 0) {
       modeval = Mem1(modeaddr);
@@ -239,33 +275,45 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
 
       case 3: /* four-byte constant */
         /* Bytes must not be sign-extended. */
-        value = (glui32)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
-        value = (value << 8) | (glui32)(Mem1(pc));
-        pc++;
+        value = Mem4(pc);
+        pc += 4;
         break;
 
-      /* We do a bit of clever code interweaving here. Each of these
-         cases falls through to the bottom. Note that one- and two-byte
-         values must not be sign-extended in these modes. */
+      case 15: /* main memory RAM, four-byte address */
+	addr = Mem4(pc);
+        addr += ramstart;
+	pc += 4;
+	goto MainMemAddr; 
+
+      case 14: /* main memory RAM, two-byte address */
+	addr = (glui32)Mem2(pc);
+        addr += ramstart;
+	pc += 2;
+	goto MainMemAddr; 
+
+      case 13: /* main memory RAM, one-byte address */
+        addr = (glui32)(Mem1(pc));
+        addr += ramstart;
+        pc++;
+	goto MainMemAddr; 
+	
       case 7: /* main memory, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = Mem4(pc);
+	pc += 4;
+	goto MainMemAddr;
+
       case 6: /* main memory, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = (glui32)Mem2(pc);
+	pc += 2;
+	goto MainMemAddr;
+
       case 5: /* main memory, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
+        addr = (glui32)(Mem1(pc));
         pc++;
-        /* cases 5, 6, 7 all wind up here. */
+	/* fall through */
+
+      MainMemAddr:
+        /* cases 5, 6, 7, 13, 14, 15 all wind up here. */
         if (argsize == 4) {
           value = Mem4(addr);
         }
@@ -278,18 +326,21 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         break;
 
       case 11: /* locals, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = Mem4(pc);
+	pc += 4;
+	goto LocalsAddr;
+
       case 10: /* locals, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = (glui32)Mem2(pc);
+	pc += 2;
+	goto LocalsAddr; 
+
       case 9: /* locals, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
+        addr = (glui32)(Mem1(pc));
         pc++;
+	/* fall through */
+
+      LocalsAddr:
         /* cases 9, 10, 11 all wind up here. It's illegal for addr to not
            be four-byte aligned, but we don't check this explicitly. 
            A "strict mode" interpreter probably should. It's also illegal
@@ -304,32 +355,6 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         }
         else {
           value = Stk1(addr);
-        }
-        break;
-
-      case 15: /* main memory RAM, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
-      case 14: /* main memory RAM, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
-      case 13: /* main memory RAM, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* cases 13, 14, 15 all wind up here. */
-        addr += ramstart;
-        if (argsize == 4) {
-          value = Mem4(addr);
-        }
-        else if (argsize == 2) {
-          value = Mem2(addr);
-        }
-        else {
-          value = Mem1(addr);
         }
         break;
 
@@ -353,37 +378,61 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         inst->value[ix] = 0;
         break;
 
+      case 15: /* main memory RAM, four-byte address */
+	addr = Mem4(pc);
+        addr += ramstart;
+	pc += 4;
+	goto WrMainMemAddr; 
+
+      case 14: /* main memory RAM, two-byte address */
+	addr = (glui32)Mem2(pc);
+        addr += ramstart;
+	pc += 2;
+	goto WrMainMemAddr; 
+
+      case 13: /* main memory RAM, one-byte address */
+        addr = (glui32)(Mem1(pc));
+        addr += ramstart;
+        pc++;
+	goto WrMainMemAddr; 
+
       case 7: /* main memory, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = Mem4(pc);
+	pc += 4;
+	goto WrMainMemAddr;
+
       case 6: /* main memory, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = (glui32)Mem2(pc);
+	pc += 2;
+	goto WrMainMemAddr;
+
       case 5: /* main memory, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
+        addr = (glui32)(Mem1(pc));
         pc++;
+	/* fall through */
+
+      WrMainMemAddr:
         /* cases 5, 6, 7 all wind up here. */
         inst->desttype = 1;
         inst->value[ix] = addr;
         break;
 
       case 11: /* locals, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = Mem4(pc);
+	pc += 4;
+	goto WrLocalsAddr;
+
       case 10: /* locals, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
+	addr = (glui32)Mem2(pc);
+	pc += 2;
+	goto WrLocalsAddr; 
+
       case 9: /* locals, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
+        addr = (glui32)(Mem1(pc));
         pc++;
+	/* fall through */
+
+      WrLocalsAddr:
         /* cases 9, 10, 11 all wind up here. It's illegal for addr to not
            be four-byte aligned, but we don't check this explicitly. 
            A "strict mode" interpreter probably should. It's also illegal
@@ -393,25 +442,6 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         /* We don't add localsbase here; the store address for desttype 2
            is relative to the current locals segment, not an absolute
            stack position. */
-        inst->value[ix] = addr;
-        break;
-
-      case 15: /* main memory RAM, four-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
-      case 14: /* main memory RAM, two-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* no break */
-      case 13: /* main memory RAM, one-byte address */
-        addr = (addr << 8) | (glui32)(Mem1(pc));
-        pc++;
-        /* cases 13, 14, 15 all wind up here. */
-        inst->desttype = 1;
-        addr += ramstart;
         inst->value[ix] = addr;
         break;
 

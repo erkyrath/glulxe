@@ -1,5 +1,5 @@
 /* glulxdump.c: Glulx game file decompiler.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 

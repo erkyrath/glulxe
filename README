@@ -1,7 +1,7 @@
 Glulxe: the Glulx VM interpreter
-Version 0.3.1
+Version 0.3.2
 
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 
 * Compiling
@@ -9,7 +9,7 @@ Version 0.3.1
 Since this is a Glk program, it must be built with a Glk library. See
 the Glk home page at
 
-http://www.edoc.com/zarf/glk/index.html
+http://www.eblong.com/zarf/glk/index.html
 
 The Unix Makefile that comes with this package is designed to link any
 of the Unix libraries (XGlk, GlkTerm, and CheapGlk.) You'll have to
@@ -26,10 +26,13 @@ where "filename.ulx" is a Glulx game file to execute.
 
 To build this program on a Macintosh, you'll need the MacGlk library.
 See the instructions that come with that. It's fairly straightforward;
-compile the library, the source code, and the "macglk_startup.c" file.
-(NOTE: Except that I haven't written a "macglk_startup.c" file yet.)
+compile the library, the source code, and the "macstart.c" file.
 
 * Version
+
+0.3.2:
+    Added search, jumpabs, callf, and gestalt opcodes.
+    Added David Kinder's Windows code for startup and osdepend.c.
 
 0.3.1:
     Startup code now handles Blorb files correctly.

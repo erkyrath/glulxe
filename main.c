@@ -1,5 +1,5 @@
 /* main.c: Glulxe top-level code.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 
@@ -12,6 +12,8 @@ glui32 gamefile_start = 0; /* The position within the stream. (This will not
 glui32 gamefile_len = 0; /* The length within the stream. */
 char *init_err = NULL;
 char *init_err2 = NULL;
+
+static winid_t get_error_win(void);
 
 /* glk_main():
    The top-level routine. This does everything, and consequently is

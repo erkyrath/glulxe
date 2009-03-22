@@ -7,9 +7,9 @@
 # sets of values appear below; uncomment one of them and change the
 # directories appropriately.
 
-#GLKINCLUDEDIR = ../cheapglk
-#GLKLIBDIR = ../cheapglk
-#GLKMAKEFILE = Make.cheapglk
+GLKINCLUDEDIR = ../cheapglk
+GLKLIBDIR = ../cheapglk
+GLKMAKEFILE = Make.cheapglk
 
 #GLKINCLUDEDIR = ../glkterm
 #GLKLIBDIR = ../glkterm
@@ -23,7 +23,7 @@
 #CC = cc
 CC = gcc
 
-OPTIONS = -g -Wall -Wno-unused -DOS_UNIX
+OPTIONS = -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-unused -DOS_UNIX
 
 include $(GLKINCLUDEDIR)/$(GLKMAKEFILE)
 
@@ -31,7 +31,7 @@ CFLAGS = $(OPTIONS) -I$(GLKINCLUDEDIR)
 LIBS = -L$(GLKLIBDIR) $(GLKLIB) $(LINKLIBS) 
 
 OBJS = main.o files.o vm.o exec.o funcs.o operand.o string.o glkop.o \
-  serial.o osdepend.o
+  serial.o search.o gestalt.o osdepend.o
 
 all: glulxe
 
@@ -44,6 +44,7 @@ glulxdump: glulxdump.o
 $(OBJS): glulxe.h
 
 exec.o operand.o: opcodes.h
+gestalt.o: gestalt.h
 
 clean:
 	rm -f *~ *.o glulxe glulxdump

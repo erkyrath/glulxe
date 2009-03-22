@@ -1,5 +1,5 @@
 /* glulxe.h: Glulxe header file.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 
@@ -181,12 +181,26 @@ extern glui32 perform_saveundo(void);
 extern glui32 perform_restoreundo(void);
 extern glui32 perform_verify(void);
 
+/* search.c */
+extern glui32 linear_search(glui32 key, glui32 keysize, 
+  glui32 start, glui32 structsize, glui32 numstructs, 
+  glui32 keyoffset, glui32 options);
+extern glui32 binary_search(glui32 key, glui32 keysize, 
+  glui32 start, glui32 structsize, glui32 numstructs, 
+  glui32 keyoffset, glui32 options);
+extern glui32 linked_search(glui32 key, glui32 keysize, 
+  glui32 start, glui32 keyoffset, glui32 nextoffset,
+  glui32 options);
+
 /* osdepend.c */
 extern void *glulx_malloc(glui32 len);
 extern void *glulx_realloc(void *ptr, glui32 len);
 extern void glulx_free(void *ptr);
 extern void glulx_setrandom(glui32 seed);
 extern glui32 glulx_random(void);
+
+/* gestalt.c */
+extern glui32 do_gestalt(glui32 val, glui32 val2);
 
 /* glkop.c */
 extern int init_dispatch(void);

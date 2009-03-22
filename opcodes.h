@@ -1,5 +1,5 @@
 /* opcodes.h: The big list of opcode values for Glulxe.
-    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
 */
 
@@ -31,6 +31,10 @@
 #define op_jge          (0x27)
 #define op_jgt          (0x28)
 #define op_jle          (0x29)
+#define op_jltu         (0x2A)
+#define op_jgeu         (0x2B)
+#define op_jgtu         (0x2C)
+#define op_jleu         (0x2D)
 
 #define op_call         (0x30)
 #define op_return       (0x31)
@@ -66,6 +70,7 @@
 #define op_debugtrap    (0x101)
 #define op_getmemsize   (0x102)
 #define op_setmemsize   (0x103)
+#define op_jumpabs      (0x104)
 
 #define op_random       (0x110)
 #define op_setrandom    (0x111)
@@ -83,6 +88,15 @@
 
 #define op_getstringtbl (0x140)
 #define op_setstringtbl (0x141)
+
+#define op_linearsearch (0x150)
+#define op_binarysearch (0x151)
+#define op_linkedsearch (0x152)
+
+#define op_callf        (0x160)
+#define op_callfi       (0x161)
+#define op_callfii      (0x162)
+#define op_callfiii     (0x163)
 
 #endif /* _OPCODES_H */
 
