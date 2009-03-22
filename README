@@ -1,0 +1,44 @@
+Glulxe: the Glulx VM interpreter
+
+    Designed by Andrew Plotkin <erkyrath@netcom.com>
+    http://www.eblong.com/zarf/glulx/index.html
+
+* Compiling
+
+Since this is a Glk program, it must be built with a Glk library. See
+the Glk home page at
+
+http://www.edoc.com/zarf/glk/index.html
+
+The Unix Makefile that comes with this package is designed to link any
+of the Unix libraries (XGlk, GlkTerm, and CheapGlk.) You'll have to
+go into the Makefile and set three variables to find the library. There
+are instructions at the top of the Makefile. Then just type
+
+    make glulxe
+
+That should suffice. When the program is built, type
+
+    ./glulxe filename.ulx
+
+where "filename.ulx" is a Glulx game file to execute.
+
+To build this program on a Macintosh, you'll need the MacGlk library.
+See the instructions that come with that. It's fairly straightforward;
+compile the library, the source code, and the "macglk_startup.c" file.
+(NOTE: Except that I haven't written a "macglk_startup.c" file yet.)
+
+* Version
+
+This is a pre-release version. It's not anywhere close to complete yet.
+It doesn't deserve a version number. If it had one, it would be 0.10.
+
+* Permissions
+
+The source code in this package is copyright 1999 by Andrew Plotkin.
+You may copy and distribute it freely, by any means and under any
+conditions, as long as the code and documentation is not changed. You
+may also modify this code and incorporate it into your own programs,
+as long as you retain a notice in your program or documentation which
+mentions my name and the URL shown above.
+
