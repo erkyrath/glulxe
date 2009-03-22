@@ -42,7 +42,7 @@ static void filio_unichar_han(glui32 ch);
 #ifndef GLK_MODULE_UNICODE
 static void glkio_unichar_nouni_han(glui32 val);
 #define glk_put_char_uni(x) glkio_unichar_nouni_han(x)
-#endif
+#endif /* GLK_MODULE_UNICODE */
 
 static void dropcache(cacheblock_t *cablist);
 static void buildcache(cacheblock_t *cablist, glui32 nodeaddr, int depth,
@@ -77,7 +77,7 @@ void stream_set_iosys(glui32 mode, glui32 rock)
     stream_unichar_handler = glkio_unichar_nouni_han;
 #else
     stream_unichar_handler = glk_put_char_uni;
-#endif
+#endif /* GLK_MODULE_UNICODE */
     break;
   }
 
@@ -116,7 +116,7 @@ static void glkio_unichar_nouni_han(glui32 val)
   glk_put_char(val);
 }
 
-#endif
+#endif /* GLK_MODULE_UNICODE */
 
 /* stream_num():
    Write a signed integer to the current output stream.

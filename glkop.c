@@ -552,10 +552,12 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
           garglist[gargnum].charstr = DecodeVMString(thisval);
           gargnum++;
           break;
+#ifdef GLK_MODULE_UNICODE
         case 'U':
           garglist[gargnum].unicharstr = DecodeVMUstring(thisval);
           gargnum++;
           break;
+#endif /* GLK_MODULE_UNICODE */
         default:
           fatal_error("Illegal format string.");
           break;
@@ -738,11 +740,13 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
             ReleaseVMString(garglist[gargnum].charstr);
           gargnum++;
           break;
+#ifdef GLK_MODULE_UNICODE
         case 'U':
           if (garglist[gargnum].unicharstr)
             ReleaseVMUstring(garglist[gargnum].unicharstr);
           gargnum++;
           break;
+#endif /* GLK_MODULE_UNICODE */
         default:
           fatal_error("Illegal format string.");
           break;

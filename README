@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.4.1
+Version 0.4.2
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://www.eblong.com/zarf/glulx/index.html
@@ -31,6 +31,10 @@ compile the library, the source code, and the "macstart.c" file.
 Ditto for Windows, using "winstart.c".
 
 * Version
+
+0.4.2:
+    Fixed a bug that preventing compiling with old (pre-Unicode) Glk
+    libraries.
 
 0.4.1:
     Added array copy and heap allocation functionality. (Glulx spec 

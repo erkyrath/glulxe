@@ -15,7 +15,7 @@ glui32 do_gestalt(glui32 val, glui32 val2)
     return 0x00030100; /* Glulx spec version 3.1 */
 
   case gestulx_TerpVersion:
-    return 0x00000401; /* Glulxe version 0.4.1 */
+    return 0x00000402; /* Glulxe version 0.4.2 */
 
   case gestulx_ResizeMem:
 #ifdef FIXED_MEMSIZE
