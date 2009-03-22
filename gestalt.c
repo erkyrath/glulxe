@@ -12,13 +12,17 @@ glui32 do_gestalt(glui32 val, glui32 val2)
   switch (val) {
 
   case gestulx_GlulxVersion:
-    return 0x00030000; /* Glulx spec version 3.0 */
+    return 0x00030100; /* Glulx spec version 3.1 */
 
   case gestulx_TerpVersion:
-    return 0x00000400; /* Glulxe version 0.4.0 */
+    return 0x00000401; /* Glulxe version 0.4.1 */
 
   case gestulx_ResizeMem:
+#ifdef FIXED_MEMSIZE
+    return 0; /* The setmemsize opcodes are compiled out. */
+#else /* FIXED_MEMSIZE */
     return 1; /* We can handle setmemsize. */
+#endif /* FIXED_MEMSIZE */
 
   case gestulx_Undo:
     return 1; /* We can handle saveundo and restoreundo. */
@@ -37,6 +41,19 @@ glui32 do_gestalt(glui32 val, glui32 val2)
 
   case gestulx_Unicode:
     return 1; /* We can handle Unicode. */
+
+  case gestulx_MemCopy:
+    return 1; /* We can do mcopy/mzero. */
+
+  case gestulx_MAlloc:
+#ifdef FIXED_MEMSIZE
+    return 0; /* The malloc opcodes are compiled out. */
+#else /* FIXED_MEMSIZE */
+    return 1; /* We can handle malloc/mfree. */
+#endif /* FIXED_MEMSIZE */
+
+  case gestulx_MAllocHeap:
+    return heap_get_start();
 
   default:
     return 0;

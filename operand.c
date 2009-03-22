@@ -212,6 +212,15 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_callfiii:
     return &list_LLLLS;
 
+  case op_mzero:
+    return &list_LL;
+  case op_mcopy:
+    return &list_LLL;
+  case op_malloc:
+    return &list_LS;
+  case op_mfree:
+    return &list_L;
+
   default: 
     return NULL;
   }

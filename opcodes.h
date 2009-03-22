@@ -101,5 +101,10 @@
 #define op_callfii      (0x162)
 #define op_callfiii     (0x163)
 
+#define op_mzero        (0x170)
+#define op_mcopy        (0x171)
+#define op_malloc       (0x178)
+#define op_mfree        (0x179)
+
 #endif /* _OPCODES_H */
 

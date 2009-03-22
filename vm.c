@@ -130,8 +130,11 @@ void vm_restart()
   glui32 lx;
   int res;
 
+  /* Deactivate the heap (if it was active). */
+  heap_clear();
+
   /* Reset memory to the original size. */
-  lx = change_memsize(origendmem);
+  lx = change_memsize(origendmem, FALSE);
   if (lx)
     fatal_error("Memory could not be reset to its original size.");
 
@@ -170,10 +173,11 @@ void vm_restart()
 /* change_memsize():
    Change the size of the memory map. This may not be available at
    all; #define FIXED_MEMSIZE if you want the interpreter to
-   unconditionally refuse.
+   unconditionally refuse. The internal flag should be true only when
+   the heap-allocation system is calling.
    Returns 0 for success; otherwise, the operation failed.
 */
-glui32 change_memsize(glui32 newlen)
+glui32 change_memsize(glui32 newlen, int internal)
 {
   long lx;
   unsigned char *newmemmap;
@@ -184,6 +188,9 @@ glui32 change_memsize(glui32 newlen)
 #ifdef FIXED_MEMSIZE
   return 1;
 #else /* FIXED_MEMSIZE */
+
+  if ((!internal) && heap_is_active())
+    fatal_error("Cannot resize Glulx memory space while heap is active.");
 
   if (newlen < origendmem)
     fatal_error("Cannot resize Glulx memory space smaller than it started.");

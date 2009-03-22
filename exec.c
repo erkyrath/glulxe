@@ -558,7 +558,7 @@ void execute_loop()
         store_operand(inst.desttype, inst.value[0], endmem);
         break;
       case op_setmemsize:
-        value = change_memsize(inst.value[0]);
+        value = change_memsize(inst.value[0], FALSE);
         store_operand(inst.desttype, inst.value[1], value);
         break;
 
@@ -680,6 +680,44 @@ void execute_loop()
         value = linked_search(inst.value[0], inst.value[1], inst.value[2], 
           inst.value[3], inst.value[4], inst.value[5]);
         store_operand(inst.desttype, inst.value[6], value);
+        break;
+
+      case op_mzero: {
+        glui32 lx;
+        glui32 count = inst.value[0];
+        addr = inst.value[1];
+        for (lx=0; lx<count; lx++, addr++) {
+          MemW1(addr, 0);
+        }
+        }
+        break;
+      case op_mcopy: {
+        glui32 lx;
+        glui32 count = inst.value[0];
+        glui32 addrsrc = inst.value[1];
+        glui32 addrdest = inst.value[2];
+        if (addrdest < addrsrc) {
+          for (lx=0; lx<count; lx++, addrsrc++, addrdest++) {
+            value = Mem1(addrsrc);
+            MemW1(addrdest, value);
+          }
+        }
+        else {
+          addrsrc += (count-1);
+          addrdest += (count-1);
+          for (lx=0; lx<count; lx++, addrsrc--, addrdest--) {
+            value = Mem1(addrsrc);
+            MemW1(addrdest, value);
+          }
+        }
+        }
+        break;
+      case op_malloc:
+        value = heap_alloc(inst.value[0]);
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+      case op_mfree:
+        heap_free(inst.value[0]);
         break;
 
       default:
