@@ -32,20 +32,20 @@ void execute_loop()
     if (opcode & 0x80) {
       /* More than one-byte opcode. */
       if (opcode & 0x40) {
-	/* Four-byte opcode */
-	opcode &= 0x3F;
-	opcode = (opcode << 8) | Mem1(pc);
-	pc++;
-	opcode = (opcode << 8) | Mem1(pc);
-	pc++;
-	opcode = (opcode << 8) | Mem1(pc);
-	pc++;
+        /* Four-byte opcode */
+        opcode &= 0x3F;
+        opcode = (opcode << 8) | Mem1(pc);
+        pc++;
+        opcode = (opcode << 8) | Mem1(pc);
+        pc++;
+        opcode = (opcode << 8) | Mem1(pc);
+        pc++;
       }
       else {
-	/* Two-byte opcode */
-	opcode &= 0x7F;
-	opcode = (opcode << 8) | Mem1(pc);
-	pc++;
+        /* Two-byte opcode */
+        opcode &= 0x7F;
+        opcode = (opcode << 8) | Mem1(pc);
+        pc++;
       }
     }
 
@@ -53,7 +53,7 @@ void execute_loop()
     /*###{
       extern int printf (__const char* __format, ...);
       printf("### pc=%04lx, fp=%04lx/%04lx, sp=%04lx: opcode %lx\n", 
-	pc, frameptr, valstackbase, stackptr, opcode);
+        pc, frameptr, valstackbase, stackptr, opcode);
     }###*/
     
     /* Fetch the structure that describes how the operands for this
@@ -80,404 +80,404 @@ void execute_loop()
       switch (opcode) {
 
       case op_nop:
-	break;
+        break;
 
       case op_add:
-	value = inst.value[0] + inst.value[1];
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        value = inst.value[0] + inst.value[1];
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_sub:
-	value = inst.value[0] - inst.value[1];
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        value = inst.value[0] - inst.value[1];
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_mul:
-	value = inst.value[0] * inst.value[1];
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        value = inst.value[0] * inst.value[1];
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_div:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals1 == 0)
-	  fatal_error("Division by zero.");
-	/* Since C doesn't guarantee the results of division of negative
-	   numbers, we carefully convert everything to positive values
-	   first. */
-	if (vals1 < 0) {
-	  vals0 = (-vals0);
-	  vals1 = (-vals1);
-	}
-	if (vals0 >= 0) {
-	  value = vals0 / vals1;
-	}
-	else {
-	  value = -((-vals0) / vals1);
-	}
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals1 == 0)
+          fatal_error("Division by zero.");
+        /* Since C doesn't guarantee the results of division of negative
+           numbers, we carefully convert everything to positive values
+           first. */
+        if (vals1 < 0) {
+          vals0 = (-vals0);
+          vals1 = (-vals1);
+        }
+        if (vals0 >= 0) {
+          value = vals0 / vals1;
+        }
+        else {
+          value = -((-vals0) / vals1);
+        }
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_mod:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals1 == 0)
-	  fatal_error("Division by zero doing remainder.");
-	if (vals1 < 0) {
-	  vals0 = (-vals0);
-	}
-	if (vals0 >= 0) {
-	  value = vals0 % vals1;
-	}
-	else {
-	  value = -((-vals0) % vals1);
-	}
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals1 == 0)
+          fatal_error("Division by zero doing remainder.");
+        if (vals1 < 0) {
+          vals0 = (-vals0);
+        }
+        if (vals0 >= 0) {
+          value = vals0 % vals1;
+        }
+        else {
+          value = -((-vals0) % vals1);
+        }
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_neg:
-	vals0 = inst.value[0];
-	value = (-vals0);
-	store_operand(inst.desttype, inst.value[1], value);
-	break;
+        vals0 = inst.value[0];
+        value = (-vals0);
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
 
       case op_bitand:
-	value = (inst.value[0] & inst.value[1]);
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        value = (inst.value[0] & inst.value[1]);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_bitor:
-	value = (inst.value[0] | inst.value[1]);
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        value = (inst.value[0] | inst.value[1]);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_bitxor:
-	value = (inst.value[0] ^ inst.value[1]);
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        value = (inst.value[0] ^ inst.value[1]);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_bitnot:
-	value = ~(inst.value[0]);
-	store_operand(inst.desttype, inst.value[1], value);
-	break;
+        value = ~(inst.value[0]);
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
 
       case op_shiftl:
-	vals0 = inst.value[1];
-	if (vals0 < 0 || vals0 >= 32)
-	  value = 0;
-	else
-	  value = ((glui32)(inst.value[0]) << (glui32)vals0);
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        vals0 = inst.value[1];
+        if (vals0 < 0 || vals0 >= 32)
+          value = 0;
+        else
+          value = ((glui32)(inst.value[0]) << (glui32)vals0);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_ushiftr:
-	vals0 = inst.value[1];
-	if (vals0 < 0 || vals0 >= 32)
-	  value = 0;
-	else
-	  value = ((glui32)(inst.value[0]) >> (glui32)vals0);
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        vals0 = inst.value[1];
+        if (vals0 < 0 || vals0 >= 32)
+          value = 0;
+        else
+          value = ((glui32)(inst.value[0]) >> (glui32)vals0);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
       case op_sshiftr:
-	vals0 = inst.value[1];
-	if (vals0 < 0 || vals0 >= 32) {
-	  if (inst.value[0] & 0x80000000)
-	    value = 0xFFFFFFFF;
-	  else
-	    value = 0;
-	}
-	else {
-	  /* This is somewhat foolhardy -- C doesn't guarantee that
-	     right-shifting a signed value replicates the sign bit.
-	     We'll assume it for now. */
-	  value = ((glsi32)(inst.value[0]) >> (glsi32)vals0);
-	}
-	store_operand(inst.desttype, inst.value[2], value);
-	break;
+        vals0 = inst.value[1];
+        if (vals0 < 0 || vals0 >= 32) {
+          if (inst.value[0] & 0x80000000)
+            value = 0xFFFFFFFF;
+          else
+            value = 0;
+        }
+        else {
+          /* This is somewhat foolhardy -- C doesn't guarantee that
+             right-shifting a signed value replicates the sign bit.
+             We'll assume it for now. */
+          value = ((glsi32)(inst.value[0]) >> (glsi32)vals0);
+        }
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
 
       case op_jump:
-	value = inst.value[0];
-	/* fall through to PerformJump label. */
+        value = inst.value[0];
+        /* fall through to PerformJump label. */
 
       PerformJump: /* goto label for successful jumping... ironic, no? */
-	if (value == 0 || value == 1) {
-	  /* Return from function. This is exactly what happens in
-	     return_op, but it's only a few lines of code, so I won't
-	     bother with a "goto". */
-	  leave_function();
-	  if (stackptr == 0) {
-	    done_executing = TRUE;
-	    break;
-	  }
-	  pop_callstub(value); /* zero or one */
-	}
-	else {
-	  /* Branch to a new PC value. */
-	  pc = (pc + value - 2);
-	}
-	break;
+        if (value == 0 || value == 1) {
+          /* Return from function. This is exactly what happens in
+             return_op, but it's only a few lines of code, so I won't
+             bother with a "goto". */
+          leave_function();
+          if (stackptr == 0) {
+            done_executing = TRUE;
+            break;
+          }
+          pop_callstub(value); /* zero or one */
+        }
+        else {
+          /* Branch to a new PC value. */
+          pc = (pc + value - 2);
+        }
+        break;
 
       case op_jz:
-	if (inst.value[0] == 0) {
-	  value = inst.value[1];
-	  goto PerformJump;
-	}
-	break;
+        if (inst.value[0] == 0) {
+          value = inst.value[1];
+          goto PerformJump;
+        }
+        break;
       case op_jnz:
-	if (inst.value[0] != 0) {
-	  value = inst.value[1];
-	  goto PerformJump;
-	}
-	break;
+        if (inst.value[0] != 0) {
+          value = inst.value[1];
+          goto PerformJump;
+        }
+        break;
       case op_jeq:
-	if (inst.value[0] == inst.value[1]) {
-	  value = inst.value[2];
-	  goto PerformJump;
-	}
-	break;
+        if (inst.value[0] == inst.value[1]) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
       case op_jne:
-	if (inst.value[0] != inst.value[1]) {
-	  value = inst.value[2];
-	  goto PerformJump;
-	}
-	break;
+        if (inst.value[0] != inst.value[1]) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
       case op_jlt:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals0 < vals1) {
-	  value = inst.value[2];
-	  goto PerformJump;
-	}
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals0 < vals1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
       case op_jgt:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals0 > vals1) {
-	  value = inst.value[2];
-	  goto PerformJump;
-	}
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals0 > vals1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
       case op_jle:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals0 <= vals1) {
-	  value = inst.value[2];
-	  goto PerformJump;
-	}
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals0 <= vals1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
       case op_jge:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals0 >= vals1) {
-	  value = inst.value[2];
-	  goto PerformJump;
-	}
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals0 >= vals1) {
+          value = inst.value[2];
+          goto PerformJump;
+        }
+        break;
 
       case op_call:
-	value = inst.value[1];
-	arglist = pop_arguments(value);
-	push_callstub(inst.desttype, inst.value[2]);
-	enter_function(inst.value[0], value, arglist);
-	break;
+        value = inst.value[1];
+        arglist = pop_arguments(value);
+        push_callstub(inst.desttype, inst.value[2]);
+        enter_function(inst.value[0], value, arglist);
+        break;
       case op_return:
-	leave_function();
-	if (stackptr == 0) {
-	  done_executing = TRUE;
-	  break;
-	}
-	pop_callstub(inst.value[0]);
-	break;
+        leave_function();
+        if (stackptr == 0) {
+          done_executing = TRUE;
+          break;
+        }
+        pop_callstub(inst.value[0]);
+        break;
       case op_tailcall:
-	fatal_error("Tailcall not implemented"); /* ### */
-	break;
+        fatal_error("Tailcall not implemented"); /* ### */
+        break;
 
       case op_catch:
-	push_callstub(inst.desttype, inst.value[0]);
-	value = inst.value[1];
-	val0 = stackptr;
-	store_operand(inst.desttype, inst.value[0], val0);
-	goto PerformJump;
+        push_callstub(inst.desttype, inst.value[0]);
+        value = inst.value[1];
+        val0 = stackptr;
+        store_operand(inst.desttype, inst.value[0], val0);
+        goto PerformJump;
         break;
       case op_throw:
-	value = inst.value[0];
-	stackptr = inst.value[1];
-	pop_callstub(value);
-	break;
+        value = inst.value[0];
+        stackptr = inst.value[1];
+        pop_callstub(value);
+        break;
 
       case op_copy:
-	value = inst.value[0];
-	store_operand(inst.desttype, inst.value[1], value);
-	break;
+        value = inst.value[0];
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
       case op_copys:
-	value = inst.value[0];
-	store_operand_s(inst.desttype, inst.value[1], value);
-	break;
+        value = inst.value[0];
+        store_operand_s(inst.desttype, inst.value[1], value);
+        break;
       case op_copyb:
-	value = inst.value[0];
-	store_operand_b(inst.desttype, inst.value[1], value);
-	break;
+        value = inst.value[0];
+        store_operand_b(inst.desttype, inst.value[1], value);
+        break;
 
       case op_sexs:
-	val0 = inst.value[0];
-	if (val0 & 0x8000)
-	  val0 |= 0xFFFF0000;
-	else
-	  val0 &= 0x0000FFFF;
-	store_operand(inst.desttype, inst.value[1], value);
-	break;
+        val0 = inst.value[0];
+        if (val0 & 0x8000)
+          val0 |= 0xFFFF0000;
+        else
+          val0 &= 0x0000FFFF;
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
       case op_sexb:
-	val0 = inst.value[0];
-	if (val0 & 0x80)
-	  val0 |= 0xFFFFFF00;
-	else
-	  val0 &= 0x000000FF;
-	store_operand(inst.desttype, inst.value[1], value);
-	break;
+        val0 = inst.value[0];
+        if (val0 & 0x80)
+          val0 |= 0xFFFFFF00;
+        else
+          val0 &= 0x000000FF;
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
 
       case op_aload:
-	value = inst.value[0];
-	value += 4 * inst.value[1];
-	val0 = Mem4(value);
-	store_operand(inst.desttype, inst.value[2], val0);
+        value = inst.value[0];
+        value += 4 * inst.value[1];
+        val0 = Mem4(value);
+        store_operand(inst.desttype, inst.value[2], val0);
         break;
       case op_aloads:
-	value = inst.value[0];
-	value += 2 * inst.value[1];
-	val0 = Mem2(value);
-	store_operand(inst.desttype, inst.value[2], val0);
+        value = inst.value[0];
+        value += 2 * inst.value[1];
+        val0 = Mem2(value);
+        store_operand(inst.desttype, inst.value[2], val0);
         break;
       case op_aloadb:
-	value = inst.value[0];
-	value += inst.value[1];
-	val0 = Mem1(value);
-	store_operand(inst.desttype, inst.value[2], val0);
+        value = inst.value[0];
+        value += inst.value[1];
+        val0 = Mem1(value);
+        store_operand(inst.desttype, inst.value[2], val0);
         break;
       case op_aloadbit:
-	value = inst.value[0];
-	vals0 = inst.value[1];
-	val1 = (vals0 & 7);
-	if (vals0 >= 0)
-	  value += (vals0 >> 3);
-	else
-	  value -= ((-1 - vals0) >> 3);
-	if (Mem1(value) & (1 << val1))
-	  val0 = 1;
-	else
-	  val0 = 0;
-	store_operand(inst.desttype, inst.value[2], val0);
-	break;
+        value = inst.value[0];
+        vals0 = inst.value[1];
+        val1 = (vals0 & 7);
+        if (vals0 >= 0)
+          value += (vals0 >> 3);
+        else
+          value -= ((-1 - vals0) >> 3);
+        if (Mem1(value) & (1 << val1))
+          val0 = 1;
+        else
+          val0 = 0;
+        store_operand(inst.desttype, inst.value[2], val0);
+        break;
 
       case op_astore:
-	value = inst.value[0];
+        value = inst.value[0];
         value += 4 * inst.value[1];
-	val0 = inst.value[2];
-	MemW4(value, val0);
-	break;
+        val0 = inst.value[2];
+        MemW4(value, val0);
+        break;
       case op_astores:
-	value = inst.value[0];
+        value = inst.value[0];
         value += 2 * inst.value[1];
-	val0 = inst.value[2];
-	MemW2(value, val0);
-	break;
+        val0 = inst.value[2];
+        MemW2(value, val0);
+        break;
       case op_astoreb:
-	value = inst.value[0];
+        value = inst.value[0];
         value += inst.value[1];
-	val0 = inst.value[2];
-	MemW1(value, val0);
-	break;
+        val0 = inst.value[2];
+        MemW1(value, val0);
+        break;
       case op_astorebit:
-	value = inst.value[0];
-	vals0 = inst.value[1];
-	val1 = (vals0 & 7);
-	if (vals0 >= 0)
-	  value += (vals0 >> 3);
-	else
-	  value -= ((-1 - vals0) >> 3);
-	val0 = Mem1(value);
-	if (inst.value[2])
-	  val0 |= (1 << val1);
-	else
-	  val0 &= ~((glui32)(1 << val1));
-	MemW1(value, val0);
-	break;
+        value = inst.value[0];
+        vals0 = inst.value[1];
+        val1 = (vals0 & 7);
+        if (vals0 >= 0)
+          value += (vals0 >> 3);
+        else
+          value -= ((-1 - vals0) >> 3);
+        val0 = Mem1(value);
+        if (inst.value[2])
+          val0 |= (1 << val1);
+        else
+          val0 &= ~((glui32)(1 << val1));
+        MemW1(value, val0);
+        break;
 
       case op_stkcount:
-	value = (stackptr - valstackbase) / 4;
-	store_operand(inst.desttype, inst.value[0], value);
-	break;
+        value = (stackptr - valstackbase) / 4;
+        store_operand(inst.desttype, inst.value[0], value);
+        break;
       case op_stkpeek:
-	vals0 = inst.value[0] * 4;
-	if (vals0 < 0 || vals0 >= (stackptr - valstackbase))
-	  fatal_error("Stkpeek outside current stack range.");
-	value = Stk4(stackptr - (vals0+4));
-	store_operand(inst.desttype, inst.value[1], value);
+        vals0 = inst.value[0] * 4;
+        if (vals0 < 0 || vals0 >= (stackptr - valstackbase))
+          fatal_error("Stkpeek outside current stack range.");
+        value = Stk4(stackptr - (vals0+4));
+        store_operand(inst.desttype, inst.value[1], value);
         break;
       case op_stkswap:
-	if (stackptr < valstackbase+8) {
-	  fatal_error("Stack underflow in stkswap.");
-	}
-	val0 = Stk4(stackptr-4);
-	val1 = Stk4(stackptr-8);
-	StkW4(stackptr-4, val1);
-	StkW4(stackptr-8, val0);
-	break;
+        if (stackptr < valstackbase+8) {
+          fatal_error("Stack underflow in stkswap.");
+        }
+        val0 = Stk4(stackptr-4);
+        val1 = Stk4(stackptr-8);
+        StkW4(stackptr-4, val1);
+        StkW4(stackptr-8, val0);
+        break;
       case op_stkcopy:
-	vals0 = inst.value[0];
-	if (vals0 < 0)
-	  fatal_error("Negative operand in stkcopy.");
-	if (vals0 == 0)
-	  break;
-	if (stackptr < valstackbase+vals0*4)
-	  fatal_error("Stack underflow in stkcopy.");
-	if (stackptr + vals0*4 > stacksize) 
-	  fatal_error("Stack overflow in stkcopy.");
-	addr = stackptr - vals0*4;
-	for (ix=0; ix<vals0; ix++) {
-	  value = Stk4(addr + ix*4);
-	  StkW4(stackptr + ix*4, value);
-	}
-	stackptr += vals0*4;
-	break;
+        vals0 = inst.value[0];
+        if (vals0 < 0)
+          fatal_error("Negative operand in stkcopy.");
+        if (vals0 == 0)
+          break;
+        if (stackptr < valstackbase+vals0*4)
+          fatal_error("Stack underflow in stkcopy.");
+        if (stackptr + vals0*4 > stacksize) 
+          fatal_error("Stack overflow in stkcopy.");
+        addr = stackptr - vals0*4;
+        for (ix=0; ix<vals0; ix++) {
+          value = Stk4(addr + ix*4);
+          StkW4(stackptr + ix*4, value);
+        }
+        stackptr += vals0*4;
+        break;
       case op_stkroll:
-	vals0 = inst.value[0];
-	vals1 = inst.value[1];
-	if (vals0 < 0)
-	  fatal_error("Negative operand in stkroll.");
-	if (stackptr < valstackbase+vals0*4)
-	  fatal_error("Stack underflow in stkroll.");
-	if (vals0 == 0)
-	  break;
-	/* The following is a bit ugly. We want to do vals1 = vals0-vals1,
-	   because rolling down is sort of easier than rolling up. But
-	   we also want to take the result mod vals0. The % operator is
-	   annoying for negative numbers, so we need to do this in two 
-	   cases. */
-	if (vals1 > 0) {
-	  vals1 = vals1 % vals0;
-	  vals1 = (vals0) - vals1;
-	}
-	else {
-	  vals1 = (-vals1) % vals0;
-	}
-	if (vals1 == 0)
-	  break;
-	addr = stackptr - vals0*4;
-	for (ix=0; ix<vals1; ix++) {
-	  value = Stk4(addr + ix*4);
-	  StkW4(stackptr + ix*4, value);
-	}
-	for (ix=0; ix<vals0; ix++) {
-	  value = Stk4(addr + (vals1+ix)*4);
-	  StkW4(addr + ix*4, value);
-	}
-	break;
+        vals0 = inst.value[0];
+        vals1 = inst.value[1];
+        if (vals0 < 0)
+          fatal_error("Negative operand in stkroll.");
+        if (stackptr < valstackbase+vals0*4)
+          fatal_error("Stack underflow in stkroll.");
+        if (vals0 == 0)
+          break;
+        /* The following is a bit ugly. We want to do vals1 = vals0-vals1,
+           because rolling down is sort of easier than rolling up. But
+           we also want to take the result mod vals0. The % operator is
+           annoying for negative numbers, so we need to do this in two 
+           cases. */
+        if (vals1 > 0) {
+          vals1 = vals1 % vals0;
+          vals1 = (vals0) - vals1;
+        }
+        else {
+          vals1 = (-vals1) % vals0;
+        }
+        if (vals1 == 0)
+          break;
+        addr = stackptr - vals0*4;
+        for (ix=0; ix<vals1; ix++) {
+          value = Stk4(addr + ix*4);
+          StkW4(stackptr + ix*4, value);
+        }
+        for (ix=0; ix<vals0; ix++) {
+          value = Stk4(addr + (vals1+ix)*4);
+          StkW4(addr + ix*4, value);
+        }
+        break;
 
       case op_streamchar:
-	value = inst.value[0] & 0xFF;
-	glk_put_char(value);
-	break;
+        value = inst.value[0] & 0xFF;
+        glk_put_char(value);
+        break;
       case op_streamnum:
-	vals0 = inst.value[0];
-	stream_num(vals0);
-	break;
+        vals0 = inst.value[0];
+        stream_num(vals0);
+        break;
       case op_streamstr:
-	stream_string(inst.value[0]);
-	break;
+        stream_string(inst.value[0]);
+        break;
 
       default:
-	fatal_error_i("Executed unknown opcode.", opcode);
+        fatal_error_i("Executed unknown opcode.", opcode);
       }
     }
     else {
@@ -485,7 +485,7 @@ void execute_loop()
       switch (opcode) {
 
       case op_gestalt:
-	/* ### */
+        /* ### */
         fatal_error("gestalt opcode not yet implemented.");
 
       case op_debugtrap:
@@ -493,70 +493,96 @@ void execute_loop()
 
       case op_getmemsize:
       case op_setmemsize:
-	fatal_error("Memsize not implemented"); /* ### */
-	break;
+        fatal_error("Memsize not implemented"); /* ### */
+        break;
 
       case op_getstringtbl:
       case op_setstringtbl:
-	fatal_error("Stringtable not implemented"); /* ### */
-	break;
+        fatal_error("Stringtable not implemented"); /* ### */
+        break;
 
       case op_glk:
-	value = inst.value[1];
-	arglist = pop_arguments(value);
-	val0 = perform_glk(inst.value[0], value, arglist);
-	store_operand(inst.desttype, inst.value[2], val0);
-	break;
+        value = inst.value[1];
+        arglist = pop_arguments(value);
+        val0 = perform_glk(inst.value[0], value, arglist);
+        store_operand(inst.desttype, inst.value[2], val0);
+        break;
 
       case op_random:
-	vals0 = inst.value[0];
-	if (vals0 == 0)
-	  value = glulx_random();
-	else if (vals0 >= 1)
-	  value = glulx_random() % (glui32)(vals0);
-	else 
-	  value = -(glulx_random() % (glui32)(-vals0));
-	store_operand(inst.desttype, inst.value[1], value);
-	break;
+        vals0 = inst.value[0];
+        if (vals0 == 0)
+          value = glulx_random();
+        else if (vals0 >= 1)
+          value = glulx_random() % (glui32)(vals0);
+        else 
+          value = -(glulx_random() % (glui32)(-vals0));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
       case op_setrandom:
-	glulx_setrandom(inst.value[0]);
-	break;
+        glulx_setrandom(inst.value[0]);
+        break;
 
       case op_verify:
+        value = perform_verify();
+        store_operand(inst.desttype, inst.value[0], value);
+        break;
+
       case op_restart:
-      case op_save:
-      case op_restore:
+        vm_restart();
+        break;
+
       case op_protect:
-	/* ### */
+        /* ### */
         fatal_error("game-state opcodes not yet implemented.");
 
+      case op_save:
+        push_callstub(inst.desttype, inst.value[1]);
+        value = perform_save(find_stream_by_id(inst.value[0]));
+        pop_callstub(value);
+        break;
+
+      case op_restore:
+        value = perform_restore(find_stream_by_id(inst.value[0]));
+        if (value == 0) {
+          /* We've succeeded, and the stack now contains the callstub
+             saved during saveundo. Ignore this opcode's operand. */
+          value = -1;
+          pop_callstub(value);
+        }
+        else {
+          /* We've failed, so we must store the failure in this opcode's
+             operand. */
+          store_operand(inst.desttype, inst.value[1], value);
+        }
+        break;
+
       case op_saveundo:
-	push_callstub(inst.desttype, inst.value[0]);
-	value = perform_saveundo();
-	pop_callstub(value);
-	break;
+        push_callstub(inst.desttype, inst.value[0]);
+        value = perform_saveundo();
+        pop_callstub(value);
+        break;
 
       case op_restoreundo:
-	value = perform_restoreundo();
-	if (value == 0) {
-	  /* We've succeeded, and the stack now contains the callstub
-	     saved during saveundo. Ignore this opcode's operand. */
-	  value = -1;
-	  pop_callstub(value);
-	}
-	else {
-	  /* We've failed, so we must store the failure in this opcode's
-	     operand. */
-	  store_operand(inst.desttype, inst.value[0], value);
-	}
-	break;
+        value = perform_restoreundo();
+        if (value == 0) {
+          /* We've succeeded, and the stack now contains the callstub
+             saved during saveundo. Ignore this opcode's operand. */
+          value = -1;
+          pop_callstub(value);
+        }
+        else {
+          /* We've failed, so we must store the failure in this opcode's
+             operand. */
+          store_operand(inst.desttype, inst.value[0], value);
+        }
+        break;
 
       case op_quit:
-	done_executing = TRUE;
-	break;
+        done_executing = TRUE;
+        break;
 
       default:
-	fatal_error_i("Executed unknown opcode.", opcode);
+        fatal_error_i("Executed unknown opcode.", opcode);
       }
     }
   }

@@ -135,6 +135,7 @@ extern int is_gamefile_valid(void);
 /* vm.c */
 extern void setup_vm(void);
 extern void finalize_vm(void);
+extern void vm_restart(void);
 extern glui32 change_memsize(glui32 newlen);
 extern glui32 *pop_arguments(glui32 count);
 
@@ -165,8 +166,11 @@ extern void free_temp_string(char *str);
 
 /* serial.c */
 extern int init_serial(void);
+extern glui32 perform_save(strid_t str);
+extern glui32 perform_restore(strid_t str);
 extern glui32 perform_saveundo(void);
 extern glui32 perform_restoreundo(void);
+extern glui32 perform_verify(void);
 
 /* osdepend.c */
 extern void *glulx_malloc(glui32 len);
@@ -178,5 +182,6 @@ extern glui32 glulx_random(void);
 /* glkop.c */
 extern int init_dispatch(void);
 extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
+extern strid_t find_stream_by_id(glui32 objid);
 
 #endif /* _GLULXE_H */

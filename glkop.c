@@ -274,10 +274,10 @@ static void prepare_glk_args(char *proto, dispatch_splot_t *splot)
     }
     if (!isreturn) {
       if (isarray) {
-	numvargswanted += 2;
+        numvargswanted += 2;
       }
       else {
-	numvargswanted += 1;
+        numvargswanted += 1;
       }
     }
         
@@ -295,18 +295,18 @@ static void prepare_glk_args(char *proto, dispatch_splot_t *splot)
       cx++;
       nwx = 0;
       while (*cx >= '0' && *cx <= '9') {
-	nwx = 10 * nwx + (*cx - '0');
-	cx++;
+        nwx = 10 * nwx + (*cx - '0');
+        cx++;
       }
       maxargs += nwx; /* This is *only* correct because all structs contain
-			 plain values. */
+                         plain values. */
       refdepth = 1;
       while (refdepth > 0) {
-	if (*cx == '[')
-	  refdepth++;
-	else if (*cx == ']')
-	  refdepth--;
-	cx++;
+        if (*cx == '[')
+          refdepth++;
+        else if (*cx == ']')
+          refdepth--;
+        cx++;
       }
     }
     else {
@@ -376,15 +376,15 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
     skipval = FALSE;
     if (isref) {
       if (!isreturn && varglist[ix] == 0) {
-	if (!nullok)
-	  fatal_error("Zero passed invalidly to Glk function.");
-	garglist[gargnum].ptrflag = FALSE;
-	gargnum++;
-	skipval = TRUE;
+        if (!nullok)
+          fatal_error("Zero passed invalidly to Glk function.");
+        garglist[gargnum].ptrflag = FALSE;
+        gargnum++;
+        skipval = TRUE;
       }
       else {
-	garglist[gargnum].ptrflag = TRUE;
-	gargnum++;
+        garglist[gargnum].ptrflag = TRUE;
+        gargnum++;
       }
     }
     if (!skipval) {
@@ -392,118 +392,118 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 
       if (typeclass == '[') {
 
-	parse_glk_args(splot, &cx, depth+1, &gargnum, varglist[ix], passin);
+        parse_glk_args(splot, &cx, depth+1, &gargnum, varglist[ix], passin);
 
       }
       else if (isarray) {
-	/* definitely isref */
+        /* definitely isref */
 
-	switch (typeclass) {
-	case 'C':
-	  garglist[gargnum].array = AddressOfArray(varglist[ix]);
-	  gargnum++;
-	  ix++;
-	  garglist[gargnum].uint = varglist[ix];
-	  gargnum++;
-	  cx++;
-	  break;
-	default:
-	  fatal_error("Illegal format string.");
-	  break;
-	}
+        switch (typeclass) {
+        case 'C':
+          garglist[gargnum].array = AddressOfArray(varglist[ix]);
+          gargnum++;
+          ix++;
+          garglist[gargnum].uint = varglist[ix];
+          gargnum++;
+          cx++;
+          break;
+        default:
+          fatal_error("Illegal format string.");
+          break;
+        }
       }
       else {
-	/* a plain value or a reference to one. */
+        /* a plain value or a reference to one. */
 
-	if (isreturn) {
-	  thisval = 0;
-	}
-	else if (depth > 0) {
-	  /* Definitely not isref or isarray. */
-	  if (subpassin)
-	    thisval = ReadStructField(subaddress, ix);
-	  else
-	    thisval = 0;
-	}
-	else if (isref) {
-	  if (passin)
-	    thisval = ReadMemory(varglist[ix]);
-	  else
-	    thisval = 0;
-	}
-	else {
-	  thisval = varglist[ix];
-	}
+        if (isreturn) {
+          thisval = 0;
+        }
+        else if (depth > 0) {
+          /* Definitely not isref or isarray. */
+          if (subpassin)
+            thisval = ReadStructField(subaddress, ix);
+          else
+            thisval = 0;
+        }
+        else if (isref) {
+          if (passin)
+            thisval = ReadMemory(varglist[ix]);
+          else
+            thisval = 0;
+        }
+        else {
+          thisval = varglist[ix];
+        }
 
-	switch (typeclass) {
-	case 'I':
-	  if (*cx == 'u')
-	    garglist[gargnum].uint = (glui32)(thisval);
-	  else if (*cx == 's')
-	    garglist[gargnum].sint = (glsi32)(thisval);
-	  else
-	    fatal_error("Illegal format string.");
-	  gargnum++;
-	  cx++;
-	  break;
-	case 'Q':
-	  if (thisval) {
-	    opref = classes_get(*cx-'a', thisval);
-	    if (!opref) {
-	      fatal_error("Reference to nonexistent Glk object.");
-	    }
-	  }
-	  else {
-	    opref = NULL;
-	  }
-	  garglist[gargnum].opaqueref = opref;
-	  gargnum++;
-	  cx++;
-	  break;
-	case 'C':
-	  if (*cx == 'u') 
-	    garglist[gargnum].uch = (unsigned char)(thisval);
-	  else if (*cx == 's')
-	    garglist[gargnum].sch = (signed char)(thisval);
-	  else if (*cx == 'n')
-	    garglist[gargnum].ch = (char)(thisval);
-	  else
-	    fatal_error("Illegal format string.");
-	  gargnum++;
-	  cx++;
-	  break;
-	case 'S':
-	  garglist[gargnum].charstr = DecodeVMString(thisval);
-	  break;
-	default:
-	  fatal_error("Illegal format string.");
-	  break;
-	}
+        switch (typeclass) {
+        case 'I':
+          if (*cx == 'u')
+            garglist[gargnum].uint = (glui32)(thisval);
+          else if (*cx == 's')
+            garglist[gargnum].sint = (glsi32)(thisval);
+          else
+            fatal_error("Illegal format string.");
+          gargnum++;
+          cx++;
+          break;
+        case 'Q':
+          if (thisval) {
+            opref = classes_get(*cx-'a', thisval);
+            if (!opref) {
+              fatal_error("Reference to nonexistent Glk object.");
+            }
+          }
+          else {
+            opref = NULL;
+          }
+          garglist[gargnum].opaqueref = opref;
+          gargnum++;
+          cx++;
+          break;
+        case 'C':
+          if (*cx == 'u') 
+            garglist[gargnum].uch = (unsigned char)(thisval);
+          else if (*cx == 's')
+            garglist[gargnum].sch = (signed char)(thisval);
+          else if (*cx == 'n')
+            garglist[gargnum].ch = (char)(thisval);
+          else
+            fatal_error("Illegal format string.");
+          gargnum++;
+          cx++;
+          break;
+        case 'S':
+          garglist[gargnum].charstr = DecodeVMString(thisval);
+          break;
+        default:
+          fatal_error("Illegal format string.");
+          break;
+        }
       }
     }
     else {
       /* We got a null reference, so we have to skip the format element. */
       if (typeclass == '[') {
-	int numsubwanted, refdepth;
-	numsubwanted = 0;
-	while (*cx >= '0' && *cx <= '9') {
-	  numsubwanted = 10 * numsubwanted + (*cx - '0');
-	  cx++;
-	}
-	refdepth = 1;
-	while (refdepth > 0) {
-	  if (*cx == '[')
-	    refdepth++;
-	  else if (*cx == ']')
-	    refdepth--;
-	  cx++;
-	}
+        int numsubwanted, refdepth;
+        numsubwanted = 0;
+        while (*cx >= '0' && *cx <= '9') {
+          numsubwanted = 10 * numsubwanted + (*cx - '0');
+          cx++;
+        }
+        refdepth = 1;
+        while (refdepth > 0) {
+          if (*cx == '[')
+            refdepth++;
+          else if (*cx == ']')
+            refdepth--;
+          cx++;
+        }
       }
       else if (typeclass == 'S') {
-	/* leave it */
+        /* leave it */
       }
       else {
-	cx++;
+        cx++;
       }
     }    
   }
@@ -559,15 +559,15 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
     skipval = FALSE;
     if (isref) {
       if (!isreturn && varglist[ix] == 0) {
-	if (!nullok)
-	  fatal_error("Zero passed invalidly to Glk function.");
-	garglist[gargnum].ptrflag = FALSE;
-	gargnum++;
-	skipval = TRUE;
+        if (!nullok)
+          fatal_error("Zero passed invalidly to Glk function.");
+        garglist[gargnum].ptrflag = FALSE;
+        gargnum++;
+        skipval = TRUE;
       }
       else {
-	garglist[gargnum].ptrflag = TRUE;
-	gargnum++;
+        garglist[gargnum].ptrflag = TRUE;
+        gargnum++;
       }
     }
     if (!skipval) {
@@ -575,109 +575,109 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 
       if (typeclass == '[') {
 
-	unparse_glk_args(splot, &cx, depth+1, &gargnum, varglist[ix], passout);
+        unparse_glk_args(splot, &cx, depth+1, &gargnum, varglist[ix], passout);
 
       }
       else if (isarray) {
-	/* definitely isref */
+        /* definitely isref */
 
-	switch (typeclass) {
-	case 'C':
-	  gargnum++;
-	  ix++;
-	  gargnum++;
-	  cx++;
-	  break;
-	default:
-	  fatal_error("Illegal format string.");
-	  break;
-	}
+        switch (typeclass) {
+        case 'C':
+          gargnum++;
+          ix++;
+          gargnum++;
+          cx++;
+          break;
+        default:
+          fatal_error("Illegal format string.");
+          break;
+        }
       }
       else {
-	/* a plain value or a reference to one. */
+        /* a plain value or a reference to one. */
 
-	switch (typeclass) {
-	case 'I':
-	  if (*cx == 'u')
-	    thisval = (glui32)garglist[gargnum].uint;
-	  else if (*cx == 's')
-	    thisval = (glui32)garglist[gargnum].sint;
-	  else
-	    fatal_error("Illegal format string.");
-	  gargnum++;
-	  cx++;
-	  break;
-	case 'Q':
-	  opref = garglist[gargnum].opaqueref;
-	  if (opref) {
-	    gidispatch_rock_t objrock = 
-	      gidispatch_get_objrock(opref, *cx-'a');
-	    thisval = ((classref_t *)objrock.ptr)->id;
-	  }
-	  else {
-	    thisval = 0;
-	  }
-	  gargnum++;
-	  cx++;
-	  break;
-	case 'C':
-	  if (*cx == 'u') 
-	    thisval = (glui32)garglist[gargnum].uch;
-	  else if (*cx == 's')
-	    thisval = (glui32)garglist[gargnum].sch;
-	  else if (*cx == 'n')
-	    thisval = (glui32)garglist[gargnum].ch;
-	  else
-	    fatal_error("Illegal format string.");
-	  gargnum++;
-	  cx++;
-	  break;
-	case 'S':
-	  if (garglist[gargnum].charstr)
-	    ReleaseVMString(garglist[gargnum].charstr);
-	  break;
-	default:
-	  fatal_error("Illegal format string.");
-	  break;
-	}
+        switch (typeclass) {
+        case 'I':
+          if (*cx == 'u')
+            thisval = (glui32)garglist[gargnum].uint;
+          else if (*cx == 's')
+            thisval = (glui32)garglist[gargnum].sint;
+          else
+            fatal_error("Illegal format string.");
+          gargnum++;
+          cx++;
+          break;
+        case 'Q':
+          opref = garglist[gargnum].opaqueref;
+          if (opref) {
+            gidispatch_rock_t objrock = 
+              gidispatch_get_objrock(opref, *cx-'a');
+            thisval = ((classref_t *)objrock.ptr)->id;
+          }
+          else {
+            thisval = 0;
+          }
+          gargnum++;
+          cx++;
+          break;
+        case 'C':
+          if (*cx == 'u') 
+            thisval = (glui32)garglist[gargnum].uch;
+          else if (*cx == 's')
+            thisval = (glui32)garglist[gargnum].sch;
+          else if (*cx == 'n')
+            thisval = (glui32)garglist[gargnum].ch;
+          else
+            fatal_error("Illegal format string.");
+          gargnum++;
+          cx++;
+          break;
+        case 'S':
+          if (garglist[gargnum].charstr)
+            ReleaseVMString(garglist[gargnum].charstr);
+          break;
+        default:
+          fatal_error("Illegal format string.");
+          break;
+        }
 
-	if (isreturn) {
-	  *(splot->retval) = thisval;
-	}
-	else if (depth > 0) {
-	  /* Definitely not isref or isarray. */
-	  if (subpassout)
-	    WriteStructField(subaddress, ix, thisval);
-	}
-	else if (isref) {
-	  if (passout)
-	    WriteMemory(varglist[ix], thisval); 
-	}
+        if (isreturn) {
+          *(splot->retval) = thisval;
+        }
+        else if (depth > 0) {
+          /* Definitely not isref or isarray. */
+          if (subpassout)
+            WriteStructField(subaddress, ix, thisval);
+        }
+        else if (isref) {
+          if (passout)
+            WriteMemory(varglist[ix], thisval); 
+        }
       }
     }
     else {
       /* We got a null reference, so we have to skip the format element. */
       if (typeclass == '[') {
-	int numsubwanted, refdepth;
-	numsubwanted = 0;
-	while (*cx >= '0' && *cx <= '9') {
-	  numsubwanted = 10 * numsubwanted + (*cx - '0');
-	  cx++;
-	}
-	refdepth = 1;
-	while (refdepth > 0) {
-	  if (*cx == '[')
-	    refdepth++;
-	  else if (*cx == ']')
-	    refdepth--;
-	  cx++;
-	}
+        int numsubwanted, refdepth;
+        numsubwanted = 0;
+        while (*cx >= '0' && *cx <= '9') {
+          numsubwanted = 10 * numsubwanted + (*cx - '0');
+          cx++;
+        }
+        refdepth = 1;
+        while (refdepth > 0) {
+          if (*cx == '[')
+            refdepth++;
+          else if (*cx == ']')
+            refdepth--;
+          cx++;
+        }
       }
       else if (typeclass == 'S') {
-	/* leave it */
+        /* leave it */
       }
       else {
-	cx++;
+        cx++;
       }
     }    
   }
@@ -694,6 +694,19 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
   
   *proto = cx;
   *argnumptr = gargnum;
+}
+
+/* find_stream_by_id():
+   This is used by some interpreter code which has to, well, find a Glk
+   stream given its ID. 
+*/
+strid_t find_stream_by_id(glui32 objid)
+{
+  if (!objid)
+    return NULL;
+
+  /* Recall that class 1 ("b") is streams. */
+  return classes_get(1, objid);
 }
 
 /* Build a hash table to hold a set of Glk objects. */
@@ -769,7 +782,7 @@ static void classes_remove(int classid, void *obj)
     if ((*crefp) == cref) {
       *crefp = cref->next;
       if (!cref->obj) {
-	nonfatal_warning("attempt to free NULL object!");
+        nonfatal_warning("attempt to free NULL object!");
       }
       cref->obj = NULL;
       cref->id = 0;

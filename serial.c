@@ -21,6 +21,12 @@ typedef struct dest_struct {
   glui32 size;
 } dest_t;
 
+#define IFFID(c1, c2, c3, c4)  \
+  ( (((glui32)c1) << 24)    \
+  | (((glui32)c2) << 16)    \
+  | (((glui32)c3) << 8)     \
+  | (((glui32)c4)) )
+
 /* This can be adjusted before startup by platform-specific startup
    code -- that is, preference code. */
 int max_undo_level = 8;
@@ -38,6 +44,8 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen);
 static glui32 read_stackstate(dest_t *dest, glui32 chunklen, int portable);
 static int write_long(dest_t *dest, glui32 val);
 static int read_long(dest_t *dest, glui32 *val);
+static int write_byte(dest_t *dest, unsigned char val);
+static int read_byte(dest_t *dest, unsigned char *val);
 static int reposition_write(dest_t *dest, glui32 pos);
 
 /* init_serial():
@@ -118,7 +126,7 @@ glui32 perform_saveundo()
     /* It worked. */
     if (undo_chain_size > 1)
       memmove(undo_chain+1, undo_chain, 
-	(undo_chain_size-1) * sizeof(unsigned char *));
+        (undo_chain_size-1) * sizeof(unsigned char *));
     undo_chain[0] = dest.ptr;
     if (undo_chain_num < undo_chain_size)
       undo_chain_num += 1;
@@ -188,6 +196,209 @@ glui32 perform_restoreundo()
   return res;
 }
 
+/* perform_save():
+   Write the state to the output stream. This returns 0 on success,
+   1 on failure.
+*/
+glui32 perform_save(strid_t str)
+{
+  dest_t dest;
+  int ix;
+  glui32 res;
+  glui32 memstart, memlen, stackstart, stacklen, filestart, filelen;
+
+  if (str == 0)
+    return 1;
+
+  dest.ismem = FALSE;
+  dest.size = 0;
+  dest.pos = 0;
+  dest.ptr = NULL;
+  dest.str = str;
+
+  res = 0;
+
+  /* Quetzal header. */
+  if (res == 0) {
+    res = write_long(&dest, IFFID('F', 'O', 'R', 'M'));
+  }
+  if (res == 0) {
+    res = write_long(&dest, 0); /* space for file length */
+    filestart = dest.pos;
+  }
+
+  if (res == 0) {
+    res = write_long(&dest, IFFID('I', 'F', 'Z', 'S')); /* ### ? */
+  }
+
+  /* Header chunk. This is the first 128 bytes of memory. */
+  if (res == 0) {
+    res = write_long(&dest, IFFID('I', 'F', 'h', 'd'));
+  }
+  if (res == 0) {
+    res = write_long(&dest, 128);
+  }
+  for (ix=0; res==0 && ix<128; ix++) {
+    res = write_byte(&dest, Mem1(ix));
+  }
+  /* Always even, so no padding necessary. */
+  
+  /* Memory chunk. */
+  if (res == 0) {
+    res = write_long(&dest, IFFID('C', 'M', 'e', 'm'));
+  }
+  if (res == 0) {
+    res = write_long(&dest, 0); /* space for chunk length */
+  }
+  if (res == 0) {
+    memstart = dest.pos;
+    res = write_memstate(&dest);
+    memlen = dest.pos - memstart;
+  }
+  if (res == 0 && (memlen & 1) != 0) {
+    res = write_byte(&dest, 0);
+  }
+
+  /* Stack chunk. */
+  if (res == 0) {
+    res = write_long(&dest, IFFID('S', 't', 'k', 's'));
+  }
+  if (res == 0) {
+    res = write_long(&dest, 0); /* space for chunk length */
+  }
+  if (res == 0) {
+    stackstart = dest.pos;
+    res = write_stackstate(&dest, TRUE);
+    stacklen = dest.pos - stackstart;
+  }
+  if (res == 0 && (stacklen & 1) != 0) {
+    res = write_byte(&dest, 0);
+  }
+
+  filelen = dest.pos - filestart;
+
+  /* Okay, fill in all the lengths. */
+  if (res == 0) {
+    res = reposition_write(&dest, memstart-4);
+  }
+  if (res == 0) {
+    res = write_long(&dest, memlen);
+  }
+  if (res == 0) {
+    res = reposition_write(&dest, stackstart-4);
+  }
+  if (res == 0) {
+    res = write_long(&dest, stacklen);
+  }
+  if (res == 0) {
+    res = reposition_write(&dest, filestart-4);
+  }
+  if (res == 0) {
+    res = write_long(&dest, filelen);
+  }
+
+  /* All done. */
+    
+  return res;
+}
+
+/* perform_restore():
+   Pull a state pointer from a stream. This returns 0 on success,
+   1 on failure. Note that if it succeeds, the frameptr, localsbase,
+   and valstackbase registers are invalid; they must be rebuilt from
+   the stack.
+*/
+glui32 perform_restore(strid_t str)
+{
+  dest_t dest;
+  int ix;
+  glui32 lx, res, val;
+  glui32 filestart, filelen;
+
+  if (str == 0)
+    return 1;
+
+  dest.ismem = FALSE;
+  dest.size = 0;
+  dest.pos = 0;
+  dest.ptr = NULL;
+  dest.str = str;
+
+  res = 0;
+
+  /* ### the format errors checked below should send error messages to
+     the current stream. */
+
+  if (res == 0) {
+    res = read_long(&dest, &val);
+  }
+  if (res == 0 && val != IFFID('F', 'O', 'R', 'M')) {
+    /* ### bad header */
+    return 1;
+  }
+  if (res == 0) {
+    res = read_long(&dest, &filelen);
+  }
+  filestart = dest.pos;
+
+  if (res == 0) {
+    res = read_long(&dest, &val);
+  }
+  if (res == 0 && val != IFFID('I', 'F', 'Z', 'S')) { /* ### ? */
+    /* ### bad header */
+    return 1;
+  }
+
+  while (res == 0 && dest.pos < filestart+filelen) {
+    /* Read a chunk and deal with it. */
+    glui32 chunktype, chunkstart, chunklen;
+    unsigned char dummy;
+
+    if (res == 0) {
+      res = read_long(&dest, &chunktype);
+    }
+    if (res == 0) {
+      res = read_long(&dest, &chunklen);
+    }
+    chunkstart = dest.pos;
+
+    if (chunktype == IFFID('I', 'F', 'h', 'd')) {
+      for (ix=0; res==0 && ix<128; ix++) {
+        res = read_byte(&dest, &dummy);
+        if (res == 0 && Mem1(ix) != dummy) {
+          /* ### non-matching header */
+          return 1;
+        }
+      }
+    }
+    else if (chunktype == IFFID('C', 'M', 'e', 'm')) {
+      res = read_memstate(&dest, chunklen);
+    }
+    else if (chunktype == IFFID('S', 't', 'k', 's')) {
+      res = read_stackstate(&dest, chunklen, TRUE);
+    }
+    else {
+      /* Unknown chunk type. Skip it. */
+      for (lx=0; res==0 && lx<chunklen; lx++) {
+        res = read_byte(&dest, &dummy);
+      }
+    }
+
+    if (chunkstart+chunklen != dest.pos) {
+      /* ### funny chunk length */
+      return 1;
+    }
+
+    if ((chunklen & 1) != 0) {
+      if (res == 0) {
+        res = read_byte(&dest, &dummy);
+      }
+    }
+  }
+
+  return 0;
+}
+
 static int reposition_write(dest_t *dest, glui32 pos)
 {
   if (dest->ismem) {
@@ -207,18 +418,18 @@ static int write_buffer(dest_t *dest, unsigned char *ptr, glui32 len)
     if (dest->pos+len > dest->size) {
       dest->size = dest->pos+len+1024;
       if (!dest->ptr) {
-	dest->ptr = glulx_malloc(dest->size);
+        dest->ptr = glulx_malloc(dest->size);
       }
       else {
-	dest->ptr = glulx_realloc(dest->ptr, dest->size);
+        dest->ptr = glulx_realloc(dest->ptr, dest->size);
       }
       if (!dest->ptr)
-	return 1;
+        return 1;
     }
     memcpy(dest->ptr+dest->pos, ptr, len);
   }
   else {
-    glk_put_buffer_stream(dest->str, ptr, len);
+    glk_put_buffer_stream(dest->str, (char *)ptr, len);
   }
 
   dest->pos += len;
@@ -231,12 +442,10 @@ static int read_buffer(dest_t *dest, unsigned char *ptr, glui32 len)
   glui32 newlen;
 
   if (dest->ismem) {
-    /*###if (dest->pos+len > dest->size) 
-      return 1;*/
     memcpy(ptr, dest->ptr+dest->pos, len);
   }
   else {
-    newlen = glk_get_buffer_stream(dest->str, ptr, len);
+    newlen = glk_get_buffer_stream(dest->str, (char *)ptr, len);
     if (newlen != len)
       return 1;
   }
@@ -309,7 +518,7 @@ static glui32 write_memstate(dest_t *dest)
     if (pos < endgamefile) {
       val = glk_get_char_stream(gamefile);
       if (val == -1) {
-	fatal_error("The game file ended unexpectedly while saving.");
+        fatal_error("The game file ended unexpectedly while saving.");
       }
       ch ^= (unsigned char)val;
     }
@@ -319,22 +528,22 @@ static glui32 write_memstate(dest_t *dest)
     else {
       /* Write any run we've got. */
       while (runlen) {
-	if (runlen >= 0x100)
-	  val = 0x100;
-	else
-	  val = runlen;
-	res = write_byte(dest, 0);
-	if (res)
-	  return res;
-	res = write_byte(dest, (val-1));
-	if (res)
-	  return res;
-	runlen -= val;
+        if (runlen >= 0x100)
+          val = 0x100;
+        else
+          val = runlen;
+        res = write_byte(dest, 0);
+        if (res)
+          return res;
+        res = write_byte(dest, (val-1));
+        if (res)
+          return res;
+        runlen -= val;
       }
       /* Write the byte we got. */
       res = write_byte(dest, ch);
       if (res)
-	return res;
+        return res;
     }
   }
   /* It's possible we've got a run left over, but we don't write it. */
@@ -366,7 +575,7 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
     if (pos < endgamefile) {
       val = glk_get_char_stream(gamefile);
       if (val == -1) {
-	fatal_error("The game file ended unexpectedly while restoring.");
+        fatal_error("The game file ended unexpectedly while restoring.");
       }
       ch = (unsigned char)val;
     }
@@ -383,15 +592,15 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
     else {
       res = read_byte(dest, &ch2);
       if (res)
-	return res;
+        return res;
       if (ch2 == 0) {
-	res = read_byte(dest, &ch2);
-	if (res)
-	  return res;
-	runlen = (glui32)ch2;
+        res = read_byte(dest, &ch2);
+        if (res)
+          return res;
+        runlen = (glui32)ch2;
       }
       else {
-	ch ^= ch2;
+        ch ^= ch2;
       }
     }
 
@@ -404,8 +613,9 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
 static glui32 write_stackstate(dest_t *dest, int portable)
 {
   glui32 res, pos;
-  int val;
+  glui32 val, lx;
   unsigned char ch;
+  glui32 lastframe;
 
   /* If we're storing for the purpose of undo, we don't need to do any
      byte-swapping, because the result will only be used by this session. */
@@ -416,15 +626,155 @@ static glui32 write_stackstate(dest_t *dest, int portable)
     return 0;
   }
 
-  /* Write a portable stack image. */
+  /* Write a portable stack image. To do this, we have to write stack
+     frames in order, bottom to top. Remember that the last word of
+     every stack frame is a pointer to the beginning of that stack frame.
+     (This includes the last frame, because the save opcode pushes on
+     a call stub before it calls perform_save().) */
 
-  return 1;
+  lastframe = (glui32)(-1);
+  while (1) {
+    glui32 frameend, frm, frm2, frm3;
+    unsigned char loctype, loccount;
+    glui32 numlocals, frlen, locpos;
+
+    /* Find the next stack frame (after the one in lastframe). Sadly,
+       this requires searching the stack from the top down. We have to
+       do this for *every* frame, which takes N^2 time overall. But
+       save routines usually aren't nested very deep. 
+       If it becomes a practical problem, we can build a stack-frame 
+       array, which requires dynamic allocation. */
+    for (frm = stackptr, frameend = stackptr;
+         frm != 0 && (frm2 = Stk4(frm-4)) != lastframe;
+         frameend = frm, frm = frm2);
+
+    /* Write out the frame. */
+    frm2 = frm;
+
+    frlen = Stk4(frm2);
+    frm2 += 4;
+    res = write_long(dest, frlen);
+    if (res)
+      return res;
+    locpos = Stk4(frm2);
+    frm2 += 4;
+    res = write_long(dest, locpos);
+    if (res)
+      return res;
+
+    frm3 = frm2;
+
+    numlocals = 0;
+    while (1) {
+      loctype = Stk1(frm2);
+      frm2 += 1;
+      loccount = Stk1(frm2);
+      frm2 += 1;
+
+      res = write_byte(dest, loctype);
+      if (res)
+        return res;
+      res = write_byte(dest, loccount);
+      if (res)
+        return res;
+
+      if (loctype == 0 && loccount == 0)
+        break;
+
+      numlocals++;
+    }
+
+    if ((numlocals & 1) == 0) {
+      res = write_byte(dest, 0);
+      if (res)
+        return res;
+      res = write_byte(dest, 0);
+      if (res)
+        return res;
+      frm2 += 2;
+    }
+
+    if (frm2 != frm+locpos)
+      fatal_error("Inconsistent stack frame during save.");
+
+    /* Write out the locals. */
+    for (lx=0; lx<numlocals; lx++) {
+      loctype = Stk1(frm3);
+      frm3 += 1;
+      loccount = Stk1(frm3);
+      frm3 += 1;
+      
+      if (loctype == 0 && loccount == 0)
+        break;
+
+      /* Put in up to 0, 1, or 3 bytes of padding, depending on loctype. */
+      while (frm2 & (loctype-1)) {
+        res = write_byte(dest, 0);
+        if (res)
+          return res;
+        frm2 += 1;
+      }
+
+      /* Put in this set of locals. */
+      switch (loctype) {
+
+      case 1:
+        do {
+          res = write_byte(dest, Stk1(frm2));
+          if (res)
+            return res;
+          frm2 += 1;
+          loccount--;
+        } while (loccount);
+        break;
+
+      case 2:
+        do {
+          res = write_short(dest, Stk2(frm2));
+          if (res)
+            return res;
+          frm2 += 2;
+          loccount--;
+        } while (loccount);
+        break;
+
+      case 4:
+        do {
+          res = write_long(dest, Stk4(frm2));
+          if (res)
+            return res;
+          frm2 += 4;
+          loccount--;
+        } while (loccount);
+        break;
+
+      }
+    }
+
+    if (frm2 != frm+frlen)
+      fatal_error("Inconsistent stack frame during save.");
+
+    while (frm2 < frameend) {
+      res = write_long(dest, Stk4(frm2));
+      if (res)
+        return res;
+      frm2 += 4;
+    }
+
+    /* Go on to the next frame. */
+    if (frameend == stackptr)
+      break; /* All done. */
+    lastframe = frm;
+  }
+
+  return 0;
 }
 
 static glui32 read_stackstate(dest_t *dest, glui32 chunklen, int portable)
 {
   glui32 res, pos;
   unsigned char ch;
+  glui32 frameend, frm, frm2, frm3, locpos, frlen, numlocals;
 
   if (chunklen > stacksize)
     return 1;
@@ -441,6 +791,160 @@ static glui32 read_stackstate(dest_t *dest, glui32 chunklen, int portable)
     return 0;
   }
 
-  return 1;
+  /* This isn't going to be pleasant; we're going to read the data in
+     as a block, and then convert it in-place. */
+  res = read_buffer(dest, stack, stackptr);
+  if (res)
+    return res;
+
+  frameend = stackptr;
+  while (frameend != 0) {
+    /* Read the beginning-of-frame pointer. Remember, right now, the
+       whole frame is stored big-endian. So we have to read with the
+       Read*() macros, and then write with the StkW*() macros. */
+    frm = Read4(stack+(frameend-4));
+
+    frm2 = frm;
+
+    frlen = Read4(stack+frm2);
+    StkW4(frm2, frlen);
+    frm2 += 4;
+    locpos = Read4(stack+frm2);
+    StkW4(frm2, locpos);
+    frm2 += 4;
+
+    /* The locals-format list is in bytes, so we don't have to convert it. */
+    frm3 = frm2;
+    frm2 = frm+locpos;
+
+    numlocals = 0;
+
+    while (1) {
+      unsigned char loctype, loccount;
+      loctype = Read1(stack+frm3);
+      frm3 += 1;
+      loccount = Read1(stack+frm3);
+      frm3 += 1;
+
+      if (loctype == 0 && loccount == 0)
+        break;
+
+      /* Skip up to 0, 1, or 3 bytes of padding, depending on loctype. */
+      while (frm2 & (loctype-1)) {
+        StkW1(frm2, 0);
+        frm2++;
+      }
+      
+      /* Convert this set of locals. */
+      switch (loctype) {
+        
+      case 1:
+        do {
+          /* Don't need to convert bytes. */
+          frm2 += 1;
+          loccount--;
+        } while (loccount);
+        break;
+
+      case 2:
+        do {
+          glui16 loc = Read2(stack+frm2);
+          StkW2(frm2, loc);
+          frm2 += 2;
+          loccount--;
+        } while (loccount);
+        break;
+
+      case 4:
+        do {
+          glui32 loc = Read4(stack+frm2);
+          StkW4(frm2, loc);
+          frm2 += 4;
+          loccount--;
+        } while (loccount);
+        break;
+
+      }
+
+      numlocals++;
+    }
+
+    if ((numlocals & 1) == 0) {
+      StkW1(frm3, 0);
+      frm3++;
+      StkW1(frm3, 0);
+      frm3++;
+    }
+
+    if (frm3 != frm+locpos) {
+      return 1;
+    }
+
+    while (frm2 & 3) {
+      StkW1(frm2, 0);
+      frm2++;
+    }
+
+    if (frm2 != frm+frlen) {
+      return 1;
+    }
+
+    /* Now, the values pushed on the stack after the call frame itself.
+       This includes the stub. */
+    while (frm2 < frameend) {
+      glui32 loc = Read4(stack+frm2);
+      StkW4(frm2, loc);
+      frm2 += 4;
+    }
+
+    frameend = frm;
+  }
+
+  return 0;
 }
 
+glui32 perform_verify()
+{
+  glui32 len, checksum, newlen;
+  unsigned char buf[4];
+  glui32 val, newsum, ix;
+
+  glk_stream_set_position(gamefile, 0, seekmode_End);
+  len = glk_stream_get_position(gamefile);
+
+  if (len < 256 || (len & 0xFF) != 0)
+    return 1;
+
+  glk_stream_set_position(gamefile, 0, seekmode_Start);
+  newsum = 0;
+
+  /* Read the header */
+  for (ix=0; ix<9; ix++) {
+    newlen = glk_get_buffer_stream(gamefile, (char *)buf, 4);
+    if (newlen != 4)
+      return 1;
+    val = Read4(buf);
+    if (ix == 4) {
+      if (len != val)
+        return 1;
+    }
+    if (ix == 8)
+      checksum = val;
+    else
+      newsum += val;
+  }
+
+  /* Read everything else */
+  for (; ix < len/4; ix++) {
+    newlen = glk_get_buffer_stream(gamefile, (char *)buf, 4);
+    if (newlen != 4)
+      return 1;
+    val = Read4(buf);
+    newsum += val;
+  }
+
+  if (newsum != checksum)
+    return 1;
+
+  return 0;  
+}

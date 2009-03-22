@@ -28,8 +28,6 @@ glui32 valstackbase;
 glui32 localsbase;
 glui32 endmem;
 
-static void vm_restart(void);
-
 /* setup_vm():
    Read in the game file and build the machine, allocating all the memory
    necessary.
@@ -44,7 +42,7 @@ void setup_vm()
   /* Read in all the size constants from the game file header. */
 
   glk_stream_set_position(gamefile, 8, seekmode_Start);
-  res = glk_get_buffer_stream(gamefile, buf, 4 * 7);
+  res = glk_get_buffer_stream(gamefile, (char *)buf, 4 * 7);
   
   ramstart = Read4(buf+0);
   endgamefile = Read4(buf+4);
@@ -115,7 +113,7 @@ void finalize_vm()
    game. This is called both at startup time, and when the machine
    performs a "restart" opcode. 
 */
-static void vm_restart()
+void vm_restart()
 {
   glui32 lx;
   int res;
@@ -142,6 +140,7 @@ static void vm_restart()
   stackptr = 0;
   frameptr = 0;
   pc = 0;
+  /* ### stringtable? */
   valstackbase = 0;
   localsbase = 0;
 

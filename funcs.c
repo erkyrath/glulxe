@@ -54,9 +54,9 @@ void enter_function(glui32 addr, glui32 argc, glui32 *argv)
     if (loctype == 0) {
       /* Make sure ix is even. */
       if (ix & 1) {
-	StkW1(frameptr+8+2*ix, 0);
-	StkW1(frameptr+8+2*ix+1, 0);
-	ix++;
+        StkW1(frameptr+8+2*ix, 0);
+        StkW1(frameptr+8+2*ix+1, 0);
+        ix++;
       }
       break;
     }
@@ -65,11 +65,11 @@ void enter_function(glui32 addr, glui32 argc, glui32 *argv)
        bytes long. */
     if (loctype == 4) {
       while (locallen & 3)
-	locallen++;
+        locallen++;
     }
     else if (loctype == 2) {
       while (locallen & 1)
-	locallen++;
+        locallen++;
     }
     else if (loctype == 1) {
       /* no padding */
@@ -135,37 +135,37 @@ void enter_function(glui32 addr, glui32 argc, glui32 *argv)
       locnum = Stk1(modeaddr);
       modeaddr++;
       if (loctype == 0)
-	break;
+        break;
       if (loctype == 4) {
-	while (opaddr & 3)
-	  opaddr++;
-	while (ix < argc && locnum) {
-	  val = argv[ix];
-	  StkW4(opaddr, val);
-	  opaddr += 4;
-	  ix++;
-	  locnum--;
-	}
+        while (opaddr & 3)
+          opaddr++;
+        while (ix < argc && locnum) {
+          val = argv[ix];
+          StkW4(opaddr, val);
+          opaddr += 4;
+          ix++;
+          locnum--;
+        }
       }
       else if (loctype == 2) {
-	while (opaddr & 1)
-	  opaddr++;
-	while (ix < argc && locnum) {
-	  val = argv[ix] & 0xFFFF;
-	  StkW2(opaddr, val);
-	  opaddr += 2;
-	  ix++;
-	  locnum--;
-	}
+        while (opaddr & 1)
+          opaddr++;
+        while (ix < argc && locnum) {
+          val = argv[ix] & 0xFFFF;
+          StkW2(opaddr, val);
+          opaddr += 2;
+          ix++;
+          locnum--;
+        }
       }
       else if (loctype == 1) {
-	while (ix < argc && locnum) {
-	  val = argv[ix] & 0xFF;
-	  StkW1(opaddr, val);
-	  opaddr += 1;
-	  ix++;
-	  locnum--;
-	}
+        while (ix < argc && locnum) {
+          val = argv[ix] & 0xFF;
+          StkW1(opaddr, val);
+          opaddr += 1;
+          ix++;
+          locnum--;
+        }
       }
     }
   }

@@ -31,7 +31,7 @@ compile the library, the source code, and the "macglk_startup.c" file.
 * Version
 
 This is a pre-release version. It's not anywhere close to complete yet.
-It doesn't deserve a version number. If it had one, it would be 0.10.
+It doesn't deserve a version number. If it had one, it would be 0.20.
 
 * Permissions
 

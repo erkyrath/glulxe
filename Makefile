@@ -35,8 +35,8 @@ OBJS = main.o files.o vm.o exec.o funcs.o operand.o string.o glkop.o \
 
 all: glulxe
 
-glulxe: $(OBJS) glkstart.o
-	$(CC) $(OPTIONS) -o glulxe $(OBJS) glkstart.o $(LIBS)
+glulxe: $(OBJS) unixstrt.o
+	$(CC) $(OPTIONS) -o glulxe $(OBJS) unixstrt.o $(LIBS)
 
 glulxdump: glulxdump.o
 	$(CC) -o glulxdump glulxdump.o

@@ -206,130 +206,130 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
       switch (mode) {
 
       case 8: /* pop off stack */
-	if (stackptr < valstackbase+4) {
-	  fatal_error("Stack underflow in operand.");
-	}
-	stackptr -= 4;
-	value = Stk4(stackptr);
-	break;
+        if (stackptr < valstackbase+4) {
+          fatal_error("Stack underflow in operand.");
+        }
+        stackptr -= 4;
+        value = Stk4(stackptr);
+        break;
 
       case 0: /* constant zero */
-	value = 0;
-	break;
+        value = 0;
+        break;
 
       case 1: /* one-byte constant */
-	/* Sign-extend from 8 bits to 32 */
-	value = (glsi32)(signed char)(Mem1(pc));
-	pc++;
-	break;
+        /* Sign-extend from 8 bits to 32 */
+        value = (glsi32)(signed char)(Mem1(pc));
+        pc++;
+        break;
 
       case 2: /* two-byte constant */
-	/* Sign-extend the first byte from 8 bits to 32; the subsequent
-	   byte must not be sign-extended. */
-	value = (glsi32)(signed char)(Mem1(pc));
-	pc++;
-	value = (value << 8) | (glui32)(Mem1(pc));
-	pc++;
-	break;
+        /* Sign-extend the first byte from 8 bits to 32; the subsequent
+           byte must not be sign-extended. */
+        value = (glsi32)(signed char)(Mem1(pc));
+        pc++;
+        value = (value << 8) | (glui32)(Mem1(pc));
+        pc++;
+        break;
 
       case 3: /* four-byte constant */
-	/* Bytes must not be sign-extended. */
-	value = (glui32)(Mem1(pc));
-	pc++;
-	value = (value << 8) | (glui32)(Mem1(pc));
-	pc++;
-	value = (value << 8) | (glui32)(Mem1(pc));
-	pc++;
-	value = (value << 8) | (glui32)(Mem1(pc));
-	pc++;
-	break;
+        /* Bytes must not be sign-extended. */
+        value = (glui32)(Mem1(pc));
+        pc++;
+        value = (value << 8) | (glui32)(Mem1(pc));
+        pc++;
+        value = (value << 8) | (glui32)(Mem1(pc));
+        pc++;
+        value = (value << 8) | (glui32)(Mem1(pc));
+        pc++;
+        break;
 
       /* We do a bit of clever code interweaving here. Each of these
-	 cases falls through to the bottom. Note that one- and two-byte
-	 values must not be sign-extended in these modes. */
+         cases falls through to the bottom. Note that one- and two-byte
+         values must not be sign-extended in these modes. */
       case 7: /* main memory, four-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 6: /* main memory, two-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 5: /* main memory, one-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* cases 5, 6, 7 all wind up here. */
-	if (argsize == 4) {
-	  value = Mem4(addr);
-	}
-	else if (argsize == 2) {
-	  value = Mem2(addr);
-	}
-	else {
-	  value = Mem1(addr);
-	}
-	break;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* cases 5, 6, 7 all wind up here. */
+        if (argsize == 4) {
+          value = Mem4(addr);
+        }
+        else if (argsize == 2) {
+          value = Mem2(addr);
+        }
+        else {
+          value = Mem1(addr);
+        }
+        break;
 
       case 11: /* locals, four-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 10: /* locals, two-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 9: /* locals, one-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* cases 9, 10, 11 all wind up here. It's illegal for addr to not
-	   be four-byte aligned, but we don't check this explicitly. 
-	   A "strict mode" interpreter probably should. It's also illegal
-	   for addr to be less than zero or greater than the size of
-	   the locals segment. */
-	addr += localsbase;
-	if (argsize == 4) {
-	  value = Stk4(addr);
-	}
-	else if (argsize == 2) {
-	  value = Stk2(addr);
-	}
-	else {
-	  value = Stk1(addr);
-	}
-	break;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* cases 9, 10, 11 all wind up here. It's illegal for addr to not
+           be four-byte aligned, but we don't check this explicitly. 
+           A "strict mode" interpreter probably should. It's also illegal
+           for addr to be less than zero or greater than the size of
+           the locals segment. */
+        addr += localsbase;
+        if (argsize == 4) {
+          value = Stk4(addr);
+        }
+        else if (argsize == 2) {
+          value = Stk2(addr);
+        }
+        else {
+          value = Stk1(addr);
+        }
+        break;
 
       case 15: /* main memory RAM, four-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 14: /* main memory RAM, two-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 13: /* main memory RAM, one-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* cases 13, 14, 15 all wind up here. */
-	addr += ramstart;
-	if (argsize == 4) {
-	  value = Mem4(addr);
-	}
-	else if (argsize == 2) {
-	  value = Mem2(addr);
-	}
-	else {
-	  value = Mem1(addr);
-	}
-	break;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* cases 13, 14, 15 all wind up here. */
+        addr += ramstart;
+        if (argsize == 4) {
+          value = Mem4(addr);
+        }
+        else if (argsize == 2) {
+          value = Mem2(addr);
+        }
+        else {
+          value = Mem1(addr);
+        }
+        break;
 
       default:
-	fatal_error("Unknown addressing mode in load operand.");
+        fatal_error("Unknown addressing mode in load operand.");
       }
 
       inst->value[ix] = value;
@@ -339,84 +339,84 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
       switch (mode) {
 
       case 0: /* discard value */
-	inst->desttype = 0;
-	inst->value[ix] = 0;
-	break;
+        inst->desttype = 0;
+        inst->value[ix] = 0;
+        break;
 
       case 8: /* push on stack */
-	inst->desttype = 3;
-	inst->value[ix] = 0;
-	break;
+        inst->desttype = 3;
+        inst->value[ix] = 0;
+        break;
 
       case 7: /* main memory, four-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 6: /* main memory, two-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 5: /* main memory, one-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* cases 5, 6, 7 all wind up here. */
-	inst->desttype = 1;
-	inst->value[ix] = addr;
-	break;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* cases 5, 6, 7 all wind up here. */
+        inst->desttype = 1;
+        inst->value[ix] = addr;
+        break;
 
       case 11: /* locals, four-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 10: /* locals, two-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 9: /* locals, one-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* cases 9, 10, 11 all wind up here. It's illegal for addr to not
-	   be four-byte aligned, but we don't check this explicitly. 
-	   A "strict mode" interpreter probably should. It's also illegal
-	   for addr to be less than zero or greater than the size of
-	   the locals segment. */
-	inst->desttype = 2;
-	/* We don't add localsbase here; the store address for desttype 2
-	   is relative to the current locals segment, not an absolute
-	   stack position. */
-	inst->value[ix] = addr;
-	break;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* cases 9, 10, 11 all wind up here. It's illegal for addr to not
+           be four-byte aligned, but we don't check this explicitly. 
+           A "strict mode" interpreter probably should. It's also illegal
+           for addr to be less than zero or greater than the size of
+           the locals segment. */
+        inst->desttype = 2;
+        /* We don't add localsbase here; the store address for desttype 2
+           is relative to the current locals segment, not an absolute
+           stack position. */
+        inst->value[ix] = addr;
+        break;
 
       case 15: /* main memory RAM, four-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 14: /* main memory RAM, two-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* no break */
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* no break */
       case 13: /* main memory RAM, one-byte address */
-	addr = (addr << 8) | (glui32)(Mem1(pc));
-	pc++;
-	/* cases 13, 14, 15 all wind up here. */
-	inst->desttype = 1;
-	addr += ramstart;
-	inst->value[ix] = addr;
-	break;
+        addr = (addr << 8) | (glui32)(Mem1(pc));
+        pc++;
+        /* cases 13, 14, 15 all wind up here. */
+        inst->desttype = 1;
+        addr += ramstart;
+        inst->value[ix] = addr;
+        break;
 
       case 1:
       case 2:
       case 3:
-	fatal_error("Constant addressing mode in store operand.");
+        fatal_error("Constant addressing mode in store operand.");
 
       default:
-	fatal_error("Unknown addressing mode in store operand.");
+        fatal_error("Unknown addressing mode in store operand.");
       }
     }
   }

@@ -46,7 +46,7 @@ static winid_t get_error_win()
     }
     else {
       errorwin = glk_window_open(rootwin, winmethod_Below | winmethod_Fixed, 
-	3, wintype_TextBuffer, 0);
+        3, wintype_TextBuffer, 0);
     }
     if (!errorwin)
       errorwin = rootwin;
@@ -68,11 +68,11 @@ void fatal_error_handler(char *str, char *arg, int useval, glsi32 val)
     if (arg || useval) {
       glk_put_string(" (");
       if (arg)
-	glk_put_string(arg);
+        glk_put_string(arg);
       if (arg && useval)
-	glk_put_string(" ");
+        glk_put_string(" ");
       if (useval)
-	stream_hexnum(val);
+        stream_hexnum(val);
       glk_put_string(")");
     }
     glk_put_string("\n");
@@ -94,11 +94,11 @@ void nonfatal_warning_handler(char *str, char *arg, int useval, glsi32 val)
     if (arg || useval) {
       glk_put_string(" (");
       if (arg)
-	glk_put_string(arg);
+        glk_put_string(arg);
       if (arg && useval)
-	glk_put_string(" ");
+        glk_put_string(" ");
       if (useval)
-	stream_hexnum(val);
+        stream_hexnum(val);
       glk_put_string(")");
     }
     glk_put_string("\n");

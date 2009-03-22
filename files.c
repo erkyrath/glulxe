@@ -16,7 +16,7 @@ int is_gamefile_valid()
   glui32 version;
 
   glk_stream_set_position(gamefile, 0, seekmode_Start);
-  res = glk_get_buffer_stream(gamefile, buf, 8);
+  res = glk_get_buffer_stream(gamefile, (char *)buf, 8);
 
   if (res != 8) {
     fatal_error("This is too short to be a valid Glulx file.");

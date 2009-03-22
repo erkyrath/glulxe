@@ -95,7 +95,7 @@ void stream_string(glui32 addr)
       ch = Mem1(addr);
       addr++;
       if (ch == '\0')
-	break;
+        break;
       glk_put_char(ch);
     }
   }
