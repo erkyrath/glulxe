@@ -384,7 +384,7 @@ void execute_loop()
         if (vals0 >= 0)
           value += (vals0 >> 3);
         else
-          value -= ((-1 - vals0) >> 3);
+          value -= (1 + ((-1 - vals0) >> 3));
         if (Mem1(value) & (1 << val1))
           val0 = 1;
         else
@@ -417,7 +417,7 @@ void execute_loop()
         if (vals0 >= 0)
           value += (vals0 >> 3);
         else
-          value -= ((-1 - vals0) >> 3);
+          value -= (1 + ((-1 - vals0) >> 3));
         val0 = Mem1(value);
         if (inst.value[2])
           val0 |= (1 << val1);
