@@ -28,8 +28,6 @@ typedef struct cacheblock_struct {
   } u;
 } cacheblock_t;
 
-static int never_cache_stringtable = FALSE;
-
 /* The current string-decoding tables, broken out into a fast and
    easy-to-use form. */
 static int tablecache_valid = FALSE;
@@ -698,7 +696,10 @@ void stream_set_table(glui32 addr)
     /* Build cache. We can only do this if the table is entirely in ROM. */
     glui32 tablelen = Mem4(stringtable);
     glui32 rootaddr = Mem4(stringtable+8);
-    if (stringtable+tablelen <= ramstart && !never_cache_stringtable) {
+    int cache_stringtable = (stringtable+tablelen <= ramstart);
+    /* cache_stringtable = TRUE; ...for testing only */
+    /* cache_stringtable = FALSE; ...for testing only */
+    if (cache_stringtable) {
       buildcache(&tablecache, rootaddr, CACHEBITS, 0);
       /* dumpcache(&tablecache, 1, 0); */
       tablecache_valid = TRUE;
