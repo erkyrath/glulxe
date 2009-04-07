@@ -35,6 +35,7 @@ Ditto for Windows, using "winstart.c".
 ###:
     Fixed off-by-eight bug in @astorebit and @aloadbit with negative bit
     numbers.
+    VERIFY_MEMORY_ACCESS now detects writes to the ROM section of memory.
 
 0.4.4:
     Added profiling code, which is turned off by default. To compile it 
