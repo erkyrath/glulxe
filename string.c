@@ -161,7 +161,8 @@ void stream_num(glsi32 val, int inmiddle, int charnum)
   switch (iosys_mode) {
 
   case iosys_Glk:
-    while (ix) {
+    ix -= charnum;
+    while (ix > 0) {
       ix--;
       glk_put_char(buf[ix]);
     }
@@ -170,23 +171,26 @@ void stream_num(glsi32 val, int inmiddle, int charnum)
   case iosys_Filter:
     if (!inmiddle) {
       push_callstub(0x11, 0);
+      inmiddle = TRUE;
     }
-    if (charnum >= ix) {
-      res = pop_callstub_string(&jx);
-      if (res) 
-        fatal_error("String-on-string call stub while printing number.");
-    }
-    else {
+    if (charnum < ix) {
       ival = buf[(ix-1)-charnum] & 0xFF;
       pc = val;
       push_callstub(0x12, charnum+1);
       enter_function(iosys_rock, 1, &ival);
+      return;
     }
     break;
 
   default:
     break;
 
+  }
+
+  if (inmiddle) {
+    res = pop_callstub_string(&jx);
+    if (res) 
+      fatal_error("String-on-string call stub while printing number.");
   }
 }
 
