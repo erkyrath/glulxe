@@ -98,16 +98,29 @@ void execute_loop()
           fatal_error("Division by zero.");
         /* Since C doesn't guarantee the results of division of negative
            numbers, we carefully convert everything to positive values
-           first. */
-        if (vals1 < 0) {
-          vals0 = (-vals0);
-          vals1 = (-vals1);
-        }
-        if (vals0 >= 0) {
-          value = vals0 / vals1;
+           first. They have to be unsigned values, too, otherwise the
+           0x80000000 case goes wonky. */
+        if (vals0 < 0) {
+          val0 = (-vals0);
+          if (vals1 < 0) {
+            val1 = (-vals1);
+            value = val0 / val1;
+          }
+          else {
+            val1 = vals1;
+            value = -(val0 / val1);
+          }
         }
         else {
-          value = -((-vals0) / vals1);
+          val0 = vals0;
+          if (vals1 < 0) {
+            val1 = (-vals1);
+            value = -(val0 / val1);
+          }
+          else {
+            val1 = vals1;
+            value = val0 / val1;
+          }
         }
         store_operand(inst.desttype, inst.value[2], value);
         break;
@@ -117,13 +130,29 @@ void execute_loop()
         if (vals1 == 0)
           fatal_error("Division by zero doing remainder.");
         if (vals1 < 0) {
-          vals1 = (-vals1);
+            vals0 = -vals0;
         }
-        if (vals0 >= 0) {
-          value = vals0 % vals1;
+        if (vals0 < 0) {
+          val0 = (-vals0);
+          if (vals1 < 0) {
+            val1 = (-vals1);
+            value = val0 % val1;
+          }
+          else {
+            val1 = vals1;
+            value = -(val0 % val1);
+          }
         }
         else {
-          value = -((-vals0) % vals1);
+          val0 = vals0;
+          if (vals1 < 0) {
+            val1 = (-vals1);
+            value = -(val0 % val1);
+          }
+          else {
+            val1 = vals1;
+            value = val0 % val1;
+          }
         }
         store_operand(inst.desttype, inst.value[2], value);
         break;
