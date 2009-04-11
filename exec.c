@@ -130,29 +130,18 @@ void execute_loop()
         if (vals1 == 0)
           fatal_error("Division by zero doing remainder.");
         if (vals1 < 0) {
-            vals0 = -vals0;
+            val1 = -vals1;
+        }
+        else {
+            val1 = vals1;
         }
         if (vals0 < 0) {
           val0 = (-vals0);
-          if (vals1 < 0) {
-            val1 = (-vals1);
-            value = val0 % val1;
-          }
-          else {
-            val1 = vals1;
-            value = -(val0 % val1);
-          }
+          value = -(val0 % val1);
         }
         else {
           val0 = vals0;
-          if (vals1 < 0) {
-            val1 = (-vals1);
-            value = -(val0 % val1);
-          }
-          else {
-            val1 = vals1;
-            value = val0 % val1;
-          }
+          value = val0 % val1;
         }
         store_operand(inst.desttype, inst.value[2], value);
         break;
