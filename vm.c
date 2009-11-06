@@ -319,3 +319,32 @@ void verify_address_write(glui32 addr, glui32 count)
   }
 }
 
+/* verify_array_addresses():
+   Make sure that an array of count elements (size bytes each),
+   starting at addr, does not fall outside the memory map. This goes
+   to some trouble that verify_address() does not, because we need
+   to be wary of lengths near -- or beyond -- 0x7FFFFFFF.
+*/
+void verify_array_addresses(glui32 addr, glui32 count, glui32 size)
+{
+  glui32 bytecount;
+  if (addr >= endmem)
+    fatal_error_i("Memory access out of range", addr);
+
+  if (count == 0)
+    return;
+  bytecount = count*size;
+
+  /* If just multiplying by the element size overflows, we have trouble. */
+  if (bytecount < count)
+    fatal_error_i("Memory access way too long", addr);
+
+  /* If the byte length by itself is too long, or if its end overflows,
+     we have trouble. */
+  if (bytecount > endmem || addr+bytecount < addr)
+    fatal_error_i("Memory access much too long", addr);
+  /* The simple length test. */
+  if (addr+bytecount > endmem)
+    fatal_error_i("Memory access too long", addr);
+}
+

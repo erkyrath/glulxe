@@ -168,6 +168,7 @@ extern glui32 change_memsize(glui32 newlen, int internal);
 extern glui32 *pop_arguments(glui32 count, glui32 addr);
 extern void verify_address(glui32 addr, glui32 count);
 extern void verify_address_write(glui32 addr, glui32 count);
+extern void verify_array_addresses(glui32 addr, glui32 count, glui32 size);
 
 /* exec.c */
 extern void execute_loop(void);

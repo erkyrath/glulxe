@@ -468,6 +468,7 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 
         switch (typeclass) {
         case 'C':
+          verify_array_addresses(varglist[ix], varglist[ix+1], 1);
           garglist[gargnum].array = AddressOfArray(varglist[ix]);
           gargnum++;
           ix++;
@@ -476,6 +477,7 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
           cx++;
           break;
         case 'I':
+          verify_array_addresses(varglist[ix], varglist[ix+1], 4);
           garglist[gargnum].array = CaptureIArray(varglist[ix], varglist[ix+1], passin);
           gargnum++;
           ix++;
