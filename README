@@ -42,6 +42,7 @@ Ditto for Windows, using "winstart.c".
     of printing a number.
     Glk array/string operations are now checked for memory overflows
     (though not for ROM writing).
+    Better fix for the @random bug.
 
 0.4.4:
     Added profiling code, which is turned off by default. To compile it 

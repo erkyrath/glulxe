@@ -619,7 +619,7 @@ void execute_loop()
       case op_random:
         vals0 = inst.value[0];
         if (vals0 == 0)
-          value = glulx_random() ^ (glulx_random() << 16);
+          value = glulx_random();
         else if (vals0 >= 1)
           value = glulx_random() % (glui32)(vals0);
         else 
