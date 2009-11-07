@@ -40,6 +40,7 @@ Ditto for Windows, using "winstart.c".
     Evin Robertson.)
     Fixed an extremely obscure problem with changing I/O mode in the middle
     of printing a number.
+    Better fix for the @random bug.
 
 0.4.4:
     Added profiling code, which is turned off by default. To compile it 
