@@ -41,7 +41,8 @@ Ditto for Windows, using "winstart.c".
     Fixed an extremely obscure problem with changing I/O mode in the middle
     of printing a number.
     Glk array/string operations are now checked for memory overflows
-    (though not for ROM writing).
+    (though not for ROM writing). This generates a warning at present;
+    in the future, it will be a fatal error.
     Better fix for the @random bug.
 
 0.4.4:
