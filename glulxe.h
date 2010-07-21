@@ -35,6 +35,11 @@ typedef signed short glsi16;
    written to a data file called "profile-raw". */
 /* #define VM_PROFILING (1) */
 
+/* Comment this definition to turn off floating-point support. You
+   might need to do this if you are building on a very limited platform
+   with no math library. */
+#define FLOAT_SUPPORT (1)
+
 /* Some macros to read and write integers to memory, always in big-endian
    format. */
 #define Read4(ptr)    \

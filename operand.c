@@ -228,6 +228,15 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_accelparam:
     return &list_LL;
 
+#ifdef FLOAT_SUPPORT
+
+  case op_numtof:
+  case op_ftonumz:
+  case op_ftonumn:
+    return &list_LS;
+
+#endif /* FLOAT_SUPPORT */
+
   default: 
     return NULL;
   }

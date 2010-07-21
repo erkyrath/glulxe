@@ -63,6 +63,13 @@ glui32 do_gestalt(glui32 val, glui32 val2)
       return 1; /* We know this accelerated function. */
     return 0;
 
+  case gestulx_Float:
+#ifdef FLOAT_SUPPORT
+    return 1; /* We can do floating-point operations. */
+#else /* FLOAT_SUPPORT */
+    return 0; /* The floating-point opcodes are not compiled in. */
+#endif /* FLOAT_SUPPORT */
+
   default:
     return 0;
 

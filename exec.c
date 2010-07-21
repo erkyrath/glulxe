@@ -760,6 +760,15 @@ void execute_loop()
         accel_set_param(inst.value[0], inst.value[1]);
         break;
 
+#ifdef FLOAT_SUPPORT
+
+      case op_numtof:
+        value = 123; /*###*/
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+#endif /* FLOAT_SUPPORT */
+
       default:
         fatal_error_i("Executed unknown opcode.", opcode);
       }
