@@ -277,4 +277,16 @@ extern acceleration_func accel_get_func(glui32 addr);
 extern void accel_set_func(glui32 index, glui32 addr);
 extern void accel_set_param(glui32 index, glui32 val);
 
+#ifdef FLOAT_SUPPORT
+
+/* You may have to edit the definition of gfloat32 to make sure it's really
+   a 32-bit floating-point type. */
+typedef float gfloat32;
+
+/* float.c */
+extern glui32 encode_float(gfloat32 val);
+extern gfloat32 decode_float(glui32 val);
+
+#endif /* FLOAT_SUPPORT */
+
 #endif /* _GLULXE_H */

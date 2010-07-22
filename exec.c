@@ -763,7 +763,8 @@ void execute_loop()
 #ifdef FLOAT_SUPPORT
 
       case op_numtof:
-        value = 123; /*###*/
+        vals0 = inst.value[0];
+        value = encode_float((gfloat32)vals0);
         store_operand(inst.desttype, inst.value[1], value);
         break;
 
