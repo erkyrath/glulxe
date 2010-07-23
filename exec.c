@@ -7,6 +7,10 @@
 #include "glulxe.h"
 #include "opcodes.h"
 
+#ifdef FLOAT_SUPPORT
+#include <math.h>
+#endif /* FLOAT_SUPPORT */
+
 /* execute_loop():
    The main interpreter loop. This repeats until the program is done.
 */
@@ -21,6 +25,9 @@ void execute_loop()
   glsi32 vals0, vals1;
   glui32 *arglist;
   glui32 arglistfix[3];
+#ifdef FLOAT_SUPPORT
+  gfloat32 valf;
+#endif /* FLOAT_SUPPORT */
 
   while (!done_executing) {
 
@@ -766,6 +773,23 @@ void execute_loop()
         vals0 = inst.value[0];
         value = encode_float((gfloat32)vals0);
         store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_ftonumz:
+        valf = decode_float(inst.value[0]);
+        if (!signbit(valf)) {
+          if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
+            vals0 = 0x7FFFFFFF;
+          else
+            vals0 = (glsi32)(floorf(valf));
+        }
+        else {
+          if (isnan(valf) || isinf(valf) || isless(valf, -4294967295.0))
+            vals0 = 0x80000000;
+          else
+            vals0 = (glsi32)(ceilf(valf));
+        }
+        store_operand(inst.desttype, inst.value[1], vals0);
         break;
 
 #endif /* FLOAT_SUPPORT */
