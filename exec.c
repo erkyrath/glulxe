@@ -792,6 +792,23 @@ void execute_loop()
         store_operand(inst.desttype, inst.value[1], vals0);
         break;
 
+      case op_ftonumn:
+        valf = decode_float(inst.value[0]);
+        if (!signbit(valf)) {
+          if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
+            vals0 = 0x7FFFFFFF;
+          else
+            vals0 = (glsi32)(rintf(valf));
+        }
+        else {
+          if (isnan(valf) || isinf(valf) || isless(valf, -4294967295.0))
+            vals0 = 0x80000000;
+          else
+            vals0 = (glsi32)(rintf(valf));
+        }
+        store_operand(inst.desttype, inst.value[1], vals0);
+        break;
+
 #endif /* FLOAT_SUPPORT */
 
       default:
