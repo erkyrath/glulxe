@@ -46,10 +46,14 @@ static int array_LLL[3] = { modeform_Load, modeform_Load, modeform_Load };
 static operandlist_t list_LLL = { 3, 4, array_LLL };
 static operandlist_t list_2LS = { 2, 2, array_LS };
 static operandlist_t list_1LS = { 2, 1, array_LS };
+static int array_LLLL[4] = { modeform_Load, modeform_Load, modeform_Load, modeform_Load };
+static operandlist_t list_LLLL = { 4, 4, array_LLLL };
 static int array_SL[2] = { modeform_Store, modeform_Load };
 static operandlist_t list_SL = { 2, 4, array_SL };
 static int array_SS[2] = { modeform_Store, modeform_Store };
 static operandlist_t list_SS = { 2, 4, array_SS };
+static int array_LLSS[4] = { modeform_Load, modeform_Load, modeform_Store, modeform_Store };
+static operandlist_t list_LLSS = { 4, 4, array_LLSS };
 
 /* init_operands():
    Set up the fast-lookup array of operandlists. This is called just
@@ -233,7 +237,39 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_numtof:
   case op_ftonumz:
   case op_ftonumn:
+  case op_ceil:
+  case op_floor:
+  case op_sqrt:
+  case op_exp:
+  case op_log:
     return &list_LS;
+  case op_fadd:
+  case op_fsub:
+  case op_fmul:
+  case op_fdiv:
+  case op_pow:
+    return &list_LLS;
+  case op_fmod:
+    return &list_LLSS;
+  case op_sin:
+  case op_cos:
+  case op_tan:
+  case op_asin:
+  case op_acos:
+  case op_atan:
+  case op_atan2:
+    return &list_LS;
+  case op_jfeq:
+  case op_jfne:
+    return &list_LLLL;
+  case op_jflt:
+  case op_jfle:
+  case op_jfgt:
+  case op_jfge:
+    return &list_LLL;
+  case op_jisnan:
+  case op_jisinf:
+    return &list_LL;
 
 #endif /* FLOAT_SUPPORT */
 
