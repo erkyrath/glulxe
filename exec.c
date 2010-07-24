@@ -777,6 +777,7 @@ void execute_loop()
 
       case op_ftonumz:
         valf = decode_float(inst.value[0]);
+        /* ### truncf? */
         if (!signbit(valf)) {
           if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
             vals0 = 0x7FFFFFFF;
@@ -794,6 +795,7 @@ void execute_loop()
 
       case op_ftonumn:
         valf = decode_float(inst.value[0]);
+        /*### roundf? */
         if (!signbit(valf)) {
           if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
             vals0 = 0x7FFFFFFF;
@@ -818,6 +820,24 @@ void execute_loop()
       case op_ceil:
         valf = decode_float(inst.value[0]);
         value = encode_float(ceilf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_sqrt:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(sqrtf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_log:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(logf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_exp:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(expf(valf));
         store_operand(inst.desttype, inst.value[1], value);
         break;
 
