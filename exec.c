@@ -809,6 +809,18 @@ void execute_loop()
         store_operand(inst.desttype, inst.value[1], vals0);
         break;
 
+      case op_floor:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(floorf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_ceil:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(ceilf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
 #endif /* FLOAT_SUPPORT */
 
       default:
