@@ -26,7 +26,7 @@ void execute_loop()
   glui32 *arglist;
   glui32 arglistfix[3];
 #ifdef FLOAT_SUPPORT
-  gfloat32 valf;
+  gfloat32 valf, valf1, valf2;
 #endif /* FLOAT_SUPPORT */
 
   while (!done_executing) {
@@ -839,6 +839,13 @@ void execute_loop()
         valf = decode_float(inst.value[0]);
         value = encode_float(expf(valf));
         store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_pow:
+        valf1 = decode_float(inst.value[0]);
+        valf2 = decode_float(inst.value[1]);
+        value = encode_float(powf(valf1, valf2));
+        store_operand(inst.desttype, inst.value[2], value);
         break;
 
 #endif /* FLOAT_SUPPORT */
