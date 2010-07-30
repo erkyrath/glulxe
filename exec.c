@@ -811,6 +811,38 @@ void execute_loop()
         store_operand(inst.desttype, inst.value[1], vals0);
         break;
 
+      case op_fadd:
+        valf1 = decode_float(inst.value[0]);
+        valf2 = decode_float(inst.value[1]);
+        value = encode_float(valf1 + valf2);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
+
+      case op_fsub:
+        valf1 = decode_float(inst.value[0]);
+        valf2 = decode_float(inst.value[1]);
+        value = encode_float(valf1 - valf2);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
+
+      case op_fmul:
+        valf1 = decode_float(inst.value[0]);
+        valf2 = decode_float(inst.value[1]);
+        value = encode_float(valf1 * valf2);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
+
+      case op_fdiv:
+        valf1 = decode_float(inst.value[0]);
+        valf2 = decode_float(inst.value[1]);
+        value = encode_float(valf1 / valf2);
+        store_operand(inst.desttype, inst.value[2], value);
+        break;
+
+      case op_fmod:
+        /*###*/
+        break;
+
       case op_floor:
         valf = decode_float(inst.value[0]);
         value = encode_float(floorf(valf));
@@ -847,6 +879,10 @@ void execute_loop()
         value = encode_float(powf(valf1, valf2));
         store_operand(inst.desttype, inst.value[2], value);
         break;
+
+        /*### seven trig opcodes */
+
+        /*### eight branch opcodes */
 
 #endif /* FLOAT_SUPPORT */
 
