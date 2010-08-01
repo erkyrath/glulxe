@@ -607,6 +607,7 @@ void execute_loop()
 
       case op_getiosys:
         stream_get_iosys(&val0, &val1);
+        /* #### desttype bug */
         store_operand(inst.desttype, inst.value[0], val0);
         store_operand(inst.desttype, inst.value[1], val1);
         break;
@@ -840,14 +841,20 @@ void execute_loop()
         break;
 
       case op_fmod:
-        valf1 = decode_float(inst.value[0]);
-        valf2 = decode_float(inst.value[1]);
+        /* We force the second argument positive, to get the right sign
+           for the quotient. We also record the sign of the first argument
+           and stuff it in manually -- this is necessary to make the -0
+           case work right. */
+        value = inst.value[0] & 0x80000000;
+        valf1 = decode_float(inst.value[0] & 0x7FFFFFFF);
+        valf2 = decode_float(inst.value[1] & 0x7FFFFFFF);
         valf = fmodf(valf1, valf2);
         val0 = encode_float(valf);
         val1 = encode_float((valf1-valf) / valf2);
         /* #### desttype bug */
-        store_operand(inst.desttype, inst.value[2], val0);
-        store_operand(inst.desttype, inst.value[3], val1);
+        /* Put the sign bit back in */
+        store_operand(inst.desttype, inst.value[2], val0|value);
+        store_operand(inst.desttype, inst.value[3], val1|value);
         break;
 
       case op_floor:
