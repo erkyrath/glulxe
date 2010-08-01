@@ -840,7 +840,14 @@ void execute_loop()
         break;
 
       case op_fmod:
-        /*###*/
+        valf1 = decode_float(inst.value[0]);
+        valf2 = decode_float(inst.value[1]);
+        valf = fmodf(valf1, valf2);
+        val0 = encode_float(valf);
+        val1 = encode_float((valf1-valf) / valf2);
+        /* #### desttype bug */
+        store_operand(inst.desttype, inst.value[2], val0);
+        store_operand(inst.desttype, inst.value[3], val1);
         break;
 
       case op_floor:
