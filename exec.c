@@ -894,9 +894,63 @@ void execute_loop()
         store_operand(inst.desttype, inst.value[2], value);
         break;
 
-        /*### seven trig opcodes */
+      case op_sin:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(sinf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
 
-        /*### eight branch opcodes */
+      case op_cos:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(cosf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_tan:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(tanf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_asin:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(asinf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_acos:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(acosf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+      case op_atan:
+        valf = decode_float(inst.value[0]);
+        value = encode_float(atanf(valf));
+        store_operand(inst.desttype, inst.value[1], value);
+        break;
+
+        /*### atan2 */
+
+      case op_jfeq:
+        valf1 = decode_float(inst.value[1]) - decode_float(inst.value[0]);
+        valf2 = fabs(decode_float(inst.value[2]));
+        if (valf1 <= valf2 && valf1 >= -valf2) {
+          value = inst.value[3];
+          goto PerformJump;
+        }
+        break;
+
+      case op_jfne:
+        valf1 = decode_float(inst.value[1]) - decode_float(inst.value[0]);
+        valf2 = fabs(decode_float(inst.value[2]));
+        if (!(valf1 <= valf2 && valf1 >= -valf2)) {
+          value = inst.value[3];
+          goto PerformJump;
+        }
+        break;
+
+        /*### six branch opcodes */
 
 #endif /* FLOAT_SUPPORT */
 
