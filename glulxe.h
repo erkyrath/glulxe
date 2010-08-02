@@ -283,7 +283,15 @@ extern void accel_set_param(glui32 index, glui32 val);
    a 32-bit floating-point type. */
 typedef float gfloat32;
 
+/* Uncomment this definition if your gfloat32 type is not a standard
+   IEEE-754 single-precision (32-bit) format. Normally, Glulxe assumes
+   that it can reinterpret-cast IEEE-754 int values into gfloat32
+   values. If you uncomment this, Glulxe switches to lengthier
+   (but safer) encoding and decoding functions. */
+/* #define FLOAT_NOT_NATIVE (1) */
+
 /* float.c */
+extern int init_float(void);
 extern glui32 encode_float(gfloat32 val);
 extern gfloat32 decode_float(glui32 val);
 
