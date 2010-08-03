@@ -770,13 +770,13 @@ void execute_loop()
 #ifdef FLOAT_SUPPORT
 
       case op_numtof:
-        vals0 = inst.value[0];
+        vals0 = inst[0].value;
         value = encode_float((gfloat32)vals0);
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_ftonumz:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         /* ### truncf? */
         if (!signbit(valf)) {
           if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
@@ -790,11 +790,11 @@ void execute_loop()
           else
             vals0 = (glsi32)(ceilf(valf));
         }
-        store_operand(inst.desttype, inst.value[1], vals0);
+        store_operand(inst[1].desttype, inst[1].value, vals0);
         break;
 
       case op_ftonumn:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         /*### roundf? */
         if (!signbit(valf)) {
           if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
@@ -808,35 +808,35 @@ void execute_loop()
           else
             vals0 = (glsi32)(rintf(valf));
         }
-        store_operand(inst.desttype, inst.value[1], vals0);
+        store_operand(inst[1].desttype, inst[1].value, vals0);
         break;
 
       case op_fadd:
-        valf1 = decode_float(inst.value[0]);
-        valf2 = decode_float(inst.value[1]);
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
         value = encode_float(valf1 + valf2);
-        store_operand(inst.desttype, inst.value[2], value);
+        store_operand(inst[2].desttype, inst[2].value, value);
         break;
 
       case op_fsub:
-        valf1 = decode_float(inst.value[0]);
-        valf2 = decode_float(inst.value[1]);
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
         value = encode_float(valf1 - valf2);
-        store_operand(inst.desttype, inst.value[2], value);
+        store_operand(inst[2].desttype, inst[2].value, value);
         break;
 
       case op_fmul:
-        valf1 = decode_float(inst.value[0]);
-        valf2 = decode_float(inst.value[1]);
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
         value = encode_float(valf1 * valf2);
-        store_operand(inst.desttype, inst.value[2], value);
+        store_operand(inst[2].desttype, inst[2].value, value);
         break;
 
       case op_fdiv:
-        valf1 = decode_float(inst.value[0]);
-        valf2 = decode_float(inst.value[1]);
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
         value = encode_float(valf1 / valf2);
-        store_operand(inst.desttype, inst.value[2], value);
+        store_operand(inst[2].desttype, inst[2].value, value);
         break;
 
       case op_fmod:
@@ -844,107 +844,106 @@ void execute_loop()
            for the quotient. We also record the sign of the first argument
            and stuff it in manually -- this is necessary to make the -0
            case work right. */
-        value = inst.value[0] & 0x80000000;
-        valf1 = decode_float(inst.value[0] & 0x7FFFFFFF);
-        valf2 = decode_float(inst.value[1] & 0x7FFFFFFF);
+        value = inst[0].value & 0x80000000;
+        valf1 = decode_float(inst[0].value & 0x7FFFFFFF);
+        valf2 = decode_float(inst[1].value & 0x7FFFFFFF);
         valf = fmodf(valf1, valf2);
         val0 = encode_float(valf);
         val1 = encode_float((valf1-valf) / valf2);
-        /* #### desttype bug */
         /* Put the sign bit back in */
-        store_operand(inst.desttype, inst.value[2], val0|value);
-        store_operand(inst.desttype, inst.value[3], val1|value);
+        store_operand(inst[2].desttype, inst[2].value, val0|value);
+        store_operand(inst[3].desttype, inst[3].value, val1|value);
         break;
 
       case op_floor:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(floorf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_ceil:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(ceilf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_sqrt:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(sqrtf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_log:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(logf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_exp:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(expf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_pow:
-        valf1 = decode_float(inst.value[0]);
-        valf2 = decode_float(inst.value[1]);
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
         value = encode_float(powf(valf1, valf2));
-        store_operand(inst.desttype, inst.value[2], value);
+        store_operand(inst[2].desttype, inst[2].value, value);
         break;
 
       case op_sin:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(sinf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_cos:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(cosf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_tan:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(tanf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_asin:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(asinf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_acos:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(acosf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
       case op_atan:
-        valf = decode_float(inst.value[0]);
+        valf = decode_float(inst[0].value);
         value = encode_float(atanf(valf));
-        store_operand(inst.desttype, inst.value[1], value);
+        store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
         /*### atan2 */
 
       case op_jfeq:
-        valf1 = decode_float(inst.value[1]) - decode_float(inst.value[0]);
-        valf2 = fabs(decode_float(inst.value[2]));
+        valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
+        valf2 = fabs(decode_float(inst[2].value));
         if (valf1 <= valf2 && valf1 >= -valf2) {
-          value = inst.value[3];
+          value = inst[3].value;
           goto PerformJump;
         }
         break;
 
       case op_jfne:
-        valf1 = decode_float(inst.value[1]) - decode_float(inst.value[0]);
-        valf2 = fabs(decode_float(inst.value[2]));
+        valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
+        valf2 = fabs(decode_float(inst[2].value));
         if (!(valf1 <= valf2 && valf1 >= -valf2)) {
-          value = inst.value[3];
+          value = inst[3].value;
           goto PerformJump;
         }
         break;
