@@ -928,7 +928,12 @@ void execute_loop()
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
 
-        /*### atan2 */
+      case op_atan2:
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
+        value = encode_float(atan2f(valf1, valf2));
+        store_operand(inst[2].desttype, inst[2].value, value);
+        break;
 
       case op_jfeq:
         valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);

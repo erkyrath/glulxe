@@ -248,6 +248,7 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_fmul:
   case op_fdiv:
   case op_pow:
+  case op_atan2:
     return &list_LLS;
   case op_fmod:
     return &list_LLSS;
@@ -257,7 +258,6 @@ operandlist_t *lookup_operandlist(glui32 opcode)
   case op_asin:
   case op_acos:
   case op_atan:
-  case op_atan2:
     return &list_LS;
   case op_jfeq:
   case op_jfne:
