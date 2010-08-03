@@ -235,26 +235,30 @@ operandlist_t *lookup_operandlist(glui32 opcode)
 
 /* parse_operands():
    Read the list of operands of an instruction, and put the values
-   in inst. This assumes that the PC is at the beginning of the
+   in args. This assumes that the PC is at the beginning of the
    operand mode list (right after an opcode number.) Upon return,
    the PC will be at the beginning of the next instruction.
+
+   This also assumes that args points at an allocated array of 
+   MAX_OPERANDS oparg_t structures.
 */
-void parse_operands(instruction_t *inst, operandlist_t *oplist)
+void parse_operands(oparg_t *args, operandlist_t *oplist)
 {
   int ix;
+  oparg_t *curarg;
   int numops = oplist->num_ops;
   int argsize = oplist->arg_size;
   glui32 modeaddr = pc;
   int modeval;
 
-  inst->desttype = 0;
-
   pc += (numops+1) / 2;
 
-  for (ix=0; ix<numops; ix++) {
+  for (ix=0, curarg=args; ix<numops; ix++, curarg++) {
     int mode;
     glui32 value;
     glui32 addr;
+
+    curarg->desttype = 0;
 
     if ((ix & 1) == 0) {
       modeval = Mem1(modeaddr);
@@ -385,20 +389,20 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
         fatal_error("Unknown addressing mode in load operand.");
       }
 
-      inst->value[ix] = value;
+      curarg->value = value;
 
     }
     else {  /* modeform_Store */
       switch (mode) {
 
       case 0: /* discard value */
-        inst->desttype = 0;
-        inst->value[ix] = 0;
+        curarg->desttype = 0;
+        curarg->value = 0;
         break;
 
       case 8: /* push on stack */
-        inst->desttype = 3;
-        inst->value[ix] = 0;
+        curarg->desttype = 3;
+        curarg->value = 0;
         break;
 
       case 15: /* main memory RAM, four-byte address */
@@ -436,8 +440,8 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
 
       WrMainMemAddr:
         /* cases 5, 6, 7 all wind up here. */
-        inst->desttype = 1;
-        inst->value[ix] = addr;
+        curarg->desttype = 1;
+        curarg->value = addr;
         break;
 
       case 11: /* locals, four-byte address */
@@ -461,11 +465,11 @@ void parse_operands(instruction_t *inst, operandlist_t *oplist)
            A "strict mode" interpreter probably should. It's also illegal
            for addr to be less than zero or greater than the size of
            the locals segment. */
-        inst->desttype = 2;
+        curarg->desttype = 2;
         /* We don't add localsbase here; the store address for desttype 2
            is relative to the current locals segment, not an absolute
            stack position. */
-        inst->value[ix] = addr;
+        curarg->value = addr;
         break;
 
       case 1:
