@@ -101,16 +101,17 @@ typedef signed short glsi16;
 
 /* Some useful structures. */
 
-/* instruction_t:
-   Represents the list of operands to an instruction being executed.
-   (Yes, it's somewhat misnamed. Sorry.) We assume, for the indefinite
-   moment, that no opcode has more than 8 operands, and no opcode
-   has two "store" operands.
+/* oparg_t:
+   Represents one operand value to an instruction being executed. The
+   code in exec.c assumes that no instruction has more than MAX_OPERANDS
+   of these.
 */
-typedef struct instruction_struct {
+typedef struct oparg_struct {
   glui32 desttype;
-  glui32 value[8];
-} instruction_t;
+  glui32 value;
+} oparg_t;
+
+#define MAX_OPERANDS (8)
 
 /* operandlist_t:
    Represents the operand structure of an opcode.
@@ -182,7 +183,7 @@ extern void execute_loop(void);
 extern operandlist_t *fast_operandlist[0x80];
 extern void init_operands(void);
 extern operandlist_t *lookup_operandlist(glui32 opcode);
-extern void parse_operands(instruction_t *inst, operandlist_t *oplist);
+extern void parse_operands(oparg_t *opargs, operandlist_t *oplist);
 extern void store_operand(glui32 desttype, glui32 destaddr, glui32 storeval);
 extern void store_operand_s(glui32 desttype, glui32 destaddr, glui32 storeval);
 extern void store_operand_b(glui32 desttype, glui32 destaddr, glui32 storeval);
