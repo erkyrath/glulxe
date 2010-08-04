@@ -774,7 +774,6 @@ void execute_loop()
         value = encode_float((gfloat32)vals0);
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_ftonumz:
         valf = decode_float(inst[0].value);
         /* ### truncf? */
@@ -792,7 +791,6 @@ void execute_loop()
         }
         store_operand(inst[1].desttype, inst[1].value, vals0);
         break;
-
       case op_ftonumn:
         valf = decode_float(inst[0].value);
         /*### roundf? */
@@ -817,21 +815,18 @@ void execute_loop()
         value = encode_float(valf1 + valf2);
         store_operand(inst[2].desttype, inst[2].value, value);
         break;
-
       case op_fsub:
         valf1 = decode_float(inst[0].value);
         valf2 = decode_float(inst[1].value);
         value = encode_float(valf1 - valf2);
         store_operand(inst[2].desttype, inst[2].value, value);
         break;
-
       case op_fmul:
         valf1 = decode_float(inst[0].value);
         valf2 = decode_float(inst[1].value);
         value = encode_float(valf1 * valf2);
         store_operand(inst[2].desttype, inst[2].value, value);
         break;
-
       case op_fdiv:
         valf1 = decode_float(inst[0].value);
         valf2 = decode_float(inst[1].value);
@@ -860,7 +855,6 @@ void execute_loop()
         value = encode_float(floorf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_ceil:
         valf = decode_float(inst[0].value);
         value = encode_float(ceilf(valf));
@@ -872,19 +866,16 @@ void execute_loop()
         value = encode_float(sqrtf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_log:
         valf = decode_float(inst[0].value);
         value = encode_float(logf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_exp:
         valf = decode_float(inst[0].value);
         value = encode_float(expf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_pow:
         valf1 = decode_float(inst[0].value);
         valf2 = decode_float(inst[1].value);
@@ -897,37 +888,31 @@ void execute_loop()
         value = encode_float(sinf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_cos:
         valf = decode_float(inst[0].value);
         value = encode_float(cosf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_tan:
         valf = decode_float(inst[0].value);
         value = encode_float(tanf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_asin:
         valf = decode_float(inst[0].value);
         value = encode_float(asinf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_acos:
         valf = decode_float(inst[0].value);
         value = encode_float(acosf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_atan:
         valf = decode_float(inst[0].value);
         value = encode_float(atanf(valf));
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
-
       case op_atan2:
         valf1 = decode_float(inst[0].value);
         valf2 = decode_float(inst[1].value);
@@ -944,7 +929,6 @@ void execute_loop()
           goto PerformJump;
         }
         break;
-
       case op_jisnan:
         /* NaN is well-defined, so we don't bother to convert to
            float. */
@@ -963,7 +947,6 @@ void execute_loop()
           goto PerformJump;
         }
         break;
-
       case op_jfne:
         valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
         valf2 = fabs(decode_float(inst[2].value));
@@ -973,7 +956,38 @@ void execute_loop()
         }
         break;
 
-        /*### six branch opcodes */
+      case op_jflt:
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
+        if (valf1 < valf2) {
+          value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jfgt:
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
+        if (valf1 > valf2) {
+          value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jfle:
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
+        if (valf1 <= valf2) {
+          value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jfge:
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
+        if (valf1 >= valf2) {
+          value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
 
 #endif /* FLOAT_SUPPORT */
 
