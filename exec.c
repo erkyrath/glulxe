@@ -776,35 +776,33 @@ void execute_loop()
         break;
       case op_ftonumz:
         valf = decode_float(inst[0].value);
-        /* ### truncf? */
         if (!signbit(valf)) {
           if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
             vals0 = 0x7FFFFFFF;
           else
-            vals0 = (glsi32)(floorf(valf));
+            vals0 = (glsi32)(truncf(valf));
         }
         else {
           if (isnan(valf) || isinf(valf) || isless(valf, -4294967295.0))
             vals0 = 0x80000000;
           else
-            vals0 = (glsi32)(ceilf(valf));
+            vals0 = (glsi32)(truncf(valf));
         }
         store_operand(inst[1].desttype, inst[1].value, vals0);
         break;
       case op_ftonumn:
         valf = decode_float(inst[0].value);
-        /*### roundf? */
         if (!signbit(valf)) {
           if (isnan(valf) || isinf(valf) || isgreater(valf, 4294967295.0))
             vals0 = 0x7FFFFFFF;
           else
-            vals0 = (glsi32)(rintf(valf));
+            vals0 = (glsi32)(roundf(valf));
         }
         else {
           if (isnan(valf) || isinf(valf) || isless(valf, -4294967295.0))
             vals0 = 0x80000000;
           else
-            vals0 = (glsi32)(rintf(valf));
+            vals0 = (glsi32)(roundf(valf));
         }
         store_operand(inst[1].desttype, inst[1].value, vals0);
         break;
