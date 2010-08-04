@@ -935,6 +935,16 @@ void execute_loop()
         store_operand(inst[2].desttype, inst[2].value, value);
         break;
 
+      case op_jisinf:
+        /* Infinity is well-defined, so we don't bother to convert to
+           float. */
+        val0 = inst[0].value;
+        if (val0 == 0x7F800000 || val0 == 0xFF800000) {
+          value = inst[1].value;
+          goto PerformJump;
+        }
+        break;
+
       case op_jfeq:
         valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
         valf2 = fabs(decode_float(inst[2].value));
