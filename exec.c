@@ -938,17 +938,35 @@ void execute_loop()
         break;
 
       case op_jfeq:
-        valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
-        valf2 = fabs(decode_float(inst[2].value));
-        if (valf1 <= valf2 && valf1 >= -valf2) {
+        if ((inst[0].value == 0x7F800000 || inst[0].value == 0xFF800000)
+          && (inst[1].value == 0x7F800000 || inst[1].value == 0xFF800000)) {
+          /* Both are infinite. Opposite infinities are never equal,
+             even if the difference is infinite, so this is easy. */
+          val0 = (inst[0].value == inst[1].value);
+        }
+        else {
+          valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
+          valf2 = fabs(decode_float(inst[2].value));
+          val0 = (valf1 <= valf2 && valf1 >= -valf2);
+        }
+        if (val0) {
           value = inst[3].value;
           goto PerformJump;
         }
         break;
       case op_jfne:
-        valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
-        valf2 = fabs(decode_float(inst[2].value));
-        if (!(valf1 <= valf2 && valf1 >= -valf2)) {
+        if ((inst[0].value == 0x7F800000 || inst[0].value == 0xFF800000)
+          && (inst[1].value == 0x7F800000 || inst[1].value == 0xFF800000)) {
+          /* Both are infinite. Opposite infinities are never equal,
+             even if the difference is infinite, so this is easy. */
+          val0 = (inst[0].value == inst[1].value);
+        }
+        else {
+          valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
+          valf2 = fabs(decode_float(inst[2].value));
+          val0 = (valf1 <= valf2 && valf1 >= -valf2);
+        }
+        if (!val0) {
           value = inst[3].value;
           goto PerformJump;
         }
