@@ -33,6 +33,7 @@ Ditto for Windows, using "winstart.c".
 * Version
 
 ###:
+    Added floating-point math feature.
     Updated winstart.c. (Thanks David Kinder.)
     Fixed @random even more, on Windows.
     @verify works right on game files with extended memory.
