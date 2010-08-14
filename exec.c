@@ -938,7 +938,11 @@ void execute_loop()
         break;
 
       case op_jfeq:
-        if ((inst[0].value == 0x7F800000 || inst[0].value == 0xFF800000)
+        if ((inst[2].value & 0x7F800000) == 0x7F800000 && (inst[2].value & 0x007FFFFF) != 0) {
+          /* The delta is NaN, which can never match. */
+          val0 = 0;
+        }
+        else if ((inst[0].value == 0x7F800000 || inst[0].value == 0xFF800000)
           && (inst[1].value == 0x7F800000 || inst[1].value == 0xFF800000)) {
           /* Both are infinite. Opposite infinities are never equal,
              even if the difference is infinite, so this is easy. */
@@ -955,7 +959,11 @@ void execute_loop()
         }
         break;
       case op_jfne:
-        if ((inst[0].value == 0x7F800000 || inst[0].value == 0xFF800000)
+        if ((inst[2].value & 0x7F800000) == 0x7F800000 && (inst[2].value & 0x007FFFFF) != 0) {
+          /* The delta is NaN, which can never match. */
+          val0 = 0;
+        }
+        else if ((inst[0].value == 0x7F800000 || inst[0].value == 0xFF800000)
           && (inst[1].value == 0x7F800000 || inst[1].value == 0xFF800000)) {
           /* Both are infinite. Opposite infinities are never equal,
              even if the difference is infinite, so this is easy. */
