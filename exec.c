@@ -833,19 +833,19 @@ void execute_loop()
         break;
 
       case op_fmod:
-        /* We force the second argument positive, to get the right sign
-           for the quotient. We also record the sign of the first argument
-           and stuff it in manually -- this is necessary to make the -0
-           case work right. */
-        value = inst[0].value & 0x80000000;
-        valf1 = decode_float(inst[0].value & 0x7FFFFFFF);
-        valf2 = decode_float(inst[1].value & 0x7FFFFFFF);
+        valf1 = decode_float(inst[0].value);
+        valf2 = decode_float(inst[1].value);
         valf = fmodf(valf1, valf2);
         val0 = encode_float(valf);
         val1 = encode_float((valf1-valf) / valf2);
-        /* Put the sign bit back in */
-        store_operand(inst[2].desttype, inst[2].value, val0|value);
-        store_operand(inst[3].desttype, inst[3].value, val1|value);
+        if (val1 == 0x0 || val1 == 0x80000000) {
+          /* When the quotient is zero, the sign has been lost in the
+             shuffle. We'll set that by hand, based on the original
+             arguments. */
+          val1 = (inst[0].value ^ inst[1].value) & 0x80000000;
+        }
+        store_operand(inst[2].desttype, inst[2].value, val0);
+        store_operand(inst[3].desttype, inst[3].value, val1);
         break;
 
       case op_floor:
