@@ -12,7 +12,7 @@ glui32 do_gestalt(glui32 val, glui32 val2)
   switch (val) {
 
   case gestulx_GlulxVersion:
-    return 0x00030101; /* Glulx spec version 3.1.1 */
+    return 0x00030102; /* Glulx spec version 3.1.2 */
 
   case gestulx_TerpVersion:
     return 0x00000405; /* Glulxe version 0.4.5 */
