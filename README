@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.4.5
+Version 0.4.6
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://eblong.com/zarf/glulx/index.html
@@ -32,7 +32,7 @@ Ditto for Windows, using "winstart.c".
 
 * Version
 
-###:
+0.4.6:
     Added floating-point math feature.
     Updated winstart.c. (Thanks David Kinder.)
     Fixed @random even more, on Windows.
