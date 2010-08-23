@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.4.6
+Version 0.4.###
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://eblong.com/zarf/glulx/index.html
@@ -33,6 +33,8 @@ these in. If your platform does not support these functions, you can
 comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
+
+###:
 
 0.4.6:
     Added floating-point math feature.
@@ -109,8 +111,8 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Permissions
 
-The source code in this package is copyright 1999 by Andrew Plotkin. You
-may copy and distribute it freely, by any means and under any conditions,
+The source code in this package is copyright 1999-2010 by Andrew Plotkin.
+You may copy and distribute it freely, by any means and under any conditions,
 as long as the code and documentation is not changed. You may also
 incorporate this code into your own program and distribute that, or modify
 this code and use and distribute the modified version, as long as you retain
