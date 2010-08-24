@@ -883,7 +883,7 @@ void execute_loop()
       case op_pow:
         valf1 = decode_float(inst[0].value);
         valf2 = decode_float(inst[1].value);
-        value = encode_float(powf(valf1, valf2));
+        value = encode_float(glulx_powf(valf1, valf2));
         store_operand(inst[2].desttype, inst[2].value, value);
         break;
 

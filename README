@@ -35,6 +35,8 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 * Version
 
 ###:
+    Abstracted powf() to an osdepend wrapper. (Needed for Windows.)
+    Fixed a @ceil bug, for some C math libraries.
 
 0.4.6:
     Added floating-point math feature.
