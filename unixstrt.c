@@ -29,18 +29,26 @@ int glkunix_startup_code(glkunix_startup_t *data)
   int res;
 
   /* Parse out the arguments. They've already been checked for validity,
-     and the library-specific ones stripped out. (This means that we
-     don't have to worry about whether profiling is compiled in; if it's 
-     not, the argument didn't reach us.)
+     and the library-specific ones stripped out.
      As usual for Unix, the zeroth argument is the executable name. */
   for (ix=1; ix<data->argc; ix++) {
+
+#if VM_PROFILING
     if (!strcmp(data->argv[ix], "--profile")) {
       ix++;
       if (ix<data->argc) {
-        setup_profile(data->argv[ix]);
+        strid_t profstr = glkunix_stream_open_pathname_gen(data->argv[ix], TRUE, FALSE, 1);
+        if (!profstr) {
+          init_err = "Unable to open profile output file.";
+          init_err2 = data->argv[ix];
+          return TRUE;
+        }
+        setup_profile(profstr, NULL);
       }
       continue;
     }
+#endif /* VM_PROFILING */
+
     if (filename) {
       init_err = "You must supply exactly one game file.";
       return TRUE;

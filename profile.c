@@ -72,6 +72,7 @@ number of opcodes executed by the entire program.
 /* Set if the --profile switch is used. */
 static int profiling_active = FALSE;
 static char *profiling_filename = NULL;
+static strid_t profiling_stream = NULL;
 
 typedef struct function_struct {
   glui32 addr;
@@ -105,13 +106,40 @@ typedef struct frame_struct {
 static function_t **functions = NULL;
 static frame_t *current_frame = NULL;
 
-/* This is globally visible, because the profile_tick() macro increments it. */
+/* This counter is globally visible, because the profile_tick() macro
+   increments it. */
 glui32 profile_opcount = 0;
 
-void setup_profile(char *filename)
+/* This is called from the setup code -- glkunix_startup_code(), for the
+   Unix version. If called, the interpreter will keep profiling information,
+   and write it out at shutdown time. If this is not called, the interpreter
+   will skip all the profiling code. (Although it won't be quite as fast
+   as if the VM_PROFILING symbol were compiled out entirely.)
+
+   The arguments are a little tricky, because I developed this on Unix,
+   but I want it to remain accessible on all platforms. Pass a writable
+   stream object as the first argument; at game-shutdown time, the terp
+   will write the profiling data to this object and then close it.
+
+   However, if it's not convenient to open a stream in the startup code,
+   you can simply pass a filename as the second argument. This filename
+   will be opened according to the usual Glk data file rules, which means
+   it may wind up in a sandboxed data directory. The filename should not
+   contain slashes or other pathname separators.
+
+   If you pass NULL for both arguments, a file called "profile-raw" will
+   be written.
+*/
+void setup_profile(strid_t stream, char *filename)
 {
   profiling_active = TRUE;
-  profiling_filename = filename;
+
+  if (stream)
+    profiling_stream = stream;
+  else if (filename)
+    profiling_filename = filename;
+  else
+    profiling_filename = "profile-raw";
 }
 
 int init_profile()
@@ -277,7 +305,6 @@ void profile_quit()
   int bucknum;
   function_t *func;
   char linebuf[512];
-  frefid_t profref;
   strid_t profstr;
 
   if (!profiling_active)
@@ -287,11 +314,19 @@ void profile_quit()
     profile_out();
   }
 
-  profref = glk_fileref_create_by_name(fileusage_BinaryMode|fileusage_Data, profiling_filename, 0);
-  if (!profref)
-    fatal_error_2("Profiler: unable to create profile-raw file", profiling_filename);
+  if (profiling_stream) {
+    profstr = profiling_stream;
+  }
+  else if (profiling_filename) {
+    frefid_t profref = glk_fileref_create_by_name(fileusage_BinaryMode|fileusage_Data, profiling_filename, 0);
+    if (!profref)
+        fatal_error_2("Profiler: unable to create profile output fileref", profiling_filename);
 
-  profstr = glk_stream_open_file(profref, filemode_Write, 0);
+    profstr = glk_stream_open_file(profref, filemode_Write, 0);
+  }
+  else {
+    fatal_error("Profiler: no profile output handle!");
+  }
 
   glk_put_string_stream(profstr, "<profile>\n");
 
@@ -327,7 +362,7 @@ void profile_quit()
 
 #else /* VM_PROFILING */
 
-void setup_profile(char *filename)
+void setup_profile(strid_t stream, char *filename)
 {
     /* Profiling is not compiled in. Do nothing. */
 }

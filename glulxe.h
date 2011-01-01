@@ -254,7 +254,7 @@ extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
 extern strid_t find_stream_by_id(glui32 objid);
 
 /* profile.c */
-extern void setup_profile(char *filename);
+extern void setup_profile(strid_t stream, char *filename);
 extern int init_profile(void);
 #if VM_PROFILING
 extern glui32 profile_opcount;
