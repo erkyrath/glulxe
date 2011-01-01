@@ -3,12 +3,18 @@
     http://eblong.com/zarf/glulx/index.html
 */
 
+#include <string.h>
 #include "glk.h"
 #include "glulxe.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
 /* The only command-line argument is the filename. */
 glkunix_argumentlist_t glkunix_arguments[] = {
+
+#if VM_PROFILING
+  { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
+#endif /* VM_PROFILING */
+
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
   { NULL, glkunix_arg_End, NULL }
 };
@@ -17,20 +23,40 @@ int glkunix_startup_code(glkunix_startup_t *data)
 {
   /* It turns out to be more convenient if we return TRUE from here, even 
      when an error occurs, and display an error in glk_main(). */
-  char *cx;
+  int ix;
+  char *filename = NULL;
   unsigned char buf[12];
   int res;
 
-  if (data->argc <= 1) {
-    init_err = "You must supply the name of a game file.";
-    return FALSE;
+  /* Parse out the arguments. They've already been checked for validity,
+     and the library-specific ones stripped out. (This means that we
+     don't have to worry about whether profiling is compiled in; if it's 
+     not, the argument didn't reach us.)
+     As usual for Unix, the zeroth argument is the executable name. */
+  for (ix=1; ix<data->argc; ix++) {
+    if (!strcmp(data->argv[ix], "--profile")) {
+      ix++;
+      if (ix<data->argc) {
+        setup_profile(data->argv[ix]);
+      }
+      continue;
+    }
+    if (filename) {
+      init_err = "You must supply exactly one game file.";
+      return TRUE;
+    }
+    filename = data->argv[ix];
   }
-  cx = data->argv[1];
+
+  if (!filename) {
+    init_err = "You must supply the name of a game file.";
+    return TRUE;
+  }
     
-  gamefile = glkunix_stream_open_pathname(cx, FALSE, 1);
+  gamefile = glkunix_stream_open_pathname(filename, FALSE, 1);
   if (!gamefile) {
     init_err = "The game file could not be opened.";
-    init_err2 = cx;
+    init_err2 = filename;
     return TRUE;
   }
 

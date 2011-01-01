@@ -17,14 +17,14 @@ Using this script is currently a nuisance. The requirements:
   option).
 - (If you want function names) you should compile your Inform 6 source
   using the -k switch. This generates a "gameinfo.dbg" file.
-- Run Glulxe, play some of the game, and quit. This generates a data
-  file called "profile-raw".
+- Run Glulxe, using the "--profile profile-raw" option. Play some of
+  the game, and quit. This generates a data file called "profile-raw".
 - Run this script, giving gameinfo.dbg and profile-raw as arguments.
 
 To sum up, in command-line form:
 
 % inform -G -k game.inf
-% glulxe game.ulx
+% glulxe --profile profile-raw game.ulx
 % python profile-analyze.py profile-raw gameinfo.dbg
 
 You can also use the assembly output of the Inform compiler, which you
@@ -32,7 +32,7 @@ get with the -a switch. Save the output and use it instead of the debug
 file:
 
 % inform -G -a game.inf > game.asm
-% glulxe game.ulx
+% glulxe --profile profile-raw game.ulx
 % python profile-analyze.py profile-raw game.asm
 
 The limitations:
