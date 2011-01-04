@@ -11,6 +11,10 @@ Optionally, this script can also read the debug output of the Inform 6
 compiler (or the assembly output), and use that to figure out the
 names of all the functions that were profiled.
 
+You can also generate profiling output in the same form as dumbfrotz's
+Z-machine profiling output. (If that happens to be what you want.) Use
+the --dumbfrotz argument.
+
 Using this script is currently a nuisance. The requirements:
 
 - You must compile Glulxe with profiling (the VM_PROFILING compile-time
@@ -40,6 +44,9 @@ The limitations:
 The profiling code is not smart about VM operations that rearrange the
 call stack. In fact, it's downright stupid. @restart, @restore,
 @restoreundo, or @throw will kill the interpreter.
+
+The profiling code does not gather stack usage information, although
+it's possible.
 
 Inform's -k switch does not work correctly with game files larger than
 16 megabytes.
@@ -117,8 +124,14 @@ import sys, os.path
 import xml.sax
 from struct import unpack
 
+dumb_frotz_mode = False
+
+if ('--dumbfrotz' in sys.argv):
+    sys.argv.remove('--dumbfrotz')
+    dumb_frotz_mode = True
+
 if (len(sys.argv) < 2):
-    print "Usage: profile-analyze.py profile-raw [ gameinfo.dbg | game.asm ]"
+    print "Usage: profile-analyze.py [--dumbfrotz] profile-raw [ gameinfo.dbg | game.asm ]"
     sys.exit(1)
 
 profile_raw = sys.argv[1]
@@ -173,6 +186,17 @@ class Function:
         print '  at $%06x (line %d); called %d times%s' % (self.addr, self.linenum,self.call_count,val)
         print '  %.6f sec (%d ops) spent executing' % (self.self_time, self.self_ops)
         print '  %.6f sec (%d ops) including child calls' % (self.total_time, self.total_ops)
+
+    def dump_dumbfrotz_style(self):
+        percent1 = '    '
+        percent2 = '    '
+        pc1 = int(100*(float(self.self_ops)/float(ops_executed)))
+        pc2 = int(100*(float(self.total_ops)/float(ops_executed)))
+        if (pc1 > 0):
+            percent1 = "%3d%%" % pc1
+        if (pc2 > 0):
+            percent2 = "%3d%%" % pc2
+        print '%-36s %s %-10lu %s %-10lu %-10lu %-4d' % (self.name, percent1, self.self_ops, percent2, self.total_ops, self.call_count, 0)
 
 class ProfileRawHandler(xml.sax.handler.ContentHandler):
     def startElement(self, name, attrs):
@@ -420,9 +444,10 @@ xml.sax.parse(profile_raw, ProfileRawHandler())
 
 source_start = min([ func.addr for func in functions.values()
     if not func.special ])
-print 'Code segment begins at', hex(source_start)
 
-print len(functions), 'called functions found in', profile_raw
+if (not dumb_frotz_mode):
+    print 'Code segment begins at', hex(source_start)
+    print len(functions), 'called functions found in', profile_raw
 
 if (game_asm):
     fl = open(game_asm, 'rb')
@@ -454,8 +479,9 @@ if (sourcemap):
         func.name = funcname
         func.linenum = linenum
     
-    if (badls):
-        print len(badls), 'functions from', profile_raw, 'did not appear in asm (veneer functions)'
+    if (not dumb_frotz_mode):
+        if (badls):
+            print len(badls), 'functions from', profile_raw, 'did not appear in asm (veneer functions)'
     
     function_names = {}
     for func in functions.values():
@@ -463,11 +489,28 @@ if (sourcemap):
 
 if (sourcemap):
     uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+source_start) not in functions ]
-    print len(uncalled_funcs), 'functions found in', game_asm, 'were never called'
+    if (not dumb_frotz_mode):
+        print len(uncalled_funcs), 'functions found in', game_asm, 'were never called'
 
-print 'Functions that consumed the most time (excluding children):'
-ls = functions.values()
-ls.sort(lambda x1, x2: cmp(x2.self_time, x1.self_time))
-for func in ls[:10]:
-    func.dump()
-
+if (dumb_frotz_mode):
+    ls = functions.values()
+    ls.sort(lambda x1, x2: cmp(x2.total_ops, x1.total_ops))
+    ops_executed = 0
+    routine_calls = 0
+    for func in ls:
+        if (func.total_ops > ops_executed):
+            ops_executed = func.total_ops
+        routine_calls = routine_calls + func.call_count
+    print 'Total opcodes: %lu' % ops_executed
+    print 'Total routine calls: %lu' % routine_calls
+    print 'Max. stack usage: ?'
+    print ''
+    print '%-35s      %-10s      %-10s %-10s %-4s' % ('Routine', 'Ops', 'Ops(+Subs)', 'Calls', 'Nest')
+    for func in ls:
+        func.dump_dumbfrotz_style()
+else:
+    print 'Functions that consumed the most time (excluding children):'
+    ls = functions.values()
+    ls.sort(lambda x1, x2: cmp(x2.self_time, x1.self_time))
+    for func in ls[:10]:
+        func.dump()
