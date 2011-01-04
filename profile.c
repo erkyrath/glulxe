@@ -12,8 +12,11 @@ call stack. In fact, it's downright stupid. @restart, @restore,
 @restoreundo, or @throw will kill the interpreter.
 
 On a normal VM exit (end of top-level routine or @quit), the profiler
-writes out a data file called "profile-raw". This is an XML file of
-the form
+writes out a data file, using the filename you provided with the 
+"--profile" option. Note that if the VM exits via glk_exit(), or is
+interrupted, the data file will be created (empty) but never filled in.
+
+The data file is an XML file of the form
 
 <profile>
   <function ... />
@@ -82,6 +85,8 @@ typedef struct function_struct {
   glui32 entry_depth;
   struct timeval entry_start_time;
   glui32 entry_start_op;
+  glui32 max_depth;
+  glui32 max_stack_use;
   struct timeval total_time;
   glui32 total_ops;
   struct timeval self_time;
@@ -93,6 +98,7 @@ typedef struct function_struct {
 typedef struct frame_struct {
   struct frame_struct *parent;
   function_t *func;
+  glui32 depth;
 
   struct timeval entry_time;
   glui32 entry_op;
@@ -186,6 +192,8 @@ static function_t *get_function(glui32 addr)
     func->total_ops = 0;
     timerclear(&func->self_time);
     func->self_ops = 0;
+    func->max_depth = 0;
+    func->max_stack_use = 0;
   }
 
   return func;
@@ -197,7 +205,7 @@ static char *timeprint(struct timeval *tv, char *buf)
   return buf;
 }
 
-void profile_in(glui32 addr, int accel)
+void profile_in(glui32 addr, glui32 stackuse, int accel)
 {
   frame_t *fra;
   function_t *func;
@@ -220,6 +228,9 @@ void profile_in(glui32 addr, int accel)
   }
   func->entry_depth += 1;
 
+  if (func->max_stack_use < stackuse)
+    func->max_stack_use = stackuse;
+
   fra = (frame_t *)glulx_malloc(sizeof(frame_t));
   if (!fra)
     fatal_error("Profiler: cannot malloc frame.");
@@ -228,6 +239,8 @@ void profile_in(glui32 addr, int accel)
   fra->parent = current_frame;
   current_frame = fra;
 
+  if (fra->parent)
+    fra->depth = fra->parent->depth + 1;
   fra->func = func;
   fra->entry_time = now;
   fra->entry_op = profile_opcount;
@@ -235,7 +248,7 @@ void profile_in(glui32 addr, int accel)
   fra->children_ops = 0;
 }
 
-void profile_out()
+void profile_out(glui32 stackuse)
 {
   frame_t *fra;
   function_t *func;
@@ -262,6 +275,11 @@ void profile_out()
   timersub(&func->self_time, &fra->children_time, &func->self_time);
   func->self_ops += runops;
   func->self_ops -= fra->children_ops;
+
+  if (func->max_depth < fra->depth)
+    func->max_depth = fra->depth;
+  if (func->max_stack_use < stackuse)
+    func->max_stack_use = stackuse;
 
   if (fra->parent) {
     timeradd(&runtime, &fra->parent->children_time, &fra->parent->children_time);
@@ -311,7 +329,7 @@ void profile_quit()
     return;
 
   while (current_frame) {
-    profile_out();
+    profile_out(0);
   }
 
   if (profiling_stream) {
@@ -342,12 +360,13 @@ void profile_quit()
         func->self_ops,
         timeprint(&func->self_time, self_buf));
       ### */
-      sprintf(linebuf, "  <function addr=\"%lx\" call_count=\"%ld\" accel_count=\"%ld\" total_ops=\"%ld\" total_time=\"%s\" self_ops=\"%ld\" self_time=\"%s\" />\n",
+      sprintf(linebuf, "  <function addr=\"%lx\" call_count=\"%ld\" accel_count=\"%ld\" total_ops=\"%ld\" total_time=\"%s\" self_ops=\"%ld\" self_time=\"%s\" max_depth=\"%ld\" max_stack_use=\"%ld\" />\n",
         func->addr, func->call_count, func->accel_count,
         func->total_ops,
         timeprint(&func->total_time, total_buf),
         func->self_ops,
-        timeprint(&func->self_time, self_buf));
+        timeprint(&func->self_time, self_buf),
+        func->max_depth, func->max_stack_use);
       glk_put_string_stream(profstr, linebuf);
     }
   }

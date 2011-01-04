@@ -523,27 +523,27 @@ void execute_loop()
         break;
 
       case op_streamchar:
-        profile_in(2, FALSE);
+        profile_in(2, stackptr, FALSE);
         value = inst[0].value & 0xFF;
         (*stream_char_handler)(value);
-        profile_out();
+        profile_out(stackptr);
         break;
       case op_streamunichar:
-        profile_in(2, FALSE);
+        profile_in(2, stackptr, FALSE);
         value = inst[0].value;
         (*stream_unichar_handler)(value);
-        profile_out();
+        profile_out(stackptr);
         break;
       case op_streamnum:
-        profile_in(2, FALSE);
+        profile_in(2, stackptr, FALSE);
         vals0 = inst[0].value;
         stream_num(vals0, FALSE, 0);
-        profile_out();
+        profile_out(stackptr);
         break;
       case op_streamstr:
-        profile_in(2, FALSE);
+        profile_in(2, stackptr, FALSE);
         stream_string(inst[0].value, 0, 0);
-        profile_out();
+        profile_out(stackptr);
         break;
 
       default:
@@ -615,12 +615,12 @@ void execute_loop()
         break;
 
       case op_glk:
-        profile_in(1, FALSE);
+        profile_in(1, stackptr, FALSE);
         value = inst[1].value;
         arglist = pop_arguments(value, 0);
         val0 = perform_glk(inst[0].value, value, arglist);
         store_operand(inst[2].desttype, inst[2].value, val0);
-        profile_out();
+        profile_out(stackptr);
         break;
 
       case op_random:
