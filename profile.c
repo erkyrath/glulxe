@@ -368,12 +368,12 @@ void profile_quit()
         timeprint(&func->self_time, self_buf));
       ### */
       sprintf(linebuf, "  <function addr=\"%lx\" call_count=\"%ld\" accel_count=\"%ld\" total_ops=\"%ld\" total_time=\"%s\" self_ops=\"%ld\" self_time=\"%s\" max_depth=\"%ld\" max_stack_use=\"%ld\" />\n",
-        func->addr, func->call_count, func->accel_count,
-        func->total_ops,
+        (unsigned long)func->addr, (long)func->call_count, (long)func->accel_count,
+        (long)func->total_ops,
         timeprint(&func->total_time, total_buf),
-        func->self_ops,
+        (long)func->self_ops,
         timeprint(&func->self_time, self_buf),
-        func->max_depth, func->max_stack_use);
+        (long)func->max_depth, (long)func->max_stack_use);
       glk_put_string_stream(profstr, linebuf);
     }
   }
