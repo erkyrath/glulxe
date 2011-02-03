@@ -120,6 +120,8 @@ typedef struct classtable_struct {
 static int num_classes = 0;
 classtable_t **classes = NULL;
 
+static glui32 find_id_for_stream(strid_t str);
+
 static classtable_t *new_classtable(glui32 firstid);
 static void *classes_get(int classid, glui32 objid);
 static classref_t *classes_put(int classid, void *obj);
@@ -185,6 +187,16 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
        directly -- instead of bothering with the whole prototype 
        mess. */
 
+  case 0x0047: /* stream_set_current */
+    if (numargs != 1)
+      goto WrongArgNum;
+    glk_stream_set_current(find_stream_by_id(arglist[0]));
+    break;
+  case 0x0048: /* stream_get_current */
+    if (numargs != 0)
+      goto WrongArgNum;
+    retval = find_id_for_stream(glk_stream_get_current());
+    break;
   case 0x0080: /* put_char */
     if (numargs != 1)
       goto WrongArgNum;
@@ -204,6 +216,16 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
     if (numargs != 1)
       goto WrongArgNum;
     retval = glk_char_to_upper(arglist[0] & 0xFF);
+    break;
+  case 0x0128: /* put_char_uni */
+    if (numargs != 1)
+      goto WrongArgNum;
+    glk_put_char_uni(arglist[0]);
+    break;
+  case 0x012B: /* put_char_stream_uni */
+    if (numargs != 2)
+      goto WrongArgNum;
+    glk_put_char_stream_uni(find_stream_by_id(arglist[0]), arglist[1]);
     break;
 
   WrongArgNum:
@@ -836,6 +858,21 @@ strid_t find_stream_by_id(glui32 objid)
 
   /* Recall that class 1 ("b") is streams. */
   return classes_get(1, objid);
+}
+
+/* find_id_for_stream():
+   The converse of find_stream_by_id(). 
+   This is only needed in this file, so it's static.
+*/
+static glui32 find_id_for_stream(strid_t str)
+{
+  gidispatch_rock_t objrock;
+
+  if (!str)
+    return 0;
+
+  objrock = gidispatch_get_objrock(str, 1);
+  return ((classref_t *)objrock.ptr)->id;
 }
 
 /* Build a hash table to hold a set of Glk objects. */
