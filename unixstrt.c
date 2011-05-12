@@ -8,7 +8,9 @@
 #include "glulxe.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
-/* The only command-line argument is the filename. */
+/* The only command-line argument is the filename. And the profiling switch,
+   if that's compiled in. The only *two* command-line arguments are... 
+*/
 glkunix_argumentlist_t glkunix_arguments[] = {
 
 #if VM_PROFILING
@@ -16,6 +18,7 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 #endif /* VM_PROFILING */
 
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
+
   { NULL, glkunix_arg_End, NULL }
 };
 
