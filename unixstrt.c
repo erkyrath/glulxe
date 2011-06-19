@@ -17,6 +17,10 @@ glkunix_argumentlist_t glkunix_arguments[] = {
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
 #endif /* VM_PROFILING */
 
+#if VM_PRECOMPUTE
+  { "--precompute", glkunix_arg_ValueFollows, "Generate a precomputed game state to a file." },
+#endif /* VM_PRECOMPUTE */
+
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
 
   { NULL, glkunix_arg_End, NULL }
@@ -51,6 +55,22 @@ int glkunix_startup_code(glkunix_startup_t *data)
       continue;
     }
 #endif /* VM_PROFILING */
+
+#if VM_PRECOMPUTE
+    if (!strcmp(data->argv[ix], "--precompute")) {
+      ix++;
+      if (ix<data->argc) {
+        strid_t precstr = glkunix_stream_open_pathname_gen(data->argv[ix], TRUE, FALSE, 1);
+        if (!precstr) {
+          init_err = "Unable to open precompute output file.";
+          init_err2 = data->argv[ix];
+          return TRUE;
+        }
+        vm_prepare_precompute(precstr, NULL);
+      }
+      continue;
+    }
+#endif /* VM_PRECOMPUTE */
 
     if (filename) {
       init_err = "You must supply exactly one game file.";

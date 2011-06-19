@@ -33,6 +33,15 @@ glui32 protectstart, protectend;
 void (*stream_char_handler)(unsigned char ch);
 void (*stream_unichar_handler)(glui32 ch);
 
+#if VM_PRECOMPUTE
+/* Set if the --precompute switch is used. */
+static int precomputing_active = FALSE;
+static char *precomputing_filename = NULL;
+static strid_t precomputing_stream = NULL;
+
+static void vm_write_game_file(void);
+#endif /* VM_PRECOMPUTE */
+
 /* setup_vm():
    Read in the game file and build the machine, allocating all the memory
    necessary.
@@ -106,11 +115,56 @@ void setup_vm()
   vm_restart();
 }
 
+#if VM_PRECOMPUTE
+/* vm_prepare_precompute():
+
+   This is called from the setup code -- glkunix_startup_code(), for
+   the Unix version. If called, the interpreter will write out a new
+   game file after the game exits. This new game file will contain the
+   same code and header information, but the memory (RAM) segment will
+   contain all the changes made during the game's execution.
+
+   Note that this only works if the game file exits via the @quit
+   opcode, or returning from Main(). If the game file calls glk_quit(),
+   you won't get a game file written out.
+
+   The arguments are a little tricky, because I developed this on Unix,
+   but I want it to remain accessible on all platforms. Pass a writable
+   stream object as the first argument; at game-shutdown time, the terp
+   will write the new game file to this object and then close it.
+
+   However, if it's not convenient to open a stream in the startup code,
+   you can simply pass a filename as the second argument. This filename
+   will be opened according to the usual Glk data file rules, which means
+   it may wind up in a sandboxed data directory. The filename should not
+   contain slashes or other pathname separators.
+
+   If you pass NULL for both arguments, a file called "game-precompute"
+   will be written.
+*/
+void vm_prepare_precompute(strid_t stream, char *filename)
+{
+  precomputing_active = TRUE;
+
+  if (stream)
+    precomputing_stream = stream;
+  else if (filename)
+    precomputing_filename = filename;
+  else
+    precomputing_filename = "game-precompute";
+}
+#endif /* VM_PRECOMPUTE */
+
 /* finalize_vm():
    Deallocate all the memory and shut down the machine.
 */
 void finalize_vm()
 {
+#if VM_PRECOMPUTE
+  if (precomputing_active)
+    vm_write_game_file();
+#endif /* VM_PRECOMPUTE */
+
   if (memmap) {
     glulx_free(memmap);
     memmap = NULL;
@@ -218,6 +272,60 @@ glui32 change_memsize(glui32 newlen, int internal)
 
 #endif /* FIXED_MEMSIZE */
 }
+
+#if VM_PRECOMPUTE
+/* vm_write_game_file():
+   Write the current memory state out as a new game file.
+*/
+static void vm_write_game_file()
+{
+  int ix;
+  strid_t precstr;
+  unsigned char header[4 * 9];
+  glui32 checksum;
+
+  if (precomputing_stream) {
+    precstr = precomputing_stream;
+  }
+  else if (precomputing_filename) {
+    frefid_t precref = glk_fileref_create_by_name(fileusage_BinaryMode|fileusage_Data, precomputing_filename, 0);
+    if (!precref)
+      fatal_error_2("Precompute: unable to create precompute output fileref", precomputing_filename);
+    
+    precstr = glk_stream_open_file(precref, filemode_Write, 0);
+  }
+  else {
+    fatal_error("Precompute: no precompute output handle!");
+  }
+
+  if (heap_is_active())
+    fatal_error("Precompute: cannot precompute if the heap is active!");
+
+  /* We work with a nine-word header here, whereas in setup_vm() it
+     was seven words. This is just because setup_vm() starts reading
+     after the Glulx magic number and version number. Sorry about
+     that. */
+  for (ix=0; ix<9*4; ix++)
+    header[ix] = memmap[ix];
+  Write4(8+header+4, endmem); /* endgamefile */
+  Write4(8+header+8, endmem); /* origendmem */
+  Write4(8+header+24, 0); /* checksum */
+
+  checksum = 0;
+  for (ix=0; ix<9*4; ix+=4) 
+    checksum += Read4(header+ix);
+  for (; ix<endmem; ix+=4)
+    checksum += Read4(memmap+ix);
+
+  Write4(8+header+24, checksum); /* checksum */
+
+  glk_put_buffer_stream(precstr, (char *)header, 9*4);
+  glk_put_buffer_stream(precstr, (char *)(memmap+9*4), endmem-9*4);
+
+  glk_stream_close(precstr, NULL);
+}
+#endif /* VM_PRECOMPUTE */
+
 
 /* pop_arguments():
    If addr is 0, pop N arguments off the stack, and put them in an array. 

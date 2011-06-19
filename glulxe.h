@@ -28,12 +28,20 @@ typedef signed short glsi16;
    this mode, all reads and writes to main memory will be checked to
    ensure they're in range. This is slower, but prevents malformed
    game files from crashing the interpreter. */
-/* #define VERIFY_MEMORY_ACCESS (1) */
+#define VERIFY_MEMORY_ACCESS (1)
 
-/* Uncomment this definition to turn on Glulx VM profiling. In this
-   mode, all function calls are timed, and the timing information is
-   written to a data file called "profile-raw". */
+/* Uncomment this definition to turn on Glulx VM profiling. This adds
+   a "--profile" option. If profiling is selected, all function calls
+   are timed, and the timing information is written to a data file.
+   (Called "profile-raw" by default.) */
 /* #define VM_PROFILING (1) */
+
+/* Uncomment this definition to turn on the game-precompute facility.
+   This adds a "--precompute" option. If this option is used, the
+   interpreter will write out the game state as seen when the game
+   exits. (The data is written to the data file "game-precompute"
+   by default.) */
+#define VM_PRECOMPUTE (1) /*###*/
 
 /* Comment this definition to turn off floating-point support. You
    might need to do this if you are building on a very limited platform
@@ -175,6 +183,9 @@ extern glui32 *pop_arguments(glui32 count, glui32 addr);
 extern void verify_address(glui32 addr, glui32 count);
 extern void verify_address_write(glui32 addr, glui32 count);
 extern void verify_array_addresses(glui32 addr, glui32 count, glui32 size);
+#if VM_PRECOMPUTE
+extern void vm_prepare_precompute(strid_t stream, char *filename);
+#endif /* VM_PRECOMPUTE */
 
 /* exec.c */
 extern void execute_loop(void);
