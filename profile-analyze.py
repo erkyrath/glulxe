@@ -368,7 +368,7 @@ class DebugFile:
         dat = fl.read(1)
         num = unpack('>B', dat)[0]
         name = self.read_string(fl)
-        self.arrays[num] = name
+        self.globals[num] = name
     
     def read_array_rec(self, fl):
         dat = fl.read(2)
