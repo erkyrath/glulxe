@@ -236,7 +236,7 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
     /* Go through the full dispatcher prototype foo. */
     char *proto, *cx;
     dispatch_splot_t splot;
-    int argnum;
+    int argnum, argnum2;
 
     /* Grab the string. */
     proto = gidispatch_prototype(funcnum);
@@ -265,9 +265,11 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
     gidispatch_call(funcnum, argnum, splot.garglist);
 
     /* Phase 3. */
-    argnum = 0;
+    argnum2 = 0;
     cx = proto;
-    unparse_glk_args(&splot, &cx, 0, &argnum, 0, 0);
+    unparse_glk_args(&splot, &cx, 0, &argnum2, 0, 0);
+    if (argnum != argnum2)
+      fatal_error("Argument counts did not match.");
 
     break;
   }
@@ -627,6 +629,8 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
       }
       else {
         cx++;
+        if (isarray)
+          ix++;
       }
     }    
   }
@@ -829,6 +833,8 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
       }
       else {
         cx++;
+        if (isarray)
+          ix++;
       }
     }    
   }
