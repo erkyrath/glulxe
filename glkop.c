@@ -23,6 +23,11 @@
      These macros are responsible for fixing byte-order and alignment
      (if the C ABI does not match the VM's). The passin, passout hints
      may be used to avoid unnecessary copying.
+   - A Glk object array is a sequence of integers in VM memory. It is
+     turned into a C pointer array (remember that C pointers may be more
+     than 4 bytes!) The pointer array is allocated by
+     CapturePtrArray(addr, len, objclass) and released by ReleasePtrArray().
+     Again, the macros handle the conversion.
    - A Glk structure (such as event_t) is a set of integers somewhere
      in VM memory, which can be read and written with the macros
      ReadStructField(addr, fieldnum) and WriteStructField(addr, fieldnum).
@@ -52,6 +57,10 @@
     (grab_temp_array(addr, len, passin))
 #define ReleaseIArray(ptr, addr, len, passout)  \
     (release_temp_array(ptr, addr, len, passout))
+#define CapturePtrArray(addr, len, objclass, passin)  \
+    (grab_temp_ptr_array(addr, len, objclass, passin))
+#define ReleasePtrArray(ptr, addr, len, objclass, passout)  \
+    (release_temp_ptr_array(ptr, addr, len, objclass, passout))
 #define ReadStructField(addr, fieldnum)  \
     (((addr) == 0xffffffff) \
       ? (stackptr -= 4, Stk4(stackptr)) \
@@ -138,6 +147,8 @@ static void glulxe_retained_unregister(void *array, glui32 len,
 
 static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin);
 static void release_temp_array(glui32 *arr, glui32 addr, glui32 len, int passout);
+static void **grab_temp_ptr_array(glui32 addr, glui32 len, int objclass, int passin);
+static void release_temp_ptr_array(void **arr, glui32 addr, glui32 len, int objclass, int passout);
 
 static void prepare_glk_args(char *proto, dispatch_splot_t *splot);
 static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
@@ -525,6 +536,18 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
           gargnum++;
           cx++;
           break;
+        case 'Q':
+          /* This case was added after the giant arrays were deprecated,
+             so we don't bother to allow for that case. We just verify
+             the length. */
+          verify_array_addresses(varglist[ix], varglist[ix+1], 4);
+          garglist[gargnum].array = CapturePtrArray(varglist[ix], varglist[ix+1], (*cx-'a'), passin);
+          gargnum++;
+          ix++;
+          garglist[gargnum].uint = varglist[ix];
+          gargnum++;
+          cx++;
+          break;
         default:
           fatal_error("Illegal format string.");
           break;
@@ -717,6 +740,13 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
           break;
         case 'I':
           ReleaseIArray(garglist[gargnum].array, varglist[ix], varglist[ix+1], passout);
+          gargnum++;
+          ix++;
+          gargnum++;
+          cx++;
+          break;
+        case 'Q':
+          ReleasePtrArray(garglist[gargnum].array, varglist[ix], varglist[ix+1], (*cx-'a'), passout);
           gargnum++;
           ix++;
           gargnum++;
@@ -1042,6 +1072,83 @@ static void release_temp_array(glui32 *arr, glui32 addr, glui32 len, int passout
     if (passout) {
       for (ix=0, addr2=addr; ix<len; ix++, addr2+=4) {
         val = arr[ix];
+        MemW4(addr2, val);
+      }
+    }
+    glulx_free(arr);
+    glulx_free(arref);
+  }
+}
+
+static void **grab_temp_ptr_array(glui32 addr, glui32 len, int objclass, int passin)
+{
+  arrayref_t *arref = NULL;
+  void **arr = NULL;
+  glui32 ix, addr2;
+
+  if (len) {
+    arr = (void **)glulx_malloc(len * sizeof(void *));
+    arref = (arrayref_t *)glulx_malloc(sizeof(arrayref_t));
+    if (!arr || !arref) 
+      fatal_error("Unable to allocate space for array argument to Glk call.");
+
+    arref->array = arr;
+    arref->addr = addr;
+    arref->elemsize = sizeof(void *);
+    arref->retained = FALSE;
+    arref->len = len;
+    arref->next = arrays;
+    arrays = arref;
+
+    if (passin) {
+      for (ix=0, addr2=addr; ix<len; ix++, addr2+=4) {
+        glui32 thisval = Mem4(addr2);
+        if (thisval)
+          arr[ix] = classes_get(objclass, thisval);
+        else
+          arr[ix] = NULL;
+      }
+    }
+  }
+
+  return arr;
+}
+
+static void release_temp_ptr_array(void **arr, glui32 addr, glui32 len, int objclass, int passout)
+{
+  arrayref_t *arref = NULL;
+  arrayref_t **aptr;
+  glui32 ix, val, addr2;
+
+  if (arr) {
+    for (aptr=(&arrays); (*aptr); aptr=(&((*aptr)->next))) {
+      if ((*aptr)->array == arr)
+        break;
+    }
+    arref = *aptr;
+    if (!arref)
+      fatal_error("Unable to re-find array argument in Glk call.");
+    if (arref->addr != addr || arref->len != len)
+      fatal_error("Mismatched array argument in Glk call.");
+
+    if (arref->retained) {
+      return;
+    }
+
+    *aptr = arref->next;
+    arref->next = NULL;
+
+    if (passout) {
+      for (ix=0, addr2=addr; ix<len; ix++, addr2+=4) {
+        void *opref = arr[ix];
+        if (opref) {
+          gidispatch_rock_t objrock = 
+            gidispatch_get_objrock(opref, objclass);
+          val = ((classref_t *)objrock.ptr)->id;
+        }
+        else {
+          val = 0;
+        }
         MemW4(addr2, val);
       }
     }
