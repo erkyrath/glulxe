@@ -34,6 +34,10 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
+0.4.8###:
+    Updated glkop.c to handle arrays of Glk objects. (This is needed to
+    support glk_schannel_play_multi().)
+
 0.4.7:
     Abstracted powf() to an osdepend wrapper. (Needed for Windows.)
     Fixed a @ceil bug, for some C math libraries.
