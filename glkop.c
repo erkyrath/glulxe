@@ -721,7 +721,7 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
       }
     }
     if (!skipval) {
-      glui32 thisval;
+      glui32 thisval = 0;
 
       if (typeclass == '[') {
 

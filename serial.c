@@ -242,7 +242,7 @@ glui32 perform_save(strid_t str)
   int ix;
   glui32 res, lx, val;
   glui32 memstart, memlen, stackstart, stacklen, heapstart, heaplen;
-  glui32 filestart, filelen;
+  glui32 filestart=0, filelen;
 
   stream_get_iosys(&val, &lx);
   if (val != 2) {
@@ -424,7 +424,7 @@ glui32 perform_restore(strid_t str)
 
   while (res == 0 && dest.pos < filestart+filelen) {
     /* Read a chunk and deal with it. */
-    glui32 chunktype, chunkstart, chunklen;
+    glui32 chunktype, chunkstart, chunklen=0;
     unsigned char dummy;
 
     if (res == 0) {
