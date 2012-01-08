@@ -748,8 +748,8 @@ static glui32 write_heapstate_sub(glui32 sumlen, glui32 *sumarray,
 
 static int sort_heap_summary(void *p1, void *p2)
 {
-  glui32 *v1 = (glui32 *)p1;
-  glui32 *v2 = (glui32 *)p2;
+  glui32 v1 = *(glui32 *)p1;
+  glui32 v2 = *(glui32 *)p2;
 
   if (v1 < v2)
     return -1;
