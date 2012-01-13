@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "glk.h"
 
 #include "opcodes.h"
@@ -68,78 +69,11 @@
 #define Mem2(adr)  (Read2(memmap+(adr)))
 #define Mem4(adr)  (Read4(memmap+(adr)))
 
-#define nop_gc 0
-#define add_gc 1
-#define sub_gc 2
-#define mul_gc 3
-#define div_gc 4
-#define mod_gc 5
-#define neg_gc 6
-#define bitand_gc 7
-#define bitor_gc 8
-#define bitxor_gc 9
-#define bitnot_gc 10
-#define shiftl_gc 11
-#define sshiftr_gc 12
-#define ushiftr_gc 13
-#define jump_gc 14
-#define jz_gc 15
-#define jnz_gc 16
-#define jeq_gc 17
-#define jne_gc 18
-#define jlt_gc 19
-#define jge_gc 20
-#define jgt_gc 21
-#define jle_gc 22
-#define call_gc 23
-#define return_gc 24
-#define catch_gc 25
-#define throw_gc 26
-#define tailcall_gc 27
-#define copy_gc 28
-#define copys_gc 29
-#define copyb_gc 30
-#define sexs_gc 31
-#define sexb_gc 32
-#define aload_gc 33
-#define aloads_gc 34
-#define aloadb_gc 35
-#define aloadbit_gc 36
-#define astore_gc 37
-#define astores_gc 38
-#define astoreb_gc 39
-#define astorebit_gc 40
-#define stkcount_gc 41
-#define stkpeek_gc 42
-#define stkswap_gc 43
-#define stkroll_gc 44
-#define stkcopy_gc 45
-#define streamchar_gc 46
-#define streamnum_gc 47
-#define streamstr_gc 48
-#define gestalt_gc 49
-#define debugtrap_gc 50
-#define getmemsize_gc 51
-#define setmemsize_gc 52
-#define random_gc 53
-#define setrandom_gc 54
-#define quit_gc 55
-#define verify_gc 56
-#define restart_gc 57
-#define save_gc 58
-#define restore_gc 59
-#define saveundo_gc 60
-#define restoreundo_gc 61
-#define protect_gc 62
-#define glk_gc 63
-#define getstringtbl_gc 64
-#define setstringtbl_gc 65
-#define streamunichar_gc 66
 
 typedef struct opcode_struct
 {  
-  char *name;        /* Lower case standard name */
-  long code;         /* Opcode number */
+  const char *name; /* Lower case standard name */
+  long code;        /* Opcode number */
   int flags;        /* Flags (see below) */
   int op_rules;     /* Any unusual operand rule applying (see below) */
   int no;           /* Number of operands */
@@ -149,81 +83,98 @@ typedef struct opcode_struct
 #define Br      2     /* Branch (last operand is a label) */
 #define Rf      4     /* "Return flag": execution never continues after this
                          opcode (e.g., is a return or unconditional jump) */
-#define uchar char
 
-static opcode_t opcodes_table[] = 
+static const opcode_t opcodes_table[] = 
 {
-  { (uchar *) "nop",            0x00,  0, 0, 0 },
-  { (uchar *) "add",            0x10, St, 0, 3 },
-  { (uchar *) "sub",            0x11, St, 0, 3 },
-  { (uchar *) "mul",            0x12, St, 0, 3 },
-  { (uchar *) "div",            0x13, St, 0, 3 },
-  { (uchar *) "mod",            0x14, St, 0, 3 },
-  { (uchar *) "neg",            0x15, St, 0, 2 },
-  { (uchar *) "bitand",         0x18, St, 0, 3 },
-  { (uchar *) "bitor",          0x19, St, 0, 3 },
-  { (uchar *) "bitxor",         0x1A, St, 0, 3 },
-  { (uchar *) "bitnot",         0x1B, St, 0, 2 },
-  { (uchar *) "shiftl",         0x1C, St, 0, 3 },
-  { (uchar *) "sshiftr",        0x1D, St, 0, 3 },
-  { (uchar *) "ushiftr",        0x1E, St, 0, 3 },
-  { (uchar *) "jump",           0x20, Br|Rf, 0, 1 },
-  { (uchar *) "jz",             0x22, Br, 0, 2 },
-  { (uchar *) "jnz",            0x23, Br, 0, 2 },
-  { (uchar *) "jeq",            0x24, Br, 0, 3 },
-  { (uchar *) "jne",            0x25, Br, 0, 3 },
-  { (uchar *) "jlt",            0x26, Br, 0, 3 },
-  { (uchar *) "jge",            0x27, Br, 0, 3 },
-  { (uchar *) "jgt",            0x28, Br, 0, 3 },
-  { (uchar *) "jle",            0x29, Br, 0, 3 },
-  { (uchar *) "call",           0x30, St, 0, 3 },
-  { (uchar *) "return",         0x31, Rf, 0, 1 },
-  { (uchar *) "catch",          0x32, Br|St, 0, 2 },
-  { (uchar *) "throw",          0x33, Rf, 0, 2 },
-  { (uchar *) "tailcall",       0x34, Rf, 0, 2 },
-  { (uchar *) "copy",           0x40, St, 0, 2 },
-  { (uchar *) "copys",          0x41, St, 0, 2 },
-  { (uchar *) "copyb",          0x42, St, 0, 2 },
-  { (uchar *) "sexs",           0x44, St, 0, 2 },
-  { (uchar *) "sexb",           0x45, St, 0, 2 },
-  { (uchar *) "aload",          0x48, St, 0, 3 },
-  { (uchar *) "aloads",         0x49, St, 0, 3 },
-  { (uchar *) "aloadb",         0x4A, St, 0, 3 },
-  { (uchar *) "aloadbit",       0x4B, St, 0, 3 },
-  { (uchar *) "astore",         0x4C,  0, 0, 3 },
-  { (uchar *) "astores",        0x4D,  0, 0, 3 },
-  { (uchar *) "astoreb",        0x4E,  0, 0, 3 },
-  { (uchar *) "astorebit",      0x4F,  0, 0, 3 },
-  { (uchar *) "stkcount",       0x50, St, 0, 1 },
-  { (uchar *) "stkpeek",        0x51, St, 0, 2 },
-  { (uchar *) "stkswap",        0x52,  0, 0, 0 },
-  { (uchar *) "stkroll",        0x53,  0, 0, 2 },
-  { (uchar *) "stkcopy",        0x54,  0, 0, 1 },
-  { (uchar *) "streamchar",     0x70,  0, 0, 1 },
-  { (uchar *) "streamnum",      0x71,  0, 0, 1 },
-  { (uchar *) "streamstr",      0x72,  0, 0, 1 },
-  { (uchar *) "gestalt",        0x0100, St, 0, 3 },
-  { (uchar *) "debugtrap",      0x0101, 0, 0, 1 },
-  { (uchar *) "getmemsize",     0x0102, St, 0, 1 },
-  { (uchar *) "setmemsize",     0x0103, St, 0, 2 },
-  { (uchar *) "random",         0x0110, St, 0, 2 },
-  { (uchar *) "setrandom",      0x0111,  0, 0, 1 },
-  { (uchar *) "quit",           0x0120,  0, 0, 0 },
-  { (uchar *) "verify",         0x0121, St, 0, 1 },
-  { (uchar *) "restart",        0x0122,  0, 0, 0 },
-  { (uchar *) "save",           0x0123, St, 0, 2 },
-  { (uchar *) "restore",        0x0124, St, 0, 2 },
-  { (uchar *) "saveundo",       0x0125, St, 0, 1 },
-  { (uchar *) "restoreundo",    0x0126, St, 0, 1 },
-  { (uchar *) "protect",        0x0127,  0, 0, 2 },
-  { (uchar *) "glk",            0x0130, St, 0, 3 },
-  { (uchar *) "getstringtbl",   0x0140, St, 0, 1 },
-  { (uchar *) "setstringtbl",   0x0141, 0, 0, 1 },
-  { (uchar *) "streamunichar",  0x73,  0, 0, 1 },
+  /* This table must be sorted! */
+  { "nop",            0x00,  0, 0, 0 },
+  { "add",            0x10, St, 0, 3 },
+  { "sub",            0x11, St, 0, 3 },
+  { "mul",            0x12, St, 0, 3 },
+  { "div",            0x13, St, 0, 3 },
+  { "mod",            0x14, St, 0, 3 },
+  { "neg",            0x15, St, 0, 2 },
+  { "bitand",         0x18, St, 0, 3 },
+  { "bitor",          0x19, St, 0, 3 },
+  { "bitxor",         0x1A, St, 0, 3 },
+  { "bitnot",         0x1B, St, 0, 2 },
+  { "shiftl",         0x1C, St, 0, 3 },
+  { "sshiftr",        0x1D, St, 0, 3 },
+  { "ushiftr",        0x1E, St, 0, 3 },
+  { "jump",           0x20, Br|Rf, 0, 1 },
+  { "jz",             0x22, Br, 0, 2 },
+  { "jnz",            0x23, Br, 0, 2 },
+  { "jeq",            0x24, Br, 0, 3 },
+  { "jne",            0x25, Br, 0, 3 },
+  { "jlt",            0x26, Br, 0, 3 },
+  { "jge",            0x27, Br, 0, 3 },
+  { "jgt",            0x28, Br, 0, 3 },
+  { "jle",            0x29, Br, 0, 3 },
+  { "jltu",           0x2A, Br, 0, 3 },
+  { "jgeu",           0x2B, Br, 0, 3 },
+  { "jgtu",           0x2C, Br, 0, 3 },
+  { "jleu",           0x2D, Br, 0, 3 },
+  { "call",           0x30, St, 0, 3 },
+  { "return",         0x31, Rf, 0, 1 },
+  { "catch",          0x32, Br|St, 0, 2 },
+  { "throw",          0x33, Rf, 0, 2 },
+  { "tailcall",       0x34, Rf, 0, 2 },
+  { "copy",           0x40, St, 0, 2 },
+  { "copys",          0x41, St, 0, 2 },
+  { "copyb",          0x42, St, 0, 2 },
+  { "sexs",           0x44, St, 0, 2 },
+  { "sexb",           0x45, St, 0, 2 },
+  { "aload",          0x48, St, 0, 3 },
+  { "aloads",         0x49, St, 0, 3 },
+  { "aloadb",         0x4A, St, 0, 3 },
+  { "aloadbit",       0x4B, St, 0, 3 },
+  { "astore",         0x4C,  0, 0, 3 },
+  { "astores",        0x4D,  0, 0, 3 },
+  { "astoreb",        0x4E,  0, 0, 3 },
+  { "astorebit",      0x4F,  0, 0, 3 },
+  { "stkcount",       0x50, St, 0, 1 },
+  { "stkpeek",        0x51, St, 0, 2 },
+  { "stkswap",        0x52,  0, 0, 0 },
+  { "stkroll",        0x53,  0, 0, 2 },
+  { "stkcopy",        0x54,  0, 0, 1 },
+  { "streamchar",     0x70,  0, 0, 1 },
+  { "streamnum",      0x71,  0, 0, 1 },
+  { "streamstr",      0x72,  0, 0, 1 },
+  { "streamunichar",  0x73,  0, 0, 1 },
+  { "gestalt",        0x0100, St, 0, 3 },
+  { "debugtrap",      0x0101,  0, 0, 1 },
+  { "getmemsize",     0x0102, St, 0, 1 },
+  { "setmemsize",     0x0103, St, 0, 2 },
+  { "jumpabs",        0x0104, Rf, 0, 1 },
+  { "random",         0x0110, St, 0, 2 },
+  { "setrandom",      0x0111,  0, 0, 1 },
+  { "quit",           0x0120,  0, 0, 0 },
+  { "verify",         0x0121, St, 0, 1 },
+  { "restart",        0x0122,  0, 0, 0 },
+  { "save",           0x0123, St, 0, 2 },
+  { "restore",        0x0124, St, 0, 2 },
+  { "saveundo",       0x0125, St, 0, 1 },
+  { "restoreundo",    0x0126, St, 0, 1 },
+  { "protect",        0x0127,  0, 0, 2 },
+  { "glk",            0x0130, St, 0, 3 },
+  { "getstringtbl",   0x0140, St, 0, 1 },
+  { "setstringtbl",   0x0141,  0, 0, 1 },
+  { "getiosys",       0x0148, St, 0, 2 },
+  { "setiosys",       0x0149,  0, 0, 2 },
+  { "callf",          0x0160, St, 0, 2 },
+  { "callfi",         0x0161, St, 0, 3 },
+  { "callfii",        0x0162, St, 0, 4 },
+  { "callfiii",       0x0163, St, 0, 5 },
+  { "mzero",          0x0170,  0, 0, 2 },
+  { "mcopy",          0x0171,  0, 0, 3 },
+  { "malloc",         0x0178, St, 0, 2 },
+  { "mfree",          0x0179,  0, 0, 1 },
+  { "accelfunc",      0x0180,  0, 0, 2 },
+  { "accelparam",     0x0181,  0, 0, 2 },
 };
 
 static int read_header(FILE *fl);
-static int findopcode(int opnum);
+static const opcode_t *findopcode(int opnum);
 void print_string(glui32 pos);
 void print_proptable(glui32 pos);
 void dump_ram(void);
@@ -345,14 +296,14 @@ int main(int argc, char *argv[])
   fl = NULL;
 
   if (dumpheader) {
-    printf("Version:   %08lx\n", version);
-    printf("RAMSTART:  %08lx\n", ramstart);
-    printf("ENDGAME:   %08lx\n", endgamefile);
-    printf("ENDMEM:    %08lx\n", endmem);
-    printf("STACKSIZE: %08lx\n", stacksize);
-    printf("StartFunc: %08lx\n", startfuncaddr);
-    printf("StringTbl: %08lx\n", stringtable);
-    printf("CheckSum:  %08lx\n", checksum);
+    printf("Version:   %08lx\n", (long)version);
+    printf("RAMSTART:  %08lx\n", (long)ramstart);
+    printf("ENDGAME:   %08lx\n", (long)endgamefile);
+    printf("ENDMEM:    %08lx\n", (long)endmem);
+    printf("STACKSIZE: %08lx\n", (long)stacksize);
+    printf("StartFunc: %08lx\n", (long)startfuncaddr);
+    printf("StringTbl: %08lx\n", (long)stringtable);
+    printf("CheckSum:  %08lx\n", (long)checksum);
   }
 
   if (dumpstrings || dumpfuncs)
@@ -418,7 +369,7 @@ void dump_ram()
     }
     else if (ch == 0xE0) {
       if (dumpstrings) {
-        printf("String (%08lx): ", startpos);
+        printf("String (%08lx): ", (long)startpos);
         pos++;
         while (1) {
           ch = Mem1(pos);
@@ -441,11 +392,11 @@ void dump_ram()
     else if (ch == 0xC0 || ch == 0xC1) {
       int loctype, locnum;
       int opcode;
-      opcode_t *opco;
+      const opcode_t *opco;
       glui32 exstart;
       int opmodes[16];
 
-      printf("Function (%08lx), ", startpos);
+      printf("Function (%08lx), ", (long)startpos);
       if (ch == 0xC0)
         printf("stack-called:");
       else
@@ -490,8 +441,8 @@ void dump_ram()
           ch = Mem1(pos); pos++;
           opcode = (opcode << 8) | ch;
         }
-        opco = &opcodes_table[findopcode(opcode)];
-        printf("  %08lx: %12s ", pos-exstart, opco->name);
+        opco = findopcode(opcode);
+        printf("  %08lx: %12s ", (long)(pos-exstart), opco->name);
 
         for (jx=0; jx<opco->no; jx+=2) {
           ch = Mem1(pos); pos++;
@@ -572,7 +523,7 @@ void dump_ram()
               printf(" (rtrue)");
             }
             else {
-              printf(" (%08lx)", (pos-exstart)+val-2+1);
+              printf(" (%08lx)", (long)((pos-exstart)+val-2+1));
             }
           }
         }
@@ -590,74 +541,28 @@ void dump_ram()
   }
 }
 
-static int findopcode(int opnum)
+static int compare_opcode_t(const void *a, const void *b)
 {
-  switch (opnum) {
-  case op_nop: return nop_gc;
-  case op_add: return add_gc;
-  case op_sub: return sub_gc;
-  case op_mul: return mul_gc;
-  case op_div: return div_gc;
-  case op_mod: return mod_gc;
-  case op_neg: return neg_gc;
-  case op_bitand: return bitand_gc;
-  case op_bitor: return bitor_gc;
-  case op_bitxor: return bitxor_gc;
-  case op_bitnot: return bitnot_gc;
-  case op_shiftl: return shiftl_gc;
-  case op_sshiftr: return sshiftr_gc;
-  case op_ushiftr: return ushiftr_gc;
-  case op_jump: return jump_gc;
-  case op_jz: return jz_gc;
-  case op_jnz: return jnz_gc;
-  case op_jeq: return jeq_gc;
-  case op_jne: return jne_gc;
-  case op_jlt: return jlt_gc;
-  case op_jge: return jge_gc;
-  case op_jgt: return jgt_gc;
-  case op_jle: return jle_gc;
-  case op_call: return call_gc;
-  case op_return: return return_gc;
-  case op_catch: return catch_gc;
-  case op_throw: return throw_gc;
-  case op_copy: return copy_gc;
-  case op_copys: return copys_gc;
-  case op_copyb: return copyb_gc;
-  case op_sexs: return sexs_gc;
-  case op_sexb: return sexb_gc;
-  case op_aload: return aload_gc;
-  case op_aloads: return aloads_gc;
-  case op_aloadb: return aloadb_gc;
-  case op_aloadbit: return aloadbit_gc;
-  case op_astore: return astore_gc;
-  case op_astores: return astores_gc;
-  case op_astoreb: return astoreb_gc;
-  case op_astorebit: return astorebit_gc;
-  case op_stkcount: return stkcount_gc;
-  case op_stkpeek: return stkpeek_gc;
-  case op_stkswap: return stkswap_gc;
-  case op_stkroll: return stkroll_gc;
-  case op_stkcopy: return stkcopy_gc;
-  case op_streamchar: return streamchar_gc;
-  case op_streamunichar: return streamunichar_gc;
-  case op_streamnum: return streamnum_gc;
-  case op_streamstr: return streamstr_gc;
-  case op_gestalt: return gestalt_gc;
-  case op_random: return random_gc;
-  case op_setrandom: return setrandom_gc;
-  case op_quit: return quit_gc;
-  case op_verify: return verify_gc;
-  case op_restart: return restart_gc;
-  case op_save: return save_gc;
-  case op_restore: return restore_gc;
-  case op_saveundo: return saveundo_gc;
-  case op_restoreundo: return restoreundo_gc;
-  case op_protect: return protect_gc;
-  case op_glk: return glk_gc;
-  default: 
+  const opcode_t *opa = (const opcode_t *)a;
+  const opcode_t *opb = (const opcode_t *)b;
+  return opa->code - opb->code;
+}
+
+static const opcode_t *findopcode(int opnum)
+{
+  const opcode_t *op;
+  opcode_t key;
+
+  key.code = opnum;
+  op = bsearch(&key, &opcodes_table,
+               sizeof(opcodes_table) / sizeof(opcodes_table[0]),
+               sizeof(opcodes_table[0]),
+               &compare_opcode_t);
+  if (!op) {
     printf("Unknown opcode %02x\n", opnum);
-    return nop_gc;
+    op = &opcodes_table[0];
   }
+  return op;
 }
 
 void dump_objs()
@@ -671,12 +576,12 @@ void dump_objs()
 
     ch = Mem1(startpos);
     if (ch != 0x70) {
-      printf("Non-object in object list (%08lx)\n", startpos);
+      printf("Non-object in object list (%08lx)\n", (long)startpos);
       return;
     }
     pos = startpos+1;
 
-    printf("Object (%08lx):\n", startpos);
+    printf("Object (%08lx):\n", (long)startpos);
     printf("    attrs:");
     for (ix=0; ix<7; ix++) {
       ch = Mem1(pos); pos++; 
@@ -730,7 +635,7 @@ void print_string(glui32 pos)
   unsigned char ch;
   ch = Mem1(pos);
   if (ch != 0xE0) {
-    printf("<nonstring %08lx>", pos);
+    printf("<nonstring %08lx>", (long)pos);
     return;
   }
   pos++;
@@ -766,12 +671,12 @@ void print_proptable(glui32 pos)
     propflags = Mem2(pos);
     pos += 2;
     printf("  num=%d, len=%d, flags=%d, addr=%08lx\n",
-      propnum, proplen, propflags, addr);
+      propnum, proplen, propflags, (long)addr);
     printf("  :");
     for (jx=0; jx<proplen; jx++) {
       glsi32 val = Mem4(addr);
       addr += 4;
-      printf(" %lx", val);
+      printf(" %lx", (long)val);
     }
     printf("\n");
   }
@@ -783,10 +688,10 @@ void dump_action_table()
 
   len = Mem4(posactiontbl);
 
-  printf("Action table at %08lx: %ld entries\n", posactiontbl, len);
+  printf("Action table at %08lx: %ld entries\n", (long)posactiontbl, (long)len);
   for (lx=0; lx<len; lx++) {
     val = Mem4(posactiontbl + 4 + lx*4);
-    printf("%ld: %08lx\n", lx, val);
+    printf("%ld: %08lx\n", (long)lx, (long)val);
   }
 }
 
@@ -798,10 +703,10 @@ void dump_dict_table()
 
   len = Mem4(posdicttbl);
 
-  printf("Dictionary table at %08lx: %ld entries\n", posdicttbl, len);
+  printf("Dictionary table at %08lx: %ld entries\n", (long)posdicttbl, (long)len);
   for (lx=0; lx<len; lx++) {
     addr = posdicttbl + 4 + lx*16;
-    printf("%08lx: ", addr);
+    printf("%08lx: ", (long)addr);
     for (ix=0; ix<9; ix++) {
       ch = Mem1(addr+1+ix);
       if (ch == '\0')
@@ -810,11 +715,11 @@ void dump_dict_table()
     }
     printf(" : ");
     val = Mem2(addr+10);
-    printf("flags=%04lx", val);
+    printf("flags=%04lx", (long)val);
     val = Mem2(addr+12);
-    printf(", verbnum=%04lx", val);
+    printf(", verbnum=%04lx", (long)val);
     val = Mem2(addr+14);
-    printf(", filler=%lx", val);
+    printf(", filler=%lx", (long)val);
     printf("\n");
   }
 }
@@ -828,12 +733,12 @@ void dump_grammar_table()
 
   len = Mem4(posgrammartbl);
 
-  printf("Grammar table at %08lx: %ld entries\n", posgrammartbl, len);
+  printf("Grammar table at %08lx: %ld entries\n", (long)posgrammartbl, (long)len);
 
   for (lx=0; lx<len; lx++) {
     addr = posgrammartbl + 4 + lx*4;
     addr = Mem4(addr);
-    printf("%03ld: %08lx: ", lx, addr);
+    printf("%03ld: %08lx: ", (long)lx, (long)addr);
     numlines = Mem1(addr);
     addr++;
     printf("%d lines:\n", numlines);
@@ -843,7 +748,7 @@ void dump_grammar_table()
       addr += 2;
       val = Mem1(addr);
       addr++;
-      printf("    ac %04lx; fl %02lx :", action, val);
+      printf("    ac %04lx; fl %02lx :", (long)action, (long)val);
       while (1) {
         toktype = Mem1(addr);
         addr++;
@@ -853,7 +758,7 @@ void dump_grammar_table()
         }
         tokdata = Mem4(addr);
         addr += 4;
-        printf(" %02lx(%04lx)", toktype, tokdata);
+        printf(" %02lx(%04lx)", (long)toktype, (long)tokdata);
       }
     }
   }
