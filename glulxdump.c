@@ -346,14 +346,14 @@ int main(int argc, char *argv[])
   fl = NULL;
 
   if (dumpheader) {
-    printf("Version:   %08lx\n", version);
-    printf("RAMSTART:  %08lx\n", ramstart);
-    printf("ENDGAME:   %08lx\n", endgamefile);
-    printf("ENDMEM:    %08lx\n", endmem);
-    printf("STACKSIZE: %08lx\n", stacksize);
-    printf("StartFunc: %08lx\n", startfuncaddr);
-    printf("StringTbl: %08lx\n", stringtable);
-    printf("CheckSum:  %08lx\n", checksum);
+    printf("Version:   %08lx\n", (long)version);
+    printf("RAMSTART:  %08lx\n", (long)ramstart);
+    printf("ENDGAME:   %08lx\n", (long)endgamefile);
+    printf("ENDMEM:    %08lx\n", (long)endmem);
+    printf("STACKSIZE: %08lx\n", (long)stacksize);
+    printf("StartFunc: %08lx\n", (long)startfuncaddr);
+    printf("StringTbl: %08lx\n", (long)stringtable);
+    printf("CheckSum:  %08lx\n", (long)checksum);
   }
 
   if (dumpstrings || dumpfuncs)
@@ -419,7 +419,7 @@ void dump_ram()
     }
     else if (ch == 0xE0) {
       if (dumpstrings) {
-        printf("String (%08lx): ", startpos);
+        printf("String (%08lx): ", (long)startpos);
         pos++;
         while (1) {
           ch = Mem1(pos);
@@ -446,7 +446,7 @@ void dump_ram()
       glui32 exstart;
       int opmodes[16];
 
-      printf("Function (%08lx), ", startpos);
+      printf("Function (%08lx), ", (long)startpos);
       if (ch == 0xC0)
         printf("stack-called:");
       else
@@ -492,7 +492,7 @@ void dump_ram()
           opcode = (opcode << 8) | ch;
         }
         opco = &opcodes_table[findopcode(opcode)];
-        printf("  %08lx: %12s ", pos-exstart, opco->name);
+        printf("  %08lx: %12s ", (long)(pos-exstart), opco->name);
 
         for (jx=0; jx<opco->no; jx+=2) {
           ch = Mem1(pos); pos++;
@@ -573,7 +573,7 @@ void dump_ram()
               printf(" (rtrue)");
             }
             else {
-              printf(" (%08lx)", (pos-exstart)+val-2+1);
+              printf(" (%08lx)", (long)((pos-exstart)+val-2+1));
             }
           }
         }
@@ -672,12 +672,12 @@ void dump_objs()
 
     ch = Mem1(startpos);
     if (ch != 0x70) {
-      printf("Non-object in object list (%08lx)\n", startpos);
+      printf("Non-object in object list (%08lx)\n", (long)startpos);
       return;
     }
     pos = startpos+1;
 
-    printf("Object (%08lx):\n", startpos);
+    printf("Object (%08lx):\n", (long)startpos);
     printf("    attrs:");
     for (ix=0; ix<7; ix++) {
       ch = Mem1(pos); pos++; 
@@ -731,7 +731,7 @@ void print_string(glui32 pos)
   unsigned char ch;
   ch = Mem1(pos);
   if (ch != 0xE0) {
-    printf("<nonstring %08lx>", pos);
+    printf("<nonstring %08lx>", (long)pos);
     return;
   }
   pos++;
@@ -767,12 +767,12 @@ void print_proptable(glui32 pos)
     propflags = Mem2(pos);
     pos += 2;
     printf("  num=%d, len=%d, flags=%d, addr=%08lx\n",
-      propnum, proplen, propflags, addr);
+      propnum, proplen, propflags, (long)addr);
     printf("  :");
     for (jx=0; jx<proplen; jx++) {
       glsi32 val = Mem4(addr);
       addr += 4;
-      printf(" %lx", val);
+      printf(" %lx", (long)val);
     }
     printf("\n");
   }
@@ -784,10 +784,10 @@ void dump_action_table()
 
   len = Mem4(posactiontbl);
 
-  printf("Action table at %08lx: %ld entries\n", posactiontbl, len);
+  printf("Action table at %08lx: %ld entries\n", (long)posactiontbl, (long)len);
   for (lx=0; lx<len; lx++) {
     val = Mem4(posactiontbl + 4 + lx*4);
-    printf("%ld: %08lx\n", lx, val);
+    printf("%ld: %08lx\n", (long)lx, (long)val);
   }
 }
 
@@ -799,10 +799,10 @@ void dump_dict_table()
 
   len = Mem4(posdicttbl);
 
-  printf("Dictionary table at %08lx: %ld entries\n", posdicttbl, len);
+  printf("Dictionary table at %08lx: %ld entries\n", (long)posdicttbl, (long)len);
   for (lx=0; lx<len; lx++) {
     addr = posdicttbl + 4 + lx*16;
-    printf("%08lx: ", addr);
+    printf("%08lx: ", (long)addr);
     for (ix=0; ix<9; ix++) {
       ch = Mem1(addr+1+ix);
       if (ch == '\0')
@@ -811,11 +811,11 @@ void dump_dict_table()
     }
     printf(" : ");
     val = Mem2(addr+10);
-    printf("flags=%04lx", val);
+    printf("flags=%04lx", (long)val);
     val = Mem2(addr+12);
-    printf(", verbnum=%04lx", val);
+    printf(", verbnum=%04lx", (long)val);
     val = Mem2(addr+14);
-    printf(", filler=%lx", val);
+    printf(", filler=%lx", (long)val);
     printf("\n");
   }
 }
@@ -829,12 +829,12 @@ void dump_grammar_table()
 
   len = Mem4(posgrammartbl);
 
-  printf("Grammar table at %08lx: %ld entries\n", posgrammartbl, len);
+  printf("Grammar table at %08lx: %ld entries\n", (long)posgrammartbl, (long)len);
 
   for (lx=0; lx<len; lx++) {
     addr = posgrammartbl + 4 + lx*4;
     addr = Mem4(addr);
-    printf("%03ld: %08lx: ", lx, addr);
+    printf("%03ld: %08lx: ", (long)lx, (long)addr);
     numlines = Mem1(addr);
     addr++;
     printf("%d lines:\n", numlines);
@@ -844,7 +844,7 @@ void dump_grammar_table()
       addr += 2;
       val = Mem1(addr);
       addr++;
-      printf("    ac %04lx; fl %02lx :", action, val);
+      printf("    ac %04lx; fl %02lx :", (long)action, (long)val);
       while (1) {
         toktype = Mem1(addr);
         addr++;
@@ -854,7 +854,7 @@ void dump_grammar_table()
         }
         tokdata = Mem4(addr);
         addr += 4;
-        printf(" %02lx(%04lx)", toktype, tokdata);
+        printf(" %02lx(%04lx)", (long)toktype, (long)tokdata);
       }
     }
   }
