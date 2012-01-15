@@ -37,7 +37,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "glk.h"
+#include <string.h>
+
+/* If your system doesn't have stdint.h, you'll have to edit the typedefs
+   below to make unsigned and signed 32-bit integers. */
+#include <stdint.h>
+typedef uint32_t glui32;
+typedef int32_t glsi32;
 
 #include "opcodes.h"
 
