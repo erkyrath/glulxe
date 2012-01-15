@@ -262,9 +262,7 @@ glui32 checksum;
 int main(int argc, char *argv[])
 {
   FILE *fl;
-  int ix, jx;
-  int ch;
-  int startpos;
+  int ix;
   glui32 val;
   char *filename = NULL;
 
@@ -751,7 +749,6 @@ void print_string(glui32 pos)
 
 void print_proptable(glui32 pos)
 {
-  unsigned char ch;
   int ix, jx;
   int numprops;
   
@@ -829,8 +826,7 @@ void dump_grammar_table()
 {
   glui32 lx, len, val, addr;
   int numlines;
-  char ch;
-  int ix, jx;
+  int jx;
 
   len = Mem4(posgrammartbl);
 
