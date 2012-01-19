@@ -74,6 +74,11 @@ void setup_vm()
       "256-byte aligned.");
   }
 
+  if (endgamefile != gamefile_len) {
+    nonfatal_warning("The gamefile length does not match the header "
+      "endgamefile length.");
+  }
+
   if (ramstart < 0x100 || endgamefile < ramstart || origendmem < endgamefile) {
     fatal_error("The segment boundaries in the header are in an impossible "
       "order.");
