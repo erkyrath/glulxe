@@ -156,12 +156,20 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
   int *argnumptr, glui32 subaddress, int subpassout);
 
+static char *get_game_id(void);
+
 /* init_dispatch():
    Set up the class hash tables and other startup-time stuff. 
 */
 int init_dispatch()
 {
   int ix;
+
+  /* Set up the game-ID hook. (This is ifdeffed because not all Glk
+     libraries have this call.) */
+#ifdef GI_DISPA_GAME_ID_AVAILABLE
+  gidispatch_set_game_id_hook(&get_game_id);
+#endif /* GI_DISPA_GAME_ID_AVAILABLE */
     
   /* Allocate the class hash tables. */
   num_classes = gidispatch_count_classes();
@@ -1221,5 +1229,30 @@ void glulxe_retained_unregister(void *array, glui32 len,
   }
   glulx_free(array);
   glulx_free(arref);
+}
+
+/* Create a string identifying this game. We use the first 64 bytes of the
+   memory map, encoded as hex,
+*/
+static char *get_game_id()
+{
+  /* This buffer gets rewritten on every call, but that's okay -- the caller
+     is supposed to copy out the result. */
+  static char buf[2*64+2];
+  int ix, jx;
+
+  if (!memmap)
+    return NULL;
+
+  for (ix=0, jx=0; ix<64; ix++) {
+    char ch = memmap[ix];
+    int val = ((ch >> 4) & 0x0F);
+    buf[jx++] = ((val < 10) ? (val + '0') : (val + 'A' - 10));
+    val = (ch & 0x0F);
+    buf[jx++] = ((val < 10) ? (val + '0') : (val + 'A' - 10));
+  }
+  buf[jx++] = '\0';
+
+  return buf;
 }
 
