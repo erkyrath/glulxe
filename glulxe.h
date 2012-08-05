@@ -24,11 +24,11 @@
 typedef unsigned short glui16; 
 typedef signed short glsi16; 
 
-/* Uncomment this definition to turn on memory-address checking. In
-   this mode, all reads and writes to main memory will be checked to
-   ensure they're in range. This is slower, but prevents malformed
+/* Comment this definition to turn off memory-address checking. With
+   verification on, all reads and writes to main memory will be checked
+   to ensure they're in range. This is slower, but prevents malformed
    game files from crashing the interpreter. */
-/* #define VERIFY_MEMORY_ACCESS (1) */
+#define VERIFY_MEMORY_ACCESS (1)
 
 /* Uncomment this definition to turn on Glulx VM profiling. In this
    mode, all function calls are timed, and the timing information is
