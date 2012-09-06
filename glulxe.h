@@ -6,6 +6,9 @@
 #ifndef _GLULXE_H
 #define _GLULXE_H
 
+/* Import definitions for glui32, glsi32, and other Glk types. */
+#include "glk.h"
+
 /* We define our own TRUE and FALSE and NULL, because ANSI
    is a strange world. */
 #ifndef TRUE
@@ -18,11 +21,14 @@
 #define NULL 0
 #endif
 
-/* You may have to edit the definition of glui16 to make sure it's really a
-   16-bit unsigned integer type, and glsi16 to make sure it's really a
-   16-bit signed integer type. If they're not, horrible things will happen. */
-typedef unsigned short glui16; 
-typedef signed short glsi16; 
+/* If your system does not have <stdint.h>, you'll have to remove this
+    include line. Then edit the definition of glui16 to make sure it's
+    really a 16-bit unsigned integer type, and glsi16 to make sure
+    it's really a 16-bit signed integer type. If they're not, horrible
+    things will happen. */
+#include <stdint.h>
+typedef uint16_t glui16;
+typedef int16_t glsi16;
 
 /* Comment this definition to turn off memory-address checking. With
    verification on, all reads and writes to main memory will be checked
