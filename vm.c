@@ -51,6 +51,9 @@ void setup_vm()
 
   glk_stream_set_position(gamefile, gamefile_start+8, seekmode_Start);
   res = glk_get_buffer_stream(gamefile, (char *)buf, 4 * 7);
+  if (res != 4 * 7) {
+    fatal_error("The game file header is too short.");
+  }
   
   ramstart = Read4(buf+0);
   endgamefile = Read4(buf+4);
