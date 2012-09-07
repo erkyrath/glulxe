@@ -49,6 +49,11 @@ void glk_main()
   execute_loop();
   finalize_vm();
 
+  gamefile = NULL;
+  gamefile_start = 0;
+  gamefile_len = 0;
+  init_err = NULL;
+
   profile_quit();
   glk_exit();
 }
