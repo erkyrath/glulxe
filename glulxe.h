@@ -21,6 +21,14 @@
 #define NULL 0
 #endif
 
+/* If glk.h defined GLK_ATTRIBUTE_NORETURN, great, we'll use it.
+   (This is a function attribute for functions that never return, e.g
+   glk_exit().) If we have an older glk.h, that definition is missing,
+   so we define it as a blank stub. */
+#ifndef GLK_ATTRIBUTE_NORETURN
+#define GLK_ATTRIBUTE_NORETURN
+#endif // GLK_ATTRIBUTE_NORETURN
+
 /* If your system does not have <stdint.h>, you'll have to remove this
     include line. Then edit the definition of glui16 to make sure it's
     really a 16-bit unsigned integer type, and glsi16 to make sure
@@ -159,7 +167,7 @@ extern void (*stream_char_handler)(unsigned char ch);
 extern void (*stream_unichar_handler)(glui32 ch);
 
 /* main.c */
-extern void fatal_error_handler(char *str, char *arg, int useval, glsi32 val);
+extern void fatal_error_handler(char *str, char *arg, int useval, glsi32 val) GLK_ATTRIBUTE_NORETURN;
 extern void nonfatal_warning_handler(char *str, char *arg, int useval, glsi32 val);
 #define fatal_error(s)  (fatal_error_handler((s), NULL, FALSE, 0))
 #define fatal_error_2(s1, s2)  (fatal_error_handler((s1), (s2), FALSE, 0))
