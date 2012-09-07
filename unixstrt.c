@@ -8,8 +8,9 @@
 #include "glulxe.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
-/* The only command-line argument is the filename. And the profiling switch,
-   if that's compiled in. The only *two* command-line arguments are... 
+/* The only command-line argument is the filename. Followed by an
+   optional save-file to autorestore. And the profiling switch, if
+   that's compiled in. The only *three* command-line arguments are...
 */
 glkunix_argumentlist_t glkunix_arguments[] = {
 
@@ -17,6 +18,7 @@ glkunix_argumentlist_t glkunix_arguments[] = {
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
 #endif /* VM_PROFILING */
 
+  { "--restore", glkunix_arg_ValueFollows, "A saved game to restore at startup. (optional)" },
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
 
   { NULL, glkunix_arg_End, NULL }
@@ -28,6 +30,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
      when an error occurs, and display an error in glk_main(). */
   int ix;
   char *filename = NULL;
+  char *restorename = NULL;
   unsigned char buf[12];
   int res;
 
@@ -52,11 +55,21 @@ int glkunix_startup_code(glkunix_startup_t *data)
     }
 #endif /* VM_PROFILING */
 
-    if (filename) {
+    if (!strcmp(data->argv[ix], "--restore")) {
+      ix++;
+      if (ix<data->argc) {
+        restorename = data->argv[ix];
+      }
+      continue;
+    }
+
+    if (!filename) {
+      filename = data->argv[ix];
+    }
+    else {
       init_err = "You must supply exactly one game file.";
       return TRUE;
     }
-    filename = data->argv[ix];
   }
 
   if (!filename) {

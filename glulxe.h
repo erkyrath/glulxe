@@ -142,6 +142,7 @@ typedef struct operandlist_struct {
 
 extern strid_t gamefile;
 extern glui32 gamefile_start, gamefile_len;
+extern strid_t restorefile;
 extern char *init_err, *init_err2;
 
 extern unsigned char *memmap;

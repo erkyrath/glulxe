@@ -10,6 +10,9 @@ strid_t gamefile = NULL; /* The stream containing the Glulx file. */
 glui32 gamefile_start = 0; /* The position within the stream. (This will not 
     be zero if the Glulx file is a chunk inside a Blorb archive.) */
 glui32 gamefile_len = 0; /* The length within the stream. */
+
+strid_t restorefile = NULL; /* An (optional) saved game to load at startup. */
+
 char *init_err = NULL;
 char *init_err2 = NULL;
 
