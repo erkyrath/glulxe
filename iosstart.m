@@ -9,6 +9,7 @@
 
 #include "glk.h" /* This comes with the IosGlk library. */
 #include "glulxe.h"
+#include "iosstart.h"
 #include "iosglk_startup.h" /* This comes with the IosGlk library. */
 
 void iosglk_startup_code()
@@ -41,3 +42,24 @@ void iosglk_startup_code()
 		init_err = "This is neither a Glulx game file nor a Blorb file which contains one.";
 	}
 }
+
+//### maybe this should be inside glulxe?
+static int can_restart = NO;
+
+void iosglk_set_can_restart_flag(int val)
+{
+ 	can_restart = val;
+}
+
+int iosglk_can_restart_cleanly()
+{
+ 	return can_restart;
+}
+
+void iosglk_shut_down_process()
+{
+	/* Yes, we really do want to exit the app here. A fatal error has occurred at the interpreter level, so we can't restart it cleanly. The user has either hit a "goodbye" dialog button or the Home button; either way, it's time for suicide. */
+	NSLog(@"iosglk_shut_down_process: goodbye!");
+	exit(1);
+}
+
