@@ -172,7 +172,12 @@ static void recover_library_state()
 
 static void iosglk_library_archive(NSCoder *encoder) {
 	if (library_state.active) {
-		//###
+		[encoder encodeBool:YES forKey:@"glulx_library_state"];
+		[encoder encodeInt32:library_state.protectstart forKey:@"glulx_protectstart"];
+		[encoder encodeInt32:library_state.protectend forKey:@"glulx_protectend"];
+		[encoder encodeInt32:library_state.iosys_mode forKey:@"glulx_iosys_mode"];
+		[encoder encodeInt32:library_state.iosys_rock forKey:@"glulx_iosys_rock"];
+		[encoder encodeInt32:library_state.stringtable forKey:@"glulx_stringtable"];
 	}
 }
 
