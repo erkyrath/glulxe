@@ -119,6 +119,8 @@ void setup_vm()
 */
 void finalize_vm()
 {
+  stream_set_table(0);
+
   if (memmap) {
     glulx_free(memmap);
     memmap = NULL;
