@@ -20,7 +20,7 @@ static void iosglk_game_select(void);
 static void stash_library_state(void);
 static void recover_library_state(void);
 static void iosglk_library_archive(NSCoder *encoder);
-static void iosglk_library_unarchive(NSCoder *encoder);
+static void iosglk_library_unarchive(NSCoder *decoder);
 
 /* We don't load in the game file here. Instead, we set a hook which glk_main() will call back to do that. Why? Because of the annoying restartability of the VM under iosglk; we may finish glk_main() and then have to call it again.
  */
@@ -170,7 +170,8 @@ static void recover_library_state()
 	}
 }
 
-static void iosglk_library_archive(NSCoder *encoder) {
+static void iosglk_library_archive(NSCoder *encoder)
+{
 	if (library_state.active) {
 		[encoder encodeBool:YES forKey:@"glulx_library_state"];
 		[encoder encodeInt32:library_state.protectstart forKey:@"glulx_protectstart"];
@@ -178,6 +179,18 @@ static void iosglk_library_archive(NSCoder *encoder) {
 		[encoder encodeInt32:library_state.iosys_mode forKey:@"glulx_iosys_mode"];
 		[encoder encodeInt32:library_state.iosys_rock forKey:@"glulx_iosys_rock"];
 		[encoder encodeInt32:library_state.stringtable forKey:@"glulx_stringtable"];
+	}
+}
+
+static void iosglk_library_unarchive(NSCoder *decoder)
+{
+	if ([decoder decodeBoolForKey:@"glulx_library_state"]) {
+		library_state.active = true;
+		library_state.protectstart = [decoder decodeInt32ForKey:@"glulx_protectstart"];
+		library_state.protectend = [decoder decodeInt32ForKey:@"glulx_protectend"];
+		library_state.iosys_mode = [decoder decodeInt32ForKey:@"glulx_iosys_mode"];
+		library_state.iosys_rock = [decoder decodeInt32ForKey:@"glulx_iosys_rock"];
+		library_state.stringtable = [decoder decodeInt32ForKey:@"glulx_stringtable"];
 	}
 }
 
