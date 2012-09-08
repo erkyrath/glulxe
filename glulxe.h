@@ -140,6 +140,7 @@ typedef struct operandlist_struct {
 
 /* Some useful globals */
 
+extern int vm_exited_cleanly;
 extern strid_t gamefile;
 extern glui32 gamefile_start, gamefile_len;
 extern char *init_err, *init_err2;

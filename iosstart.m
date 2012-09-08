@@ -43,17 +43,9 @@ void iosglk_startup_code()
 	}
 }
 
-//### maybe this should be inside glulxe?
-static int can_restart = NO;
-
-void iosglk_set_can_restart_flag(int val)
-{
- 	can_restart = val;
-}
-
 int iosglk_can_restart_cleanly()
 {
- 	return can_restart;
+ 	return vm_exited_cleanly;
 }
 
 void iosglk_shut_down_process()

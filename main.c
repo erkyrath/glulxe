@@ -6,6 +6,7 @@
 #include "glk.h"
 #include "glulxe.h"
 
+int vm_exited_cleanly = TRUE;
 strid_t gamefile = NULL; /* The stream containing the Glulx file. */
 glui32 gamefile_start = 0; /* The position within the stream. (This will not 
     be zero if the Glulx file is a chunk inside a Blorb archive.) */
@@ -22,6 +23,8 @@ static void stream_hexnum(glsi32 val);
 */
 void glk_main()
 {
+	vm_exited_cleanly = FALSE;
+	
   if (init_err) {
     fatal_error_2(init_err, init_err2);
     return;
@@ -53,6 +56,7 @@ void glk_main()
   gamefile_start = 0;
   gamefile_len = 0;
   init_err = NULL;
+	vm_exited_cleanly = TRUE;
 
   profile_quit();
   glk_exit();
