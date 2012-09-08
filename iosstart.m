@@ -18,7 +18,7 @@ static library_state_data library_state; /* used by the archive/unarchive hooks 
 static void iosglk_game_start(void);
 static void iosglk_game_select(void);
 static void stash_library_state(void);
-static int recover_library_state(void);
+static void recover_library_state(void);
 static void iosglk_library_archive(NSCoder *encoder);
 static void iosglk_library_unarchive(NSCoder *encoder);
 
@@ -153,16 +153,21 @@ void iosglk_do_autosave()
 static void stash_library_state()
 {
 	library_state.active = YES;
-	//###
+	
+	library_state.protectstart = protectstart;
+	library_state.protectend = protectend;
+	stream_get_iosys(&library_state.iosys_mode, &library_state.iosys_rock);
+	library_state.stringtable = stream_get_table();
 }
 
-static int recover_library_state()
+static void recover_library_state()
 {
 	if (library_state.active) {
-		//###
+		protectstart = library_state.protectstart;
+		protectend = library_state.protectend;
+		stream_set_iosys(library_state.iosys_mode, library_state.iosys_rock);
+		stream_set_table(library_state.stringtable);
 	}
-	
-	return YES;
 }
 
 static void iosglk_library_archive(NSCoder *encoder) {
