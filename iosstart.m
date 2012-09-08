@@ -12,7 +12,18 @@
 #include "iosstart.h"
 #include "iosglk_startup.h" /* This comes with the IosGlk library. */
 
+static void iosglk_game_start(void);
+
+/* We don't load in the game file here. Instead, we set a hook which glk_main() will call back to do that. Why? Because of the annoying restartability of the VM under iosglk; we may finish glk_main() and then have to call it again.
+ */
 void iosglk_startup_code()
+{
+	set_library_start_hook(&iosglk_game_start);
+}
+
+/* This is the library_start_hook, which will be called every time glk_main() begins.
+ */
+static void iosglk_game_start()
 {
 	TerpGlkViewController *glkviewc = [TerpGlkViewController singleton];
 	NSString *pathname = glkviewc.terpDelegate.gamePath;

@@ -14,6 +14,12 @@ glui32 gamefile_len = 0; /* The length within the stream. */
 char *init_err = NULL;
 char *init_err2 = NULL;
 
+/* The library_start_hook is called at the beginning of glk_main. This
+   is not normally necessary -- the library can do all its setup work
+   before calling glk_main -- but iosglk has some weird cases which
+   require it. */
+static void (*library_start_hook)(void) = NULL;
+
 static winid_t get_error_win(void);
 static void stream_hexnum(glsi32 val);
 
@@ -23,8 +29,11 @@ static void stream_hexnum(glsi32 val);
 */
 void glk_main()
 {
-	vm_exited_cleanly = FALSE;
-	
+  vm_exited_cleanly = FALSE;
+  
+  if (library_start_hook)
+    library_start_hook();
+  
   if (init_err) {
     fatal_error_2(init_err, init_err2);
     return;
@@ -56,10 +65,15 @@ void glk_main()
   gamefile_start = 0;
   gamefile_len = 0;
   init_err = NULL;
-	vm_exited_cleanly = TRUE;
-
+  vm_exited_cleanly = TRUE;
+  
   profile_quit();
   glk_exit();
+}
+
+void set_library_start_hook(void (*func)(void))
+{
+  library_start_hook = func;
 }
 
 /* get_error_win():

@@ -168,6 +168,7 @@ extern void (*stream_char_handler)(unsigned char ch);
 extern void (*stream_unichar_handler)(glui32 ch);
 
 /* main.c */
+extern void set_library_start_hook(void (*)(void));
 extern void fatal_error_handler(char *str, char *arg, int useval, glsi32 val) GLK_ATTRIBUTE_NORETURN;
 extern void nonfatal_warning_handler(char *str, char *arg, int useval, glsi32 val);
 #define fatal_error(s)  (fatal_error_handler((s), NULL, FALSE, 0))
