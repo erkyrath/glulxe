@@ -84,6 +84,15 @@ int glkunix_startup_code(glkunix_startup_t *data)
     return TRUE;
   }
 
+  if (restorename) {
+    restorefile = glkunix_stream_open_pathname(restorename, FALSE, 2);
+    if (!restorefile) {
+      init_err = "The save file could not be opened.";
+      init_err2 = restorename;
+      return TRUE;
+    }
+  }
+
   /* Now we have to check to see if it's a Blorb file. */
 
   glk_stream_set_position(gamefile, 0, seekmode_Start);

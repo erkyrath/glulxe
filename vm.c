@@ -35,7 +35,9 @@ void (*stream_unichar_handler)(glui32 ch);
 
 /* setup_vm():
    Read in the game file and build the machine, allocating all the memory
-   necessary.
+   necessary. Also read in the autorestore file, if one was provided.
+
+   (This makes use of the global gamefile and restorefile variables.)
 */
 void setup_vm()
 {
@@ -112,6 +114,19 @@ void setup_vm()
 
   /* Set up the initial machine state. */
   vm_restart();
+
+  if (restorefile) {
+    profile_fail("restore");
+    res = perform_restore(restorefile, TRUE);
+    if (res) {
+      fatal_error("Unable to restore the given save file.");
+    }
+    pop_callstub(-1);
+
+    /* Close the restorefile -- we won't be returning to it. */
+    glk_stream_close(restorefile, NULL);
+    restorefile = NULL;
+  }
 }
 
 /* finalize_vm():

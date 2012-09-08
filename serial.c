@@ -371,8 +371,11 @@ glui32 perform_save(strid_t str)
    1 on failure. Note that if it succeeds, the frameptr, localsbase,
    and valstackbase registers are invalid; they must be rebuilt from
    the stack.
+
+   If fromshell is set, the restore is being invoked at startup time,
+   rather than by the game.
 */
-glui32 perform_restore(strid_t str)
+glui32 perform_restore(strid_t str, int fromshell)
 {
   dest_t dest;
   int ix;
@@ -381,11 +384,15 @@ glui32 perform_restore(strid_t str)
   glui32 heapsumlen = 0;
   glui32 *heapsumarr = NULL;
 
-  stream_get_iosys(&val, &lx);
-  if (val != 2) {
-    /* Not using the Glk I/O system, so bail. This function only
-       knows how to read from a Glk stream. */
-    fatal_error("Streams are only available in Glk I/O system.");
+  if (!fromshell) {
+    stream_get_iosys(&val, &lx);
+    if (val != 2) {
+      /* Not using the Glk I/O system, so bail. This function only
+         knows how to read from a Glk stream. (We don't check this
+         when called fromshell, because the iosys hasn't been set
+         yet!) */
+      fatal_error("Streams are only available in Glk I/O system.");
+    }
   }
 
   if (str == 0)
