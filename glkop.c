@@ -145,6 +145,10 @@ static gidispatch_rock_t glulxe_retained_register(void *array,
 static void glulxe_retained_unregister(void *array, glui32 len, 
   char *typecode, gidispatch_rock_t objrock);
 
+/* The library_select_hook is called every time the VM blocks for input.
+   The app might take this opportunity to autosave, for example. */
+static void (*library_select_hook)(void) = NULL;
+
 static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin);
 static void release_temp_array(glui32 *arr, glui32 addr, glui32 len, int passout);
 static void **grab_temp_ptr_array(glui32 addr, glui32 len, int objclass, int passin);
@@ -231,6 +235,13 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
       goto WrongArgNum;
     glk_put_char_stream(find_stream_by_id(arglist[0]), arglist[1] & 0xFF);
     break;
+  case 0x00C0: /* select */
+    /* call a library hook on every glk_select() */
+    if (library_select_hook)
+      library_select_hook();
+    /* but then fall through to full dispatcher, because there's no real
+       need for speed here */
+    goto FullDispatcher;
   case 0x00A0: /* char_to_lower */
     if (numargs != 1)
       goto WrongArgNum;
@@ -256,6 +267,7 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
     fatal_error("Wrong number of arguments to Glk function.");
     break;
 
+  FullDispatcher:
   default: {
     /* Go through the full dispatcher prototype foo. */
     char *proto, *cx;
@@ -1234,6 +1246,11 @@ void glulxe_retained_unregister(void *array, glui32 len,
   }
   glulx_free(array);
   glulx_free(arref);
+}
+
+void set_library_select_hook(void (*func)(void))
+{
+  library_select_hook = func;
 }
 
 /* Create a string identifying this game. We use the first 64 bytes of the
