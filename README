@@ -39,6 +39,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
     done this years ago.)
     Updated glkop.c to handle arrays of Glk objects. (This is needed to
     support glk_schannel_play_multi().)
+    Added hooks for the library to execute at startup and select time.
     Added a hook which allows the library to get and pass on a game ID
     string.
 
