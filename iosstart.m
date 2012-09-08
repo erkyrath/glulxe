@@ -69,7 +69,7 @@ static void iosglk_game_start()
 static void iosglk_game_select()
 {
 	NSLog(@"### game called select");
-	//### filter based on whether the last event was important?
+	//### filter based on whether the last event was important? Or if it was an autorestore, definitely filter that.
 	
 	iosglk_do_autosave();
 }
@@ -89,18 +89,27 @@ static NSString *documents_dir() {
 void iosglk_do_autosave()
 {
 	GlkLibrary *library = [GlkLibrary singleton];
-	NSLog(@"### attempting autosave (pc = %x)", pc);
+	NSLog(@"### attempting autosave (pc = %x)", prevpc);
 
 	NSString *dirname = documents_dir();
 	if (!dirname)
 		return;
 	NSString *tmpgamepath = [dirname stringByAppendingPathComponent:@"autosave-tmp.glksave"];
 	
+	int res;
 	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Write rock:1 unicode:NO textmode:NO dirname:dirname pathname:tmpgamepath];
-	//### rejigger pc to point to the @select opcode?
-	push_callstub(0, 0);
-	int res = perform_save(savefile);
-	pop_callstub(0);
+	
+	/* Push a temporary callstub which contains the *last* PC -- the address of the @glk(select) invocation. */
+	if (stackptr+16 > stacksize)
+		fatal_error("Stack overflow in autosave callstub.");
+	StkW4(stackptr+0, 0);
+	StkW4(stackptr+4, 0);
+	StkW4(stackptr+8, prevpc);
+	StkW4(stackptr+12, frameptr);
+	stackptr += 16;
+	res = perform_save(savefile);
+	stackptr -= 16; // discard the temporary callstub
+	
 	glk_stream_close(savefile, nil);
 	
 	if (res) {

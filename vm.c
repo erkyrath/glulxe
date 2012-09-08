@@ -30,6 +30,10 @@ glui32 localsbase;
 glui32 endmem;
 glui32 protectstart, protectend;
 
+/* This is not needed for VM operation, but it may be needed for
+   autosave/autorestore. */
+glui32 prevpc;
+
 void (*stream_char_handler)(unsigned char ch);
 void (*stream_unichar_handler)(glui32 ch);
 
@@ -43,6 +47,7 @@ void setup_vm()
   int res;
 
   pc = 0; /* Clear this, so that error messages are cleaner. */
+  prevpc = 0;
 
   /* Read in all the size constants from the game file header. */
 
@@ -170,6 +175,7 @@ void vm_restart()
   stackptr = 0;
   frameptr = 0;
   pc = 0;
+  prevpc = 0;
   stream_set_iosys(0, 0);
   stream_set_table(origstringtable);
   valstackbase = 0;

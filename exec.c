@@ -34,7 +34,10 @@ void execute_loop()
     profile_tick();
     /* Do OS-specific processing, if appropriate. */
     glk_tick();
-
+    
+    /* Stash the current opcode's address, in case the interpreter needs to serialize the VM state out-of-band. */
+    prevpc = pc;
+    
     /* Fetch the opcode number. */
     opcode = Mem1(pc);
     pc++;

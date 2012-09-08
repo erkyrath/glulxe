@@ -163,6 +163,7 @@ extern glui32 valstackbase;
 extern glui32 localsbase;
 extern glui32 endmem;
 extern glui32 protectstart, protectend;
+extern glui32 prevpc;
 
 extern void (*stream_char_handler)(unsigned char ch);
 extern void (*stream_unichar_handler)(glui32 ch);
