@@ -33,7 +33,7 @@ int max_undo_level = 8;
 
 static int undo_chain_size = 0;
 static int undo_chain_num = 0;
-unsigned char **undo_chain = NULL;
+static unsigned char **undo_chain = NULL;
 
 static glui32 write_memstate(dest_t *dest);
 static glui32 write_heapstate(dest_t *dest, int portable);
@@ -63,6 +63,23 @@ int init_serial()
     return FALSE;
 
   return TRUE;
+}
+
+/* final_serial():
+   Clean up memory when the VM shuts down.
+*/
+void final_serial()
+{
+  if (undo_chain) {
+    int ix;
+    for (ix=0; ix<undo_chain_num; ix++) {
+      glulx_free(undo_chain[ix]);
+    }
+    glulx_free(undo_chain);
+  }
+  undo_chain = NULL;
+  undo_chain_size = 0;
+  undo_chain_num = 0;
 }
 
 /* perform_saveundo():

@@ -19,6 +19,7 @@ static void iosglk_game_start(void);
 void iosglk_startup_code()
 {
 	set_library_start_hook(&iosglk_game_start);
+	max_undo_level = 32; // allow 32 undo steps
 }
 
 /* This is the library_start_hook, which will be called every time glk_main() begins.

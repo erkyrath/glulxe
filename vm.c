@@ -127,6 +127,8 @@ void finalize_vm()
     glulx_free(stack);
     stack = NULL;
   }
+
+  final_serial();
 }
 
 /* vm_restart(): 

@@ -234,7 +234,9 @@ extern int heap_apply_summary(glui32 valcount, glui32 *summary);
 extern void heap_sanity_check(void);
 
 /* serial.c */
+extern int max_undo_level;
 extern int init_serial(void);
+extern void final_serial(void);
 extern glui32 perform_save(strid_t str);
 extern glui32 perform_restore(strid_t str);
 extern glui32 perform_saveundo(void);
