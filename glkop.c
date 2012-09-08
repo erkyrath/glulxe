@@ -159,12 +159,17 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 static char *get_game_id(void);
 
 /* init_dispatch():
-   Set up the class hash tables and other startup-time stuff. 
+   Set up the class hash tables and other startup-time stuff.
 */
 int init_dispatch()
 {
   int ix;
-
+  
+  /* What with one thing and another, this *could* be called more than
+     once. We only need to allocate the tables once. */
+  if (classes)
+      return TRUE;
+  
   /* Set up the game-ID hook. (This is ifdeffed because not all Glk
      libraries have this call.) */
 #ifdef GI_DISPA_GAME_ID_AVAILABLE
