@@ -10,6 +10,12 @@
 
 /* The only command-line argument is the filename. And the profiling switch,
    if that's compiled in. The only *two* command-line arguments are... 
+
+   You may wonder why there's no argument for a save file to autorestore
+   at startup. That would be nice; unfortunately it can't work. A Glulx
+   game expects to set up its Glk environment (@setiosys, open windows,
+   etc) before handling a "restore" command. It can't pick up from a
+   restored state without that environment in place.
 */
 glkunix_argumentlist_t glkunix_arguments[] = {
 
