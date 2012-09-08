@@ -41,6 +41,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
     support glk_schannel_play_multi().)
     Added a hook which allows the library to get and pass on a game ID
     string.
+    Clean up all memory allocation when the VM exits.
 
 0.4.7:
     Abstracted powf() to an osdepend wrapper. (Needed for Windows.)
