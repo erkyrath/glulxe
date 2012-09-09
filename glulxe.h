@@ -240,7 +240,7 @@ extern int max_undo_level;
 extern int init_serial(void);
 extern void final_serial(void);
 extern glui32 perform_save(strid_t str);
-extern glui32 perform_restore(strid_t str);
+extern glui32 perform_restore(strid_t str, int fromshell);
 extern glui32 perform_saveundo(void);
 extern glui32 perform_restoreundo(void);
 extern glui32 perform_verify(void);
@@ -273,6 +273,10 @@ extern void set_library_select_hook(void (*func)(void));
 extern int init_dispatch(void);
 extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
 extern strid_t find_stream_by_id(glui32 objid);
+extern glui32 find_id_for_window(winid_t win);
+extern glui32 find_id_for_stream(strid_t str);
+extern glui32 find_id_for_fileref(frefid_t fref);
+extern glui32 find_id_for_schannel(schanid_t schan);
 
 /* profile.c */
 extern void setup_profile(strid_t stream, char *filename);

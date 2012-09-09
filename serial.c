@@ -388,8 +388,12 @@ glui32 perform_save(strid_t str)
    1 on failure. Note that if it succeeds, the frameptr, localsbase,
    and valstackbase registers are invalid; they must be rebuilt from
    the stack.
+ 
+   If fromshell is true, the restore is being invoked by the library
+   shell (an autorestore of some kind). This currently happens only in
+   iosglk.
 */
-glui32 perform_restore(strid_t str)
+glui32 perform_restore(strid_t str, int fromshell)
 {
   dest_t dest;
   int ix;
@@ -399,9 +403,10 @@ glui32 perform_restore(strid_t str)
   glui32 *heapsumarr = NULL;
 
   stream_get_iosys(&val, &lx);
-  if (val != 2) {
+  if (val != 2 && !fromshell) {
     /* Not using the Glk I/O system, so bail. This function only
-       knows how to read from a Glk stream. */
+       knows how to read from a Glk stream. (But in the autorestore
+       case, iosys hasn't been set yet, so ignore this test.) */
     fatal_error("Streams are only available in Glk I/O system.");
   }
 

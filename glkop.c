@@ -129,11 +129,9 @@ typedef struct classtable_struct {
 static int num_classes = 0;
 classtable_t **classes = NULL;
 
-static glui32 find_id_for_stream(strid_t str);
-
 static classtable_t *new_classtable(glui32 firstid);
 static void *classes_get(int classid, glui32 objid);
-static classref_t *classes_put(int classid, void *obj);
+static classref_t *classes_put(int classid, void *obj, glui32 origid);
 static void classes_remove(int classid, void *obj);
 
 static gidispatch_rock_t glulxe_classtable_register(void *obj, 
@@ -144,6 +142,10 @@ static gidispatch_rock_t glulxe_retained_register(void *array,
   glui32 len, char *typecode);
 static void glulxe_retained_unregister(void *array, glui32 len, 
   char *typecode, gidispatch_rock_t objrock);
+
+/* This is only needed for autorestore. */
+extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
+  glui32 objclass, glui32 dispid);
 
 /* The library_select_hook is called every time the VM blocks for input.
    The app might take this opportunity to autosave, for example. */
@@ -918,21 +920,62 @@ strid_t find_stream_by_id(glui32 objid)
     return NULL;
 
   /* Recall that class 1 ("b") is streams. */
-  return classes_get(1, objid);
+  return classes_get(gidisp_Class_Stream, objid);
+}
+
+/* find_id_for_window():
+   Return the ID of a given Glk window.
+*/
+glui32 find_id_for_window(winid_t win)
+{
+  gidispatch_rock_t objrock;
+
+  if (!win)
+    return 0;
+
+  objrock = gidispatch_get_objrock(win, gidisp_Class_Window);
+  return ((classref_t *)objrock.ptr)->id;
 }
 
 /* find_id_for_stream():
-   The converse of find_stream_by_id(). 
-   This is only needed in this file, so it's static.
+   Return the ID of a given Glk stream.
 */
-static glui32 find_id_for_stream(strid_t str)
+glui32 find_id_for_stream(strid_t str)
 {
   gidispatch_rock_t objrock;
 
   if (!str)
     return 0;
 
-  objrock = gidispatch_get_objrock(str, 1);
+  objrock = gidispatch_get_objrock(str, gidisp_Class_Stream);
+  return ((classref_t *)objrock.ptr)->id;
+}
+
+/* find_id_for_fileref():
+   Return the ID of a given Glk fileref.
+*/
+glui32 find_id_for_fileref(frefid_t fref)
+{
+  gidispatch_rock_t objrock;
+
+  if (!fref)
+    return 0;
+
+  objrock = gidispatch_get_objrock(fref, gidisp_Class_Fileref);
+  return ((classref_t *)objrock.ptr)->id;
+}
+
+/* find_id_for_schannel():
+   Return the ID of a given Glk schannel.
+*/
+glui32 find_id_for_schannel(schanid_t schan)
+{
+  gidispatch_rock_t objrock;
+
+  if (!schan)
+    return 0;
+
+  objrock = gidispatch_get_objrock(schan, gidisp_Class_Schannel);
   return ((classref_t *)objrock.ptr)->id;
 }
 
@@ -968,8 +1011,9 @@ static void *classes_get(int classid, glui32 objid)
   return NULL;
 }
 
-/* Put a Glk object in the appropriate hash table. */
-static classref_t *classes_put(int classid, void *obj)
+/* Put a Glk object in the appropriate hash table. If origid is zero,
+   invent a new unique ID for it. */
+static classref_t *classes_put(int classid, void *obj, glui32 origid)
 {
   int bucknum;
   classtable_t *ctab;
@@ -981,8 +1025,15 @@ static classref_t *classes_put(int classid, void *obj)
   if (!cref)
     return NULL;
   cref->obj = obj;
-  cref->id = ctab->lastid;
-  ctab->lastid++;
+  if (!origid) {
+    cref->id = ctab->lastid;
+    ctab->lastid++;
+  }
+  else {
+    cref->id = origid;
+    if (ctab->lastid <= origid)
+      ctab->lastid = origid+1;
+  }
   bucknum = cref->id % CLASSHASH_SIZE;
   cref->bucknum = bucknum;
   cref->next = ctab->bucket[bucknum];
@@ -1029,7 +1080,7 @@ static gidispatch_rock_t glulxe_classtable_register(void *obj,
 {
   classref_t *cref;
   gidispatch_rock_t objrock;
-  cref = classes_put(objclass, obj);
+  cref = classes_put(objclass, obj, 0);
   objrock.ptr = cref;
   return objrock;
 }
@@ -1038,6 +1089,16 @@ static void glulxe_classtable_unregister(void *obj, glui32 objclass,
   gidispatch_rock_t objrock)
 {
   classes_remove(objclass, obj);
+}
+
+gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
+  glui32 objclass, glui32 dispid)
+{
+  classref_t *cref;
+  gidispatch_rock_t objrock;
+  cref = classes_put(objclass, obj, dispid);
+  objrock.ptr = cref;
+  return objrock;
 }
 
 static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin)
