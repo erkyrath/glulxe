@@ -6,7 +6,9 @@
 #import "TerpGlkViewController.h"
 #import "TerpGlkDelegate.h"
 #import "GlkLibrary.h"
+#import "GlkWindow.h"
 #import "GlkStream.h"
+#import "GlkFileRef.h"
 
 #include "glk.h" /* This comes with the IosGlk library. */
 #include "glulxe.h"
@@ -22,6 +24,23 @@ static void stash_library_state(void);
 static void recover_library_state(void);
 static void iosglk_library_archive(NSCoder *encoder);
 static void iosglk_library_unarchive(NSCoder *decoder);
+
+/* This is only needed for autorestore. */
+extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
+															 glui32 objclass, glui32 dispid);
+
+static NSString *documents_dir()
+{
+	/* We use an old-fashioned way of locating the Documents directory. (The NSManager method for this is iOS 4.0 and later.) */
+	
+	NSArray *dirlist = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+	if (!dirlist || [dirlist count] == 0) {
+		NSLog(@"unable to locate Documents directory.");
+		return nil;
+	}
+	
+	return [dirlist objectAtIndex:0];
+}
 
 /* We don't load in the game file here. Instead, we set a hook which glk_main() will call back to do that. Why? Because of the annoying restartability of the VM under iosglk; we may finish glk_main() and then have to call it again.
  */
@@ -68,6 +87,59 @@ static void iosglk_game_start()
 
 static void iosglk_game_autorestore()
 {
+	GlkLibrary *library = [GlkLibrary singleton];
+	
+	NSString *dirname = documents_dir();
+	if (!dirname)
+		return;
+	NSString *gamepath = [dirname stringByAppendingPathComponent:@"autosave.glksave"];
+	NSString *libpath = [dirname stringByAppendingPathComponent:@"autosave.plist"];
+	
+	if (![library.filemanager fileExistsAtPath:gamepath])
+		return;
+	if (![library.filemanager fileExistsAtPath:libpath])
+		return;
+
+	bzero(&library_state, sizeof(library_state));
+	GlkLibrary *newlib = nil;
+	
+	[GlkLibrary setExtraUnarchiveHook:iosglk_library_unarchive];
+	@try {
+		newlib = [NSKeyedUnarchiver unarchiveObjectWithFile:libpath];
+	}
+	@catch (NSException *ex) {
+		// leave newlib as nil
+		NSLog(@"Unable to restore autosave library: %@", ex);
+	}
+	[GlkLibrary setExtraUnarchiveHook:nil];
+	
+	if (!newlib || !library_state.active) {
+		/* Without a Glk state, there's no point in even trying the VM state. */
+		NSLog(@"library autorestore failed!");
+		return;
+	}
+	
+	int res;
+	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Read rock:1 unicode:NO textmode:NO dirname:dirname pathname:gamepath];
+	res = perform_restore(savefile, TRUE);
+	glk_stream_close(savefile, nil);
+	
+	if (res) {
+		NSLog(@"VM autorestore failed!");
+		fatal_error("The game state could not be restored.");
+		return;
+	}
+	
+	pop_callstub(0);
+	
+	[library updateFromLibrary:newlib];
+	recover_library_state();
+	NSLog(@"autorestore succeeded.");
+	
+	if (library_state.id_map_list) {
+		[library_state.id_map_list release]; // was retained in stash_library_state()
+		library_state.id_map_list = nil;
+	}	
 }
 
 /* This is the library_select_hook, which will be called every time glk_select() is invoked.
@@ -80,22 +152,10 @@ static void iosglk_game_select()
 	iosglk_do_autosave();
 }
 
-static NSString *documents_dir() {
-	/* We use an old-fashioned way of locating the Documents directory. (The NSManager method for this is iOS 4.0 and later.) */
-	
-	NSArray *dirlist = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-	if (!dirlist || [dirlist count] == 0) {
-		NSLog(@"unable to locate Documents directory.");
-		return nil;
-	}
-	
-	return [dirlist objectAtIndex:0];
-}
-
 void iosglk_do_autosave()
 {
 	GlkLibrary *library = [GlkLibrary singleton];
-	NSLog(@"### attempting autosave (pc = %x)", prevpc);
+	NSLog(@"### attempting autosave (pc = %x, stack = %d before stub)", prevpc, stackptr);
 
 	NSString *dirname = documents_dir();
 	if (!dirname)
@@ -131,6 +191,10 @@ void iosglk_do_autosave()
 	[GlkLibrary setExtraArchiveHook:iosglk_library_archive];
 	res = [NSKeyedArchiver archiveRootObject:library toFile:tmplibpath];
 	[GlkLibrary setExtraArchiveHook:nil];
+	if (library_state.id_map_list) {
+		[library_state.id_map_list release]; // was retained in stash_library_state()
+		library_state.id_map_list = nil;
+	}
 
 	if (!res) {
 		NSLog(@"library serialize failed!");
@@ -181,6 +245,23 @@ static void stash_library_state()
 	library_state.protectend = protectend;
 	stream_get_iosys(&library_state.iosys_mode, &library_state.iosys_rock);
 	library_state.stringtable = stream_get_table();
+	
+	GlkLibrary *library = [GlkLibrary singleton];
+	NSMutableArray *id_map_list = [NSMutableArray arrayWithCapacity:4];
+	library_state.id_map_list = [id_map_list retain];
+	
+	for (GlkWindow *win in library.windows) {
+		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Window tag:win.tag id:find_id_for_window(win)] autorelease];
+		[id_map_list addObject:ent];
+	}
+	for (GlkStream *str in library.streams) {
+		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Stream tag:str.tag id:find_id_for_stream(str)] autorelease];
+		[id_map_list addObject:ent];
+	}
+	for (GlkFileRef *fref in library.filerefs) {
+		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Stream tag:fref.tag id:find_id_for_fileref(fref)] autorelease];
+		[id_map_list addObject:ent];
+	}
 }
 
 static void recover_library_state()
@@ -190,6 +271,41 @@ static void recover_library_state()
 		protectend = library_state.protectend;
 		stream_set_iosys(library_state.iosys_mode, library_state.iosys_rock);
 		stream_set_table(library_state.stringtable);
+	}
+	
+	GlkLibrary *library = [GlkLibrary singleton];
+	if (library_state.id_map_list) {
+		for (GlkObjIdEntry *ent in library_state.id_map_list) {
+			switch (ent.objclass) {
+				case gidisp_Class_Window: {
+					GlkWindow *win = [library windowForIntTag:ent.tag];
+					if (!win) {
+						NSLog(@"### Could not find window for tag %d", ent.tag);
+						continue;
+					}
+					win.disprock = glulxe_classtable_register_existing(win, ent.objclass, ent.dispid);
+				}
+				break;
+				case gidisp_Class_Stream: {
+					GlkStream *str = [library streamForIntTag:ent.tag];
+					if (!str) {
+						NSLog(@"### Could not find stream for tag %d", ent.tag);
+						continue;
+					}
+					str.disprock = glulxe_classtable_register_existing(str, ent.objclass, ent.dispid);
+				}
+				break;
+				case gidisp_Class_Fileref: {
+					GlkFileRef *fref = [library filerefForIntTag:ent.tag];
+					if (!fref) {
+						NSLog(@"### Could not find fileref for tag %d", ent.tag);
+						continue;
+					}
+					fref.disprock = glulxe_classtable_register_existing(fref, ent.objclass, ent.dispid);
+				}
+					break;
+			}
+		}
 	}
 }
 
@@ -202,6 +318,8 @@ static void iosglk_library_archive(NSCoder *encoder)
 		[encoder encodeInt32:library_state.iosys_mode forKey:@"glulx_iosys_mode"];
 		[encoder encodeInt32:library_state.iosys_rock forKey:@"glulx_iosys_rock"];
 		[encoder encodeInt32:library_state.stringtable forKey:@"glulx_stringtable"];
+		if (library_state.id_map_list)
+			[encoder encodeObject:library_state.id_map_list forKey:@"glulx_id_map_list"];
 	}
 }
 
@@ -214,6 +332,8 @@ static void iosglk_library_unarchive(NSCoder *decoder)
 		library_state.iosys_mode = [decoder decodeInt32ForKey:@"glulx_iosys_mode"];
 		library_state.iosys_rock = [decoder decodeInt32ForKey:@"glulx_iosys_rock"];
 		library_state.stringtable = [decoder decodeInt32ForKey:@"glulx_stringtable"];
+		NSArray *arr = [decoder decodeObjectForKey:@"glulx_id_map_list"];
+		library_state.id_map_list = [arr retain];
 	}
 }
 
@@ -228,4 +348,44 @@ void iosglk_shut_down_process()
 	NSLog(@"iosglk_shut_down_process: goodbye!");
 	exit(1);
 }
+
+
+/* GlkObjIdEntry: A simple data class which stores the mapping of a GlkLibrary object (window, stream, etc) to its Glulx-VM ID number. */
+
+@implementation GlkObjIdEntry
+
+- (id) initWithClass:(int)objclassval tag:(NSNumber *)tagref id:(glui32)dispidval
+{
+	self = [super init];
+	
+	if (self) {
+		objclass = objclassval;
+		tag = tagref.intValue;
+		dispid = dispidval;
+	}
+	
+	return self;
+}
+
+- (id) initWithCoder:(NSCoder *)decoder
+{
+	objclass = [decoder decodeInt32ForKey:@"objclass"];
+	tag = [decoder decodeInt32ForKey:@"tag"];
+	dispid = [decoder decodeInt32ForKey:@"dispid"];
+	return self;
+}
+
+- (void) encodeWithCoder:(NSCoder *)encoder
+{
+	[encoder encodeInt32:objclass forKey:@"objclass"];
+	[encoder encodeInt32:tag forKey:@"tag"];
+	[encoder encodeInt32:dispid forKey:@"dispid"];
+}
+
+- (glui32) objclass { return objclass; }
+- (glui32) tag { return tag; }
+- (glui32) dispid { return dispid; }
+
+@end
+
 

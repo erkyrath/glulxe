@@ -11,6 +11,7 @@ typedef struct library_state_data_struct {
 	glui32 protectstart, protectend;
 	glui32 iosys_mode, iosys_rock;
 	glui32 stringtable;
+	NSArray *id_map_list; // manually retained!
 } library_state_data;
 
 extern void iosglk_do_autosave(void);
@@ -18,3 +19,17 @@ extern void iosglk_clear_autosave(void);
 extern void iosglk_set_can_restart_flag(int);
 extern int iosglk_can_restart_cleanly(void);
 extern void iosglk_shut_down_process(void) GLK_ATTRIBUTE_NORETURN;
+
+
+@interface GlkObjIdEntry : NSObject {
+	glui32 objclass;
+	glui32 tag;
+	glui32 dispid;
+}
+
+- (id) initWithClass:(int)objclass tag:(NSNumber *)tag id:(glui32)dispid;
+- (glui32) objclass;
+- (glui32) tag;
+- (glui32) dispid;
+
+@end
