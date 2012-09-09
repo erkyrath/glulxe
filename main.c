@@ -19,6 +19,11 @@ char *init_err2 = NULL;
    before calling glk_main -- but iosglk has some weird cases which
    require it. */
 static void (*library_start_hook)(void) = NULL;
+/* The library_autorestore_hook is called right after the VM's initial
+   setup. This is an appropriate time to autorestore an initial game
+   state, if the library has that capability. (Currently, only iosglk
+   does.) */
+static void (*library_autorestore_hook)(void) = NULL;
 
 static winid_t get_error_win(void);
 static void stream_hexnum(glsi32 val);
@@ -58,6 +63,8 @@ void glk_main()
   }
 
   setup_vm();
+  if (library_autorestore_hook)
+    library_autorestore_hook();
   execute_loop();
   finalize_vm();
 
@@ -74,6 +81,11 @@ void glk_main()
 void set_library_start_hook(void (*func)(void))
 {
   library_start_hook = func;
+}
+
+void set_library_autorestore_hook(void (*func)(void))
+{
+  library_autorestore_hook = func;
 }
 
 /* get_error_win():
