@@ -190,9 +190,10 @@ static void iosglk_game_autorestore()
 static void iosglk_game_select(glui32 eventaddr)
 {
 	NSLog(@"### game called select");
+	return; //###
 	//### filter based on whether the last event was important? Or if it was an autorestore, definitely filter that.
 	
-	//###iosglk_do_autosave(eventaddr);
+	iosglk_do_autosave(eventaddr);
 }
 
 void iosglk_do_autosave(glui32 eventaddr)
@@ -200,7 +201,7 @@ void iosglk_do_autosave(glui32 eventaddr)
 	GlkLibrary *library = [GlkLibrary singleton];
 	NSLog(@"### attempting autosave (pc = %x, eventaddr = %x, stack = %d before stub)", prevpc, eventaddr, stackptr);
 	
-	/* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands. */
+	/* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands -- these might or might not have come off the stack. */
 	int res;
 	int opmodes[3];
 	res = parse_partial_operand(opmodes);
@@ -224,7 +225,7 @@ void iosglk_do_autosave(glui32 eventaddr)
 		fatal_error("Stack overflow in autosave callstub.");
 	StkW4(stackptr, eventaddr);
 	stackptr += 4;
-	if (opmodes[1] == 9) {
+	if (opmodes[1] == 8) {
 		/* The number of Glk arguments (1): */
 		stackvals++;
 		if (stackptr+4 > stacksize)
@@ -232,7 +233,7 @@ void iosglk_do_autosave(glui32 eventaddr)
 		StkW4(stackptr, 1);
 		stackptr += 4;
 	}
-	if (opmodes[0] == 9) {
+	if (opmodes[0] == 8) {
 		/* The Glk call selector (0x130): */
 		stackvals++;
 		if (stackptr+4 > stacksize)
