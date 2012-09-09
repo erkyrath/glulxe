@@ -19,15 +19,14 @@ static library_state_data library_state; /* used by the archive/unarchive hooks 
 
 static void iosglk_game_start(void);
 static void iosglk_game_autorestore(void);
-static void iosglk_game_select(void);
+static void iosglk_game_select(glui32 eventaddr);
 static void stash_library_state(void);
 static void recover_library_state(void);
 static void iosglk_library_archive(NSCoder *encoder);
 static void iosglk_library_unarchive(NSCoder *decoder);
 
 /* This is only needed for autorestore. */
-extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
-															 glui32 objclass, glui32 dispid);
+extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj, glui32 objclass, glui32 dispid);
 
 static NSString *documents_dir()
 {
@@ -40,6 +39,50 @@ static NSString *documents_dir()
 	}
 	
 	return [dirlist objectAtIndex:0];
+}
+
+/* Backtrack through the current opcode (at prevpc), and figure out whether its input arguments are on the stack or not. This will be important when setting up the saved VM state for restarting its opcode.
+ 
+	The opmodes argument must be an array int[3].
+ */
+static int parse_partial_operand(int *opmodes)
+{
+	glui32 addr = prevpc;
+	
+    /* Fetch the opcode number. */
+    glui32 opcode = Mem1(addr);
+    addr++;
+    if (opcode & 0x80) {
+		/* More than one-byte opcode. */
+		if (opcode & 0x40) {
+			/* Four-byte opcode */
+			opcode &= 0x3F;
+			opcode = (opcode << 8) | Mem1(addr);
+			addr++;
+			opcode = (opcode << 8) | Mem1(addr);
+			addr++;
+			opcode = (opcode << 8) | Mem1(addr);
+			addr++;
+		}
+		else {
+			/* Two-byte opcode */
+			opcode &= 0x7F;
+			opcode = (opcode << 8) | Mem1(addr);
+			addr++;
+		}
+    }
+	
+	if (opcode != 0x130) { /* op_glk */
+		NSLog(@"iosglk_startup_code: parsed wrong opcode: %d", opcode);
+		return NO;
+	}
+	
+	/* @glk has operands LLS. */
+	opmodes[0] = Mem1(addr) & 0x0F;
+	opmodes[1] = (Mem1(addr) >> 4) & 0x0F;
+	opmodes[2] = Mem1(addr+1) & 0x0F;
+	
+	return YES;
 }
 
 /* We don't load in the game file here. Instead, we set a hook which glk_main() will call back to do that. Why? Because of the annoying restartability of the VM under iosglk; we may finish glk_main() and then have to call it again.
@@ -144,26 +187,59 @@ static void iosglk_game_autorestore()
 
 /* This is the library_select_hook, which will be called every time glk_select() is invoked.
  */
-static void iosglk_game_select()
+static void iosglk_game_select(glui32 eventaddr)
 {
 	NSLog(@"### game called select");
 	//### filter based on whether the last event was important? Or if it was an autorestore, definitely filter that.
 	
-	iosglk_do_autosave();
+	//###iosglk_do_autosave(eventaddr);
 }
 
-void iosglk_do_autosave()
+void iosglk_do_autosave(glui32 eventaddr)
 {
 	GlkLibrary *library = [GlkLibrary singleton];
-	NSLog(@"### attempting autosave (pc = %x, stack = %d before stub)", prevpc, stackptr);
+	NSLog(@"### attempting autosave (pc = %x, eventaddr = %x, stack = %d before stub)", prevpc, eventaddr, stackptr);
+	
+	/* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands. */
+	int res;
+	int opmodes[3];
+	res = parse_partial_operand(opmodes);
+	if (!res)
+		return;
+	NSLog(@"### ...opmodes are %d %d %d", opmodes[0], opmodes[1], opmodes[2]);
 
 	NSString *dirname = documents_dir();
 	if (!dirname)
 		return;
 	NSString *tmpgamepath = [dirname stringByAppendingPathComponent:@"autosave-tmp.glksave"];
 	
-	int res;
 	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Write rock:1 unicode:NO textmode:NO dirname:dirname pathname:tmpgamepath];
+	
+	/* Push all the necessary arguments for the @glk opcode. */
+	glui32 origstackptr = stackptr;
+	int stackvals = 0;
+	/* The event structure address: */
+	stackvals++;
+	if (stackptr+4 > stacksize)
+		fatal_error("Stack overflow in autosave callstub.");
+	StkW4(stackptr, eventaddr);
+	stackptr += 4;
+	if (opmodes[1] == 9) {
+		/* The number of Glk arguments (1): */
+		stackvals++;
+		if (stackptr+4 > stacksize)
+			fatal_error("Stack overflow in autosave callstub.");
+		StkW4(stackptr, 1);
+		stackptr += 4;
+	}
+	if (opmodes[0] == 9) {
+		/* The Glk call selector (0x130): */
+		stackvals++;
+		if (stackptr+4 > stacksize)
+			fatal_error("Stack overflow in autosave callstub.");
+		StkW4(stackptr, 0x130); /* op_glk */
+		stackptr += 4;
+	}
 	
 	/* Push a temporary callstub which contains the *last* PC -- the address of the @glk(select) invocation. */
 	if (stackptr+16 > stacksize)
@@ -173,8 +249,13 @@ void iosglk_do_autosave()
 	StkW4(stackptr+8, prevpc);
 	StkW4(stackptr+12, frameptr);
 	stackptr += 16;
+	
 	res = perform_save(savefile);
+	
 	stackptr -= 16; // discard the temporary callstub
+	stackptr -= 4 * stackvals; // discard the temporary arguments
+	if (origstackptr != stackptr)
+		fatal_error("Stack pointer mismatch in autosave");
 	
 	glk_stream_close(savefile, nil);
 	

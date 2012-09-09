@@ -149,7 +149,7 @@ extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
 
 /* The library_select_hook is called every time the VM blocks for input.
    The app might take this opportunity to autosave, for example. */
-static void (*library_select_hook)(void) = NULL;
+static void (*library_select_hook)(glui32) = NULL;
 
 static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin);
 static void release_temp_array(glui32 *arr, glui32 addr, glui32 len, int passout);
@@ -240,7 +240,7 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
   case 0x00C0: /* select */
     /* call a library hook on every glk_select() */
     if (library_select_hook)
-      library_select_hook();
+      library_select_hook(arglist[0]);
     /* but then fall through to full dispatcher, because there's no real
        need for speed here */
     goto FullDispatcher;
@@ -1309,7 +1309,7 @@ void glulxe_retained_unregister(void *array, glui32 len,
   glulx_free(arref);
 }
 
-void set_library_select_hook(void (*func)(void))
+void set_library_select_hook(void (*func)(glui32))
 {
   library_select_hook = func;
 }
