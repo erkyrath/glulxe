@@ -190,7 +190,7 @@ static void iosglk_game_autorestore()
 static void iosglk_game_select(glui32 eventaddr)
 {
 	NSLog(@"### game called select");
-	return; //###
+	//return; //###
 	//### filter based on whether the last event was important? Or if it was an autorestore, definitely filter that.
 	
 	iosglk_do_autosave(eventaddr);
@@ -234,11 +234,11 @@ void iosglk_do_autosave(glui32 eventaddr)
 		stackptr += 4;
 	}
 	if (opmodes[0] == 8) {
-		/* The Glk call selector (0x130): */
+		/* The Glk call selector (0x00C0): */
 		stackvals++;
 		if (stackptr+4 > stacksize)
 			fatal_error("Stack overflow in autosave callstub.");
-		StkW4(stackptr, 0x130); /* op_glk */
+		StkW4(stackptr, 0x00C0); /* glk_select */
 		stackptr += 4;
 	}
 	
