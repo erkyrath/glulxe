@@ -16,6 +16,7 @@
 static library_state_data library_state; /* used by the archive/unarchive hooks */
 
 static void iosglk_game_start(void);
+static void iosglk_game_autorestore(void);
 static void iosglk_game_select(void);
 static void stash_library_state(void);
 static void recover_library_state(void);
@@ -27,6 +28,7 @@ static void iosglk_library_unarchive(NSCoder *decoder);
 void iosglk_startup_code()
 {
 	set_library_start_hook(&iosglk_game_start);
+	set_library_autorestore_hook(&iosglk_game_autorestore);
 	set_library_select_hook(&iosglk_game_select);
 	max_undo_level = 32; // allow 32 undo steps
 }
@@ -62,6 +64,10 @@ static void iosglk_game_start()
 	else {
 		init_err = "This is neither a Glulx game file nor a Blorb file which contains one.";
 	}
+}
+
+static void iosglk_game_autorestore()
+{
 }
 
 /* This is the library_select_hook, which will be called every time glk_select() is invoked.
@@ -148,6 +154,23 @@ void iosglk_do_autosave()
 		NSLog(@"could not move library autosave to final position");
 		return;
 	}
+}
+
+/* Delete an autosaved game, if one exists.
+ */
+void iosglk_clear_autosave()
+{
+	GlkLibrary *library = [GlkLibrary singleton];
+	
+	NSString *dirname = documents_dir();
+	if (!dirname)
+		return;
+	
+	NSString *finalgamepath = [dirname stringByAppendingPathComponent:@"autosave.glksave"];
+	NSString *finallibpath = [dirname stringByAppendingPathComponent:@"autosave.plist"];
+	
+	[library.filemanager removeItemAtPath:finallibpath error:nil];
+	[library.filemanager removeItemAtPath:finalgamepath error:nil];
 }
 
 static void stash_library_state()
