@@ -11,6 +11,7 @@ typedef struct library_state_data_struct {
 	glui32 protectstart, protectend;
 	glui32 iosys_mode, iosys_rock;
 	glui32 stringtable;
+	glui32 gamefiletag;
 	NSArray *id_map_list; // manually retained!
 } library_state_data;
 

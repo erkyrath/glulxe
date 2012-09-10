@@ -175,9 +175,14 @@ static void iosglk_game_autorestore()
 	
 	pop_callstub(0);
 	
+	/* Annoyingly, the updateFromLibrary we're about to do will close the currently-open gamefile. We'll recover it immediately, in recover_library_state(). */
+	gamefile = nil;
+	
 	[library updateFromLibrary:newlib];
 	recover_library_state();
 	NSLog(@"autorestore succeeded.");
+	
+	NSLog(@"### gamefiletag %d: %@", library_state.gamefiletag, gamefile);
 	
 	if (library_state.id_map_list) {
 		[library_state.id_map_list release]; // was retained in stash_library_state()
@@ -207,7 +212,6 @@ void iosglk_do_autosave(glui32 eventaddr)
 	res = parse_partial_operand(opmodes);
 	if (!res)
 		return;
-	NSLog(@"### ...opmodes are %d %d %d", opmodes[0], opmodes[1], opmodes[2]);
 
 	NSString *dirname = documents_dir();
 	if (!dirname)
@@ -327,6 +331,8 @@ static void stash_library_state()
 	library_state.protectend = protectend;
 	stream_get_iosys(&library_state.iosys_mode, &library_state.iosys_rock);
 	library_state.stringtable = stream_get_table();
+	if (gamefile)
+		library_state.gamefiletag = gamefile.tag.intValue;
 	
 	GlkLibrary *library = [GlkLibrary singleton];
 	NSMutableArray *id_map_list = [NSMutableArray arrayWithCapacity:4];
@@ -389,6 +395,9 @@ static void recover_library_state()
 			}
 		}
 	}
+	
+	if (library_state.gamefiletag)
+		gamefile = [library streamForIntTag:library_state.gamefiletag];
 }
 
 static void iosglk_library_archive(NSCoder *encoder)
@@ -400,6 +409,7 @@ static void iosglk_library_archive(NSCoder *encoder)
 		[encoder encodeInt32:library_state.iosys_mode forKey:@"glulx_iosys_mode"];
 		[encoder encodeInt32:library_state.iosys_rock forKey:@"glulx_iosys_rock"];
 		[encoder encodeInt32:library_state.stringtable forKey:@"glulx_stringtable"];
+		[encoder encodeInt32:library_state.gamefiletag forKey:@"glulx_gamefiletag"];
 		if (library_state.id_map_list)
 			[encoder encodeObject:library_state.id_map_list forKey:@"glulx_id_map_list"];
 	}
@@ -414,6 +424,7 @@ static void iosglk_library_unarchive(NSCoder *decoder)
 		library_state.iosys_mode = [decoder decodeInt32ForKey:@"glulx_iosys_mode"];
 		library_state.iosys_rock = [decoder decodeInt32ForKey:@"glulx_iosys_rock"];
 		library_state.stringtable = [decoder decodeInt32ForKey:@"glulx_stringtable"];
+		library_state.gamefiletag = [decoder decodeInt32ForKey:@"glulx_gamefiletag"];
 		NSArray *arr = [decoder decodeObjectForKey:@"glulx_id_map_list"];
 		library_state.id_map_list = [arr retain];
 	}
