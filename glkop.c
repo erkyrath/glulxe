@@ -142,6 +142,10 @@ static gidispatch_rock_t glulxe_retained_register(void *array,
   glui32 len, char *typecode);
 static void glulxe_retained_unregister(void *array, glui32 len, 
   char *typecode, gidispatch_rock_t objrock);
+static long glulxe_array_locate(void *array, glui32 len,
+  char *typecode, gidispatch_rock_t objrock, int *elemsizeref);
+static gidispatch_rock_t glulxe_array_restore(long bufkey,
+  glui32 len, char *typecode, void **arrayref);
 
 /* This is only needed for autorestore. */
 extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
@@ -200,7 +204,14 @@ int init_dispatch()
     &glulxe_classtable_unregister);
   gidispatch_set_retained_registry(&glulxe_retained_register, 
     &glulxe_retained_unregister);
-    
+  
+  /* If the library supports autorestore callbacks, set those up too.
+     (These are only used in iosglk, currently.) */
+#ifdef GIDISPATCH_AUTORESTORE_REGISTRY
+  gidispatch_set_autorestore_registry(&glulxe_array_locate,
+    &glulxe_array_restore);
+#endif // GIDISPATCH_AUTORESTORE_REGISTRY
+  
   return TRUE;
 }
 
@@ -1243,7 +1254,7 @@ static void release_temp_ptr_array(void **arr, glui32 addr, glui32 len, int objc
   }
 }
 
-gidispatch_rock_t glulxe_retained_register(void *array,
+static gidispatch_rock_t glulxe_retained_register(void *array,
   glui32 len, char *typecode)
 {
   gidispatch_rock_t rock;
@@ -1272,7 +1283,7 @@ gidispatch_rock_t glulxe_retained_register(void *array,
   return rock;
 }
 
-void glulxe_retained_unregister(void *array, glui32 len, 
+static void glulxe_retained_unregister(void *array, glui32 len,
   char *typecode, gidispatch_rock_t objrock)
 {
   arrayref_t *arref = NULL;
@@ -1307,6 +1318,54 @@ void glulxe_retained_unregister(void *array, glui32 len,
   }
   glulx_free(array);
   glulx_free(arref);
+}
+
+static long glulxe_array_locate(void *array, glui32 len,
+  char *typecode, gidispatch_rock_t objrock, int *elemsizeref)
+{
+  arrayref_t *arref = NULL;
+  arrayref_t **aptr;
+  
+  if (typecode[4] != 'I' || array == NULL) {
+    /* We only retain integer arrays. Char arrays are located in the
+       memory map itself. */
+    *elemsizeref = 0; // No need to save the array separately
+    return (unsigned char *)array - memmap;
+  }
+  
+  for (aptr=(&arrays); (*aptr); aptr=(&((*aptr)->next))) {
+    if ((*aptr)->array == array)
+      break;
+  }
+  arref = *aptr;
+  if (!arref)
+    fatal_error("Unable to re-find array argument in array_locate.");
+  if (arref != objrock.ptr)
+    fatal_error("Mismatched array reference in array_locate.");
+  if (!arref->retained)
+    fatal_error("Unretained array reference in array_locate.");
+  if (arref->elemsize != 4 || arref->len != len)
+    fatal_error("Mismatched array argument in array_locate.");
+  
+  *elemsizeref = arref->elemsize;
+  return arref->addr;
+}
+
+static gidispatch_rock_t glulxe_array_restore(long bufkey,
+  glui32 len, char *typecode, void **arrayref)
+{
+  gidispatch_rock_t rock;
+  
+  if (typecode[4] != 'I') {
+    /* We only retain integer arrays. Char arrays are located in the
+       memory map itself. */
+    unsigned char *buf = memmap + bufkey;
+    *arrayref = buf;
+    rock.ptr = NULL;
+    return rock;
+  }
+  
+  fatal_error("### not implemented");
 }
 
 void set_library_select_hook(void (*func)(glui32))
