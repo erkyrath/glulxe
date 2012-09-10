@@ -169,7 +169,6 @@ static void iosglk_game_autorestore()
 	
 	if (res) {
 		NSLog(@"VM autorestore failed!");
-		fatal_error("The game state could not be restored.");
 		return;
 	}
 	
