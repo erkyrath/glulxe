@@ -34,7 +34,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
-0.4.8###:
+0.5.0###:
     Turned on memory-range checking in the default build. (Should have
     done this years ago.)
     Updated glkop.c to handle arrays of Glk objects. (This is needed to
