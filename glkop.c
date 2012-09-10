@@ -1355,6 +1355,7 @@ static gidispatch_rock_t glulxe_array_restore(long bufkey,
   glui32 len, char *typecode, void **arrayref)
 {
   gidispatch_rock_t rock;
+  glui32 *ubuf;
   
   if (typecode[4] != 'I') {
     /* We only retain integer arrays. Char arrays are located in the
@@ -1365,7 +1366,10 @@ static gidispatch_rock_t glulxe_array_restore(long bufkey,
     return rock;
   }
   
-  fatal_error("### not implemented");
+  ubuf = grab_temp_array(bufkey, len, FALSE);
+  rock = glulxe_retained_register(ubuf, len, typecode);
+  *arrayref = ubuf;
+  return rock;
 }
 
 void set_library_select_hook(void (*func)(glui32))
