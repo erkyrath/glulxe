@@ -6,6 +6,7 @@
 #import "TerpGlkViewController.h"
 #import "TerpGlkDelegate.h"
 #import "GlkLibrary.h"
+#import "GlkAppWrapper.h"
 #import "GlkWindow.h"
 #import "GlkStream.h"
 #import "GlkFileRef.h"
@@ -43,7 +44,7 @@ static NSString *documents_dir()
 
 /* Backtrack through the current opcode (at prevpc), and figure out whether its input arguments are on the stack or not. This will be important when setting up the saved VM state for restarting its opcode.
  
-	The opmodes argument must be an array int[3].
+	The opmodes argument must be an array int[3]. Returns YES on success.
  */
 static int parse_partial_operand(int *opmodes)
 {
@@ -95,7 +96,7 @@ void iosglk_startup_code()
 	max_undo_level = 32; // allow 32 undo steps
 }
 
-/* This is the library_start_hook, which will be called every time glk_main() begins.
+/* This is the library_start_hook, which will be called every time glk_main() begins. (VM thread)
  */
 static void iosglk_game_start()
 {
@@ -128,6 +129,8 @@ static void iosglk_game_start()
 	}
 }
 
+/* This is the library_autorestore_hook, which will be called from glk_main() between VM setup and the beginning of the execution loop. (VM thread)
+ */
 static void iosglk_game_autorestore()
 {
 	GlkLibrary *library = [GlkLibrary singleton];
@@ -180,22 +183,23 @@ static void iosglk_game_autorestore()
 	[library updateFromLibrary:newlib];
 	recover_library_state();
 	NSLog(@"autorestore succeeded.");
-	
-	NSLog(@"### gamefiletag %d: %@", library_state.gamefiletag, gamefile);
-	
+		
 	if (library_state.id_map_list) {
 		[library_state.id_map_list release]; // was retained in stash_library_state()
 		library_state.id_map_list = nil;
 	}	
 }
 
-/* This is the library_select_hook, which will be called every time glk_select() is invoked.
+/* This is the library_select_hook, which will be called every time glk_select() is invoked. (VM thread)
  */
 static void iosglk_game_select(glui32 eventaddr)
 {
-	NSLog(@"### game called select");
-	//return; //###
-	//### filter based on whether the last event was important? Or if it was an autorestore, definitely filter that.
+	glui32 lasteventtype = [GlkAppWrapper singleton].lasteventtype;
+	//NSLog(@"### game called select, last event was %d", lasteventtype);
+	
+	/* Do not autosave if we've just started up, or if the last event was a rearrange event. (We get rearranges in clusters, and they don't change anything interesting anyhow.) */
+	if (lasteventtype == -1 || lasteventtype == evtype_Arrange)
+		return;
 	
 	iosglk_do_autosave(eventaddr);
 }
