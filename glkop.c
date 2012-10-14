@@ -13,10 +13,10 @@
    - We can read or write to a 32-bit integer in VM memory using the macros
      ReadMemory(addr) and WriteMemory(addr), where addr is an address
      taken from the argument list.
-   - A character array is an actual array of bytes somewhere in terp
-     memory, whose actual address can be computed by the macro
-     AddressOfArray(addr). Again, addr is a VM address from the argument
-     list.
+   - A character array is a sequence of bytes somewhere in VM memory.
+     The array can be turned into a C char array by the macro
+     CaptureCArray(addr, len), and released by ReleaseCArray().
+     The passin, passout hints may be used to avoid unnecessary copying.
    - An integer array is a sequence of integers somewhere in VM memory.
      The array can be turned into a C integer array by the macro
      CaptureIArray(addr, len), and released by ReleaseIArray().
@@ -51,12 +51,14 @@
     (((addr) == 0xffffffff) \
       ? (StkW4(stackptr, (val)), stackptr += 4) \
       : (MemW4((addr), (val))))
-#define AddressOfArray(addr)  \
-    (memmap + (addr))
+#define CaptureCArray(addr, len, passin)  \
+    (grab_temp_c_array(addr, len, passin))
+#define ReleaseCArray(ptr, addr, len, passout)  \
+    (release_temp_c_array(ptr, addr, len, passout))
 #define CaptureIArray(addr, len, passin)  \
-    (grab_temp_array(addr, len, passin))
+    (grab_temp_i_array(addr, len, passin))
 #define ReleaseIArray(ptr, addr, len, passout)  \
-    (release_temp_array(ptr, addr, len, passout))
+    (release_temp_i_array(ptr, addr, len, passout))
 #define CapturePtrArray(addr, len, objclass, passin)  \
     (grab_temp_ptr_array(addr, len, objclass, passin))
 #define ReleasePtrArray(ptr, addr, len, objclass, passout)  \
@@ -155,8 +157,10 @@ extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
    The app might take this opportunity to autosave, for example. */
 static void (*library_select_hook)(glui32) = NULL;
 
-static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin);
-static void release_temp_array(glui32 *arr, glui32 addr, glui32 len, int passout);
+static char *grab_temp_c_array(glui32 addr, glui32 len, int passin);
+static void release_temp_c_array(char *arr, glui32 addr, glui32 len, int passout);
+static glui32 *grab_temp_i_array(glui32 addr, glui32 len, int passin);
+static void release_temp_i_array(glui32 *arr, glui32 addr, glui32 len, int passout);
 static void **grab_temp_ptr_array(glui32 addr, glui32 len, int objclass, int passin);
 static void release_temp_ptr_array(void **arr, glui32 addr, glui32 len, int objclass, int passout);
 
@@ -552,7 +556,7 @@ static void parse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
               varglist[ix+1] = endmem - varglist[ix];
           }
           verify_array_addresses(varglist[ix], varglist[ix+1], 1);
-          garglist[gargnum].array = AddressOfArray(varglist[ix]);
+          garglist[gargnum].array = CaptureCArray(varglist[ix], varglist[ix+1], passin);
           gargnum++;
           ix++;
           garglist[gargnum].uint = varglist[ix];
@@ -1112,7 +1116,72 @@ gidispatch_rock_t glulxe_classtable_register_existing(void *obj,
   return objrock;
 }
 
-static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin)
+static char *grab_temp_c_array(glui32 addr, glui32 len, int passin)
+{
+  arrayref_t *arref = NULL;
+  char *arr = NULL;
+  glui32 ix, addr2;
+
+  if (len) {
+    arr = (char *)glulx_malloc(len * sizeof(char));
+    arref = (arrayref_t *)glulx_malloc(sizeof(arrayref_t));
+    if (!arr || !arref) 
+      fatal_error("Unable to allocate space for array argument to Glk call.");
+
+    arref->array = arr;
+    arref->addr = addr;
+    arref->elemsize = 1;
+    arref->retained = FALSE;
+    arref->len = len;
+    arref->next = arrays;
+    arrays = arref;
+
+    if (passin) {
+      for (ix=0, addr2=addr; ix<len; ix++, addr2+=1) {
+        arr[ix] = Mem1(addr2);
+      }
+    }
+  }
+
+  return arr;
+}
+
+static void release_temp_c_array(char *arr, glui32 addr, glui32 len, int passout)
+{
+  arrayref_t *arref = NULL;
+  arrayref_t **aptr;
+  glui32 ix, val, addr2;
+
+  if (arr) {
+    for (aptr=(&arrays); (*aptr); aptr=(&((*aptr)->next))) {
+      if ((*aptr)->array == arr)
+        break;
+    }
+    arref = *aptr;
+    if (!arref)
+      fatal_error("Unable to re-find array argument in Glk call.");
+    if (arref->addr != addr || arref->len != len)
+      fatal_error("Mismatched array argument in Glk call.");
+
+    if (arref->retained) {
+      return;
+    }
+
+    *aptr = arref->next;
+    arref->next = NULL;
+
+    if (passout) {
+      for (ix=0, addr2=addr; ix<len; ix++, addr2+=1) {
+        val = arr[ix];
+        MemW1(addr2, val);
+      }
+    }
+    glulx_free(arr);
+    glulx_free(arref);
+  }
+}
+
+static glui32 *grab_temp_i_array(glui32 addr, glui32 len, int passin)
 {
   arrayref_t *arref = NULL;
   glui32 *arr = NULL;
@@ -1142,7 +1211,7 @@ static glui32 *grab_temp_array(glui32 addr, glui32 len, int passin)
   return arr;
 }
 
-static void release_temp_array(glui32 *arr, glui32 addr, glui32 len, int passout)
+static void release_temp_i_array(glui32 *arr, glui32 addr, glui32 len, int passout)
 {
   arrayref_t *arref = NULL;
   arrayref_t **aptr;
@@ -1260,9 +1329,14 @@ static gidispatch_rock_t glulxe_retained_register(void *array,
   gidispatch_rock_t rock;
   arrayref_t *arref = NULL;
   arrayref_t **aptr;
+  int elemsize = 0;
 
-  if (typecode[4] != 'I' || array == NULL) {
-    /* We only retain integer arrays. */
+  if (typecode[4] == 'C')
+    elemsize = 1;
+  else if (typecode[4] == 'I')
+    elemsize = 4;
+
+  if (!elemsize || array == NULL) {
     rock.ptr = NULL;
     return rock;
   }
@@ -1274,7 +1348,7 @@ static gidispatch_rock_t glulxe_retained_register(void *array,
   arref = *aptr;
   if (!arref)
     fatal_error("Unable to re-find array argument in Glk call.");
-  if (arref->elemsize != 4 || arref->len != len)
+  if (arref->elemsize != elemsize || arref->len != len)
     fatal_error("Mismatched array argument in Glk call.");
 
   arref->retained = TRUE;
@@ -1289,9 +1363,14 @@ static void glulxe_retained_unregister(void *array, glui32 len,
   arrayref_t *arref = NULL;
   arrayref_t **aptr;
   glui32 ix, addr2, val;
+  int elemsize = 0;
 
-  if (typecode[4] != 'I' || array == NULL) {
-    /* We only retain integer arrays. */
+  if (typecode[4] == 'C')
+    elemsize = 1;
+  else if (typecode[4] == 'I')
+    elemsize = 4;
+
+  if (!elemsize || array == NULL) {
     return;
   }
 
@@ -1306,16 +1385,25 @@ static void glulxe_retained_unregister(void *array, glui32 len,
     fatal_error("Mismatched array reference in Glk call.");
   if (!arref->retained)
     fatal_error("Unretained array reference in Glk call.");
-  if (arref->elemsize != 4 || arref->len != len)
+  if (arref->elemsize != elemsize || arref->len != len)
     fatal_error("Mismatched array argument in Glk call.");
 
   *aptr = arref->next;
   arref->next = NULL;
 
-  for (ix=0, addr2=arref->addr; ix<arref->len; ix++, addr2+=4) {
-    val = ((glui32 *)array)[ix];
-    MemW4(addr2, val);
+  if (elemsize == 1) {
+    for (ix=0, addr2=arref->addr; ix<arref->len; ix++, addr2+=1) {
+      val = ((char *)array)[ix];
+      MemW1(addr2, val);
+    }
   }
+  else if (elemsize == 4) {
+    for (ix=0, addr2=arref->addr; ix<arref->len; ix++, addr2+=4) {
+      val = ((glui32 *)array)[ix];
+      MemW4(addr2, val);
+    }
+  }
+
   glulx_free(array);
   glulx_free(arref);
 }
@@ -1325,10 +1413,14 @@ static long glulxe_array_locate(void *array, glui32 len,
 {
   arrayref_t *arref = NULL;
   arrayref_t **aptr;
-  
-  if (typecode[4] != 'I' || array == NULL) {
-    /* We only retain integer arrays. Char arrays are located in the
-       memory map itself. */
+  int elemsize = 0;
+
+  if (typecode[4] == 'C')
+    elemsize = 1;
+  else if (typecode[4] == 'I')
+    elemsize = 4;
+
+  if (!elemsize || array == NULL) {
     *elemsizeref = 0; // No need to save the array separately
     return (unsigned char *)array - memmap;
   }
@@ -1344,7 +1436,7 @@ static long glulxe_array_locate(void *array, glui32 len,
     fatal_error("Mismatched array reference in array_locate.");
   if (!arref->retained)
     fatal_error("Unretained array reference in array_locate.");
-  if (arref->elemsize != 4 || arref->len != len)
+  if (arref->elemsize != elemsize || arref->len != len)
     fatal_error("Mismatched array argument in array_locate.");
   
   *elemsizeref = arref->elemsize;
@@ -1355,20 +1447,30 @@ static gidispatch_rock_t glulxe_array_restore(long bufkey,
   glui32 len, char *typecode, void **arrayref)
 {
   gidispatch_rock_t rock;
-  glui32 *ubuf;
-  
-  if (typecode[4] != 'I') {
-    /* We only retain integer arrays. Char arrays are located in the
-       memory map itself. */
+  int elemsize = 0;
+
+  if (typecode[4] == 'C')
+    elemsize = 1;
+  else if (typecode[4] == 'I')
+    elemsize = 4;
+
+  if (!elemsize) {
     unsigned char *buf = memmap + bufkey;
     *arrayref = buf;
     rock.ptr = NULL;
     return rock;
   }
-  
-  ubuf = grab_temp_array(bufkey, len, FALSE);
-  rock = glulxe_retained_register(ubuf, len, typecode);
-  *arrayref = ubuf;
+
+  if (elemsize == 1) {
+    char *cbuf = grab_temp_c_array(bufkey, len, FALSE);
+    rock = glulxe_retained_register(cbuf, len, typecode);
+    *arrayref = cbuf;
+  }
+  else {
+    glui32 *ubuf = grab_temp_i_array(bufkey, len, FALSE);
+    rock = glulxe_retained_register(ubuf, len, typecode);
+    *arrayref = ubuf;
+  }
   return rock;
 }
 

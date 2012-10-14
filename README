@@ -37,6 +37,8 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 0.5.0###:
     Turned on memory-range checking in the default build. (Should have
     done this years ago.)
+    Fixed a bug where @setmemsize could crash an open char memory stream
+    or char line input request.
     Updated glkop.c to handle arrays of Glk objects. (This is needed to
     support glk_schannel_play_multi().)
     Added hooks for the library to execute at startup and select time.
