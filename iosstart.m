@@ -207,7 +207,7 @@ static void iosglk_game_select(glui32 eventaddr)
 void iosglk_do_autosave(glui32 eventaddr)
 {
 	GlkLibrary *library = [GlkLibrary singleton];
-	NSLog(@"### attempting autosave (pc = %x, eventaddr = %x, stack = %d before stub)", prevpc, eventaddr, stackptr);
+	//NSLog(@"### attempting autosave (pc = %x, eventaddr = %x, stack = %d before stub)", prevpc, eventaddr, stackptr);
 	
 	/* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands -- these might or might not have come off the stack. */
 	int res;
