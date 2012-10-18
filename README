@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.4.7
+Version 0.5.0
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://eblong.com/zarf/glulx/index.html
@@ -34,7 +34,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
-0.5.0###:
+0.5.0:
     Turned on memory-range checking in the default build. (Should have
     done this years ago.)
     Fixed a bug where @setmemsize could crash an open char memory stream
