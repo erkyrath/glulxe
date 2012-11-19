@@ -269,6 +269,7 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
       goto WrongArgNum;
     retval = glk_char_to_upper(arglist[0] & 0xFF);
     break;
+#ifdef GLK_MODULE_UNICODE
   case 0x0128: /* put_char_uni */
     if (numargs != 1)
       goto WrongArgNum;
@@ -279,6 +280,7 @@ glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist)
       goto WrongArgNum;
     glk_put_char_stream_uni(find_stream_by_id(arglist[0]), arglist[1]);
     break;
+#endif
 
   WrongArgNum:
     fatal_error("Wrong number of arguments to Glk function.");
