@@ -151,7 +151,7 @@ if (not args):
     sys.exit(1)
 
 profile_raw = None
-game_asm = None
+game_file_data = None
 
 if not opts.debugonly:
     # Normal operation
@@ -161,15 +161,15 @@ if not opts.debugonly:
         sys.exit(1)
 
     if (len(args) >= 2):
-        game_asm = args[1]
-        if (not os.path.exists(game_asm)):
-            print 'File not readable:', game_asm
+        game_file_data = args[1]
+        if (not os.path.exists(game_file_data)):
+            print 'File not readable:', game_file_data
             sys.exit(1)
 else:
     # Debug-only operation
-    game_asm = args[0]
-    if (not os.path.exists(game_asm)):
-        print 'File not readable:', game_asm
+    game_file_data = args[0]
+    if (not os.path.exists(game_file_data)):
+        print 'File not readable:', game_file_data
         sys.exit(1)
 
 if (opts.dispatchfile):
@@ -262,7 +262,10 @@ class ProfileRawHandler(xml.sax.handler.ContentHandler):
             func = Function(addr, hexaddr, attrs)
             functions[addr] = func
 
-def parse_asm(fl):
+class NewDebugHandler(xml.sax.handler.ContentHandler):
+    pass
+            
+def parse_inform_assembly(fl):
     global sourcemap
     sourcemap = {}
     
@@ -500,23 +503,25 @@ if (profile_raw):
     # Fills out the functions global
     xml.sax.parse(profile_raw, ProfileRawHandler())
 
-if (game_asm):
+if (game_file_data):
     # Fill out the sourcemap global, by one of various methods
-    fl = open(game_asm, 'rb')
+    fl = open(game_file_data, 'rb')
     val = fl.read(2)
     fl.close()
     if (not val):
         pass
     elif (val == '\xde\xbf'):
-        fl = open(game_asm, 'rb')
+        fl = open(game_file_data, 'rb')
         debugfile = DebugFile(fl)
         fl.close()
         sourcemap = {}
         for func in debugfile.functions.values():
             sourcemap[func.addr] = ( func.linenum[1], func.name )
+    elif (val == '<?'):
+        xml.sax.parse(game_file_data, NewDebugHandler())
     else:
-        fl = open(game_asm, 'rU')
-        parse_asm(fl)
+        fl = open(game_file_data, 'rU')
+        parse_inform_assembly(fl)
         fl.close()
 
 if (profile_raw):
@@ -554,7 +559,7 @@ if (profile_raw):
     if (sourcemap):
         uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+source_start) not in functions ]
         if (not opts.dumbfrotz):
-            print len(uncalled_funcs), 'functions found in', game_asm, 'were never called'
+            print len(uncalled_funcs), 'functions found in', game_file_data, 'were never called'
     
     if (opts.dumbfrotz):
         ls = functions.values()
