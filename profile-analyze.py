@@ -140,21 +140,34 @@ popt.add_option('--glk',
 popt.add_option('--dumbfrotz',
                 action='store_true', dest='dumbfrotz',
                 help='use dumbfrotz-compatible output format')
+popt.add_option('-d', '--debug',
+                action='store_true', dest='debugonly',
+                help='read only the debug data, no profile data')
 
 (opts, args) = popt.parse_args()
 
 if (not args):
-    print "Usage: profile-analyze.py [--dumbfrotz] [--glk dispatch_dump.xml] profile-raw [ gameinfo.dbg | game.asm ]"
+    print 'Usage: profile-analyze.py [--dumbfrotz] [--glk dispatch_dump.xml] profile-raw [ gameinfo.dbg | game.asm ]'
     sys.exit(1)
 
-profile_raw = args[0]
-if (not os.path.exists(profile_raw)):
-    print 'File not readable:', profile_raw
-    sys.exit(1)
-
+profile_raw = None
 game_asm = None
-if (len(args) >= 2):
-    game_asm = args[1]
+
+if not opts.debugonly:
+    # Normal operation
+    profile_raw = args[0]
+    if (not os.path.exists(profile_raw)):
+        print 'File not readable:', profile_raw
+        sys.exit(1)
+
+    if (len(args) >= 2):
+        game_asm = args[1]
+        if (not os.path.exists(game_asm)):
+            print 'File not readable:', game_asm
+            sys.exit(1)
+else:
+    # Debug-only operation
+    game_asm = args[0]
     if (not os.path.exists(game_asm)):
         print 'File not readable:', game_asm
         sys.exit(1)
@@ -477,21 +490,18 @@ class DebugFile:
             self.functions[funcnum] = func
         return func
                         
-# Begin the work
+# Read in the various files
             
 if (opts.dispatchfile):
+    # Fills out the glk_functions global
     xml.sax.parse(opts.dispatchfile, DispatchDumpHandler())
-        
-xml.sax.parse(profile_raw, ProfileRawHandler())
 
-source_start = min([ func.addr for func in functions.values()
-    if not func.special ])
-
-if (not opts.dumbfrotz):
-    print 'Code segment begins at', hex(source_start)
-    print len(functions), 'called functions found in', profile_raw
+if (profile_raw):
+    # Fills out the functions global
+    xml.sax.parse(profile_raw, ProfileRawHandler())
 
 if (game_asm):
+    # Fill out the sourcemap global, by one of various methods
     fl = open(game_asm, 'rb')
     val = fl.read(2)
     fl.close()
@@ -503,59 +513,69 @@ if (game_asm):
         fl.close()
         sourcemap = {}
         for func in debugfile.functions.values():
-            sourcemap[func.addr] = ( func.linenum[1], func.name)
+            sourcemap[func.addr] = ( func.linenum[1], func.name )
     else:
         fl = open(game_asm, 'rU')
         parse_asm(fl)
         fl.close()
 
-if (sourcemap):
-    badls = []
-
-    for (addr, func) in functions.items():
-        if (func.special):
-            continue
-        tup = sourcemap.get(addr-source_start)
-        if (not tup):
-            badls.append(addr)
-            continue
-        (linenum, funcname) = tup
-        func.name = funcname
-        func.linenum = linenum
+if (profile_raw):
+    # If there is profile data, display it.
+    
+    source_start = min([ func.addr for func in functions.values()
+        if not func.special ])
     
     if (not opts.dumbfrotz):
-        if (badls):
-            print len(badls), 'functions from', profile_raw, 'did not appear in asm (veneer functions)'
+        print 'Code segment begins at', hex(source_start)
+        print len(functions), 'called functions found in', profile_raw
     
-    function_names = {}
-    for func in functions.values():
-        function_names[func.name] = func
-
-if (sourcemap):
-    uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+source_start) not in functions ]
-    if (not opts.dumbfrotz):
-        print len(uncalled_funcs), 'functions found in', game_asm, 'were never called'
-
-if (opts.dumbfrotz):
-    ls = functions.values()
-    ls.sort(lambda x1, x2: cmp(x2.total_ops, x1.total_ops))
-    ops_executed = 0
-    routine_calls = 0
-    max_stack_use = max([func.max_stack_use for func in ls])
-    for func in ls:
-        if (func.total_ops > ops_executed):
-            ops_executed = func.total_ops
-        routine_calls = routine_calls + func.call_count
-    print 'Total opcodes: %lu' % ops_executed
-    print 'Total routine calls: %lu' % routine_calls
-    print 'Max. stack usage: %li' % max_stack_use
-    print ''
-    print '%-35s      %-10s      %-10s %-10s %-4s' % ('Routine', 'Ops', 'Ops(+Subs)', 'Calls', 'Nest')
-    for func in ls:
-        func.dump_dumbfrotz_style()
-else:
-    print 'Functions that consumed the most time (excluding children):'
-    ls = functions.values()
-    ls.sort(lambda x1, x2: cmp(x2.self_time, x1.self_time))
-    for func in ls[:10]:
-        func.dump()
+    if (sourcemap):
+        badls = []
+    
+        for (addr, func) in functions.items():
+            if (func.special):
+                continue
+            tup = sourcemap.get(addr-source_start)
+            if (not tup):
+                badls.append(addr)
+                continue
+            (linenum, funcname) = tup
+            func.name = funcname
+            func.linenum = linenum
+        
+        if (not opts.dumbfrotz):
+            if (badls):
+                print len(badls), 'functions from', profile_raw, 'did not appear in asm (veneer functions)'
+        
+        function_names = {}
+        for func in functions.values():
+            function_names[func.name] = func
+    
+    if (sourcemap):
+        uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+source_start) not in functions ]
+        if (not opts.dumbfrotz):
+            print len(uncalled_funcs), 'functions found in', game_asm, 'were never called'
+    
+    if (opts.dumbfrotz):
+        ls = functions.values()
+        ls.sort(lambda x1, x2: cmp(x2.total_ops, x1.total_ops))
+        ops_executed = 0
+        routine_calls = 0
+        max_stack_use = max([func.max_stack_use for func in ls])
+        for func in ls:
+            if (func.total_ops > ops_executed):
+                ops_executed = func.total_ops
+            routine_calls = routine_calls + func.call_count
+        print 'Total opcodes: %lu' % ops_executed
+        print 'Total routine calls: %lu' % routine_calls
+        print 'Max. stack usage: %li' % max_stack_use
+        print ''
+        print '%-35s      %-10s      %-10s %-10s %-4s' % ('Routine', 'Ops', 'Ops(+Subs)', 'Calls', 'Nest')
+        for func in ls:
+            func.dump_dumbfrotz_style()
+    else:
+        print 'Functions that consumed the most time (excluding children):'
+        ls = functions.values()
+        ls.sort(lambda x1, x2: cmp(x2.self_time, x1.self_time))
+        for func in ls[:10]:
+            func.dump()
