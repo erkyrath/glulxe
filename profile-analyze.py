@@ -24,23 +24,23 @@ Using this script is currently a nuisance. The requirements:
 - Run Glulxe, using the "--profile profile-raw" option. Play some of
   the game, and quit. This generates a data file called "profile-raw".
 - Run this script, giving gameinfo.dbg and profile-raw as arguments.
-  (You can provide dispatch_dump.xml as an optional third argument.
+- You can provide "--glk dispatch_dump.xml" as an optional extra argument.
   This file gives the names of Glk functions; it is available from
-  https://github.com/erkyrath/glk-dev/tree/master/dispatch_dump .)
+  https://github.com/erkyrath/glk-dev/tree/master/dispatch_dump .
 
 To sum up, in command-line form:
 
 % inform -G -k game.inf
 % glulxe --profile profile-raw game.ulx
-% python profile-analyze.py profile-raw gameinfo.dbg dispatch_dump.xml
+% python profile-analyze.py profile-raw gameinfo.dbg --glk dispatch_dump.xml
 
-You can also use the assembly output of the Inform compiler, which you
-get with the -a switch. Save the output and use it instead of the debug
-file:
+You can replace the debug output with the assembly output of the Inform
+compiler, which you get with the -a switch. Save the output and use it
+instead of the debug file:
 
 % inform -G -a game.inf > game.asm
 % glulxe --profile profile-raw game.ulx
-% python profile-analyze.py profile-raw game.asm dispatch_dump.xml
+% python profile-analyze.py profile-raw game.asm --glk dispatch_dump.xml
 
 The limitations:
 
@@ -49,22 +49,17 @@ call stack. In fact, it's downright stupid. @restart, @restore,
 @restoreundo, or @throw will kill the interpreter.
 
 Inform's -k switch does not work correctly with game files larger than
-16 megabytes.
+16 megabytes. (This is fixed in the upcoming Inform 6.33, which has a
+revamped debug file format.)
 
-Inform's -a switch does not display code for veneer functions, so if
-you use that data, these will not be named; they will be listed as
-"<???>". This is a particular nuisance because veneer functions are
-often the most costly ones. (Therefore, you'll almost certainly want
-to use -k.)
-
-If you leave off the "dispatch_dump.xml" argument, everything will
+If you leave off the "--glk dispatch_dump.xml" argument, everything will
 still work, but @glk function entries will be listed by number rather
 than by name.
 
 You can explore the profiling data in more detail by running the script
 interactively:
 
-% python -i profile-analyze.py profile-raw game.asm dispatch_dump.xml
+% python -i profile-analyze.py profile-raw game.asm --glk dispatch_dump.xml
 
 After it runs, you'll be left at a Python prompt. The environment
 will contain mappings called "functions" (mapping addresses to
@@ -133,36 +128,40 @@ by the entire program; its max_depth is zero.
 """
 
 import sys, os.path
+import optparse
 import xml.sax
 from struct import unpack
 
-dumb_frotz_mode = False
+popt = optparse.OptionParser(usage='profile-analyze.py [options] profile-raw [ gameinfo.dbg | game.asm ]')
 
-if ('--dumbfrotz' in sys.argv):
-    sys.argv.remove('--dumbfrotz')
-    dumb_frotz_mode = True
+popt.add_option('--glk',
+                action='store', dest='dispatchfile', metavar='DISPATCH_DUMP',
+                help='path to dispatch_dump.xml file (optional)')
+popt.add_option('--dumbfrotz',
+                action='store_true', dest='dumbfrotz',
+                help='use dumbfrotz-compatible output format')
 
-if (len(sys.argv) < 2):
-    print "Usage: profile-analyze.py [--dumbfrotz] profile-raw [ gameinfo.dbg | game.asm ] [ dispatch_dump.xml ]"
+(opts, args) = popt.parse_args()
+
+if (not args):
+    print "Usage: profile-analyze.py [--dumbfrotz] [--glk dispatch_dump.xml] profile-raw [ gameinfo.dbg | game.asm ]"
     sys.exit(1)
 
-profile_raw = sys.argv[1]
+profile_raw = args[0]
 if (not os.path.exists(profile_raw)):
     print 'File not readable:', profile_raw
     sys.exit(1)
 
 game_asm = None
-if (len(sys.argv) >= 3):
-    game_asm = sys.argv[2]
+if (len(args) >= 2):
+    game_asm = args[1]
     if (not os.path.exists(game_asm)):
         print 'File not readable:', game_asm
         sys.exit(1)
 
-dispatch_dump = None
-if (len(sys.argv) >= 4):
-    dispatch_dump = sys.argv[3]
-    if (not os.path.exists(dispatch_dump)):
-        print 'File not readable:', dispatch_dump
+if (opts.dispatchfile):
+    if (not os.path.exists(opts.dispatchfile)):
+        print 'File not readable:', opts.dispatchfile
         sys.exit(1)
 
 special_functions = {
@@ -480,15 +479,15 @@ class DebugFile:
                         
 # Begin the work
             
-if (dispatch_dump):
-    xml.sax.parse(dispatch_dump, DispatchDumpHandler())
+if (opts.dispatchfile):
+    xml.sax.parse(opts.dispatchfile, DispatchDumpHandler())
         
 xml.sax.parse(profile_raw, ProfileRawHandler())
 
 source_start = min([ func.addr for func in functions.values()
     if not func.special ])
 
-if (not dumb_frotz_mode):
+if (not opts.dumbfrotz):
     print 'Code segment begins at', hex(source_start)
     print len(functions), 'called functions found in', profile_raw
 
@@ -524,7 +523,7 @@ if (sourcemap):
         func.name = funcname
         func.linenum = linenum
     
-    if (not dumb_frotz_mode):
+    if (not opts.dumbfrotz):
         if (badls):
             print len(badls), 'functions from', profile_raw, 'did not appear in asm (veneer functions)'
     
@@ -534,10 +533,10 @@ if (sourcemap):
 
 if (sourcemap):
     uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+source_start) not in functions ]
-    if (not dumb_frotz_mode):
+    if (not opts.dumbfrotz):
         print len(uncalled_funcs), 'functions found in', game_asm, 'were never called'
 
-if (dumb_frotz_mode):
+if (opts.dumbfrotz):
     ls = functions.values()
     ls.sort(lambda x1, x2: cmp(x2.total_ops, x1.total_ops))
     ops_executed = 0
