@@ -9,7 +9,8 @@ which does nothing but call other functions will be considered uncostly.)
 
 Optionally, this script can also read the debug output of the Inform 6
 compiler (or the assembly output), and use that to figure out the
-names of all the functions that were profiled.
+names of all the functions that were profiled. Both the old and new
+(Inform 6.33) debug file format are supported.
 
 You can also generate profiling output in the same form as dumbfrotz's
 Z-machine profiling output. (If that happens to be what you want.) Use
@@ -48,9 +49,8 @@ The profiling code is not smart about VM operations that rearrange the
 call stack. In fact, it's downright stupid. @restart, @restore,
 @restoreundo, or @throw will kill the interpreter.
 
-Inform's -k switch does not work correctly with game files larger than
-16 megabytes. (This is fixed in the upcoming Inform 6.33, which has a
-revamped debug file format.)
+The old debug file format (Inform 6.32 and earlier) does not work correctly
+with game files larger than 16 megabytes. 
 
 If you leave off the "--glk dispatch_dump.xml" argument, everything will
 still work, but @glk function entries will be listed by number rather
