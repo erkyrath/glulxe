@@ -316,6 +316,8 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
         if parframe and parframe.children:
             parhan = parframe.children.get(name)
         if parhan is not None:
+            if type(parhan) is list:
+                parhan = parhan[0]
             frame.handler = parhan
             if parhan in (int, str):
                 frame.accumchar = []
@@ -378,7 +380,15 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
         if self.sstack and res is not None:
             parframe = self.sstack[-1]
             if parframe.accumobj is not None:
-                parframe.accumobj[name] = res
+                if type(parframe.children.get(name)) is list:
+                    subls = parframe.accumobj.get(name)
+                    if subls:
+                        subls.append(res)
+                    else:
+                        subls = [ res ]
+                        parframe.accumobj[name] = subls
+                else:
+                    parframe.accumobj[name] = res
 
     def handle_tag(self, tag, parent=None, depth=None, children={},
                    active=None, handler=None):
@@ -425,9 +435,10 @@ class NewDebugArray:
         return '<Array "%s", %d els of %d bytes (%d total), at %d (%s)>' % (self.id, self.elcount, self.bytesperel, self.bytecount, self.address, self.sourceloc)
 
 class NewDebugFunction:
-    def __init__(self, ident, address, sourceloc=None, artificial=False):
+    def __init__(self, ident, address, args=(), sourceloc=None, artificial=False):
         self.id = ident
         self.address = address
+        self.args = args
         if not sourceloc:
             sourceloc = 'veneer'
         self.sourceloc = sourceloc
@@ -459,11 +470,13 @@ class NewDebugHandler(SimpleXMLFrame):
                         children={'identifier':str, 'value':int, 'byte-count':int, 'bytes-per-element':int, 'source-code-location':()},
                         handler=self.handle_array)
         self.handle_tag('routine', parent='inform-story-file',
-                        children={'identifier':self.handle_ident_artificial, 'address':int, 'source-code-location':()},
+                        children={'identifier':self.handle_ident_artificial, 'address':int, 'source-code-location':(), 'local-variable':[()]},
                         handler=self.handle_function)
         self.handle_tag('source-code-location', active=False,
                         children={'line':int, 'file-index':int},
                         handler=self.handle_source_code_loc)
+        self.handle_tag('local-variable',
+                        children={'identifier':str})
 
     def debugfile(self):
         return self._debugfile
@@ -482,7 +495,12 @@ class NewDebugHandler(SimpleXMLFrame):
 
     def handle_function(self, name, attrs, obj):
         (ident, artificial) = obj['identifier']
-        func = NewDebugFunction(ident, obj['address'], obj.get('source-code-location'), artificial=artificial)
+        args = obj.get('local-variable')
+        if not args:
+            args = ()
+        else:
+            args = tuple([ loc['identifier'] for loc in args ])
+        func = NewDebugFunction(ident, obj['address'], args, obj.get('source-code-location'), artificial=artificial)
         self._debugfile.functions.append(func)
 
     def handle_ident_artificial(self, name, attrs, obj):
