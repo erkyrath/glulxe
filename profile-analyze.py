@@ -324,6 +324,11 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
                 frame.handler = taghan
                 frame.children = taghan.children
                 frame.accumobj = {}
+            elif callable(parhan):
+                frame.handler = parhan
+                frame.accumchar = []
+            else:
+                raise Exception('unknown element handler thingie: %s' % (parhan,))
         else:
             taghan = self.taghandlers.get(name)
             if taghan:
@@ -362,6 +367,11 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
                 res = frame.handler.handler(frame.name, frame.attrs, frame.accumobj)
             else:
                 res = frame.accumobj
+        elif callable(frame.handler):
+            val = ''.join(frame.accumchar)
+            res = frame.handler(frame.name, frame.attrs, val)
+        else:
+            raise Exception('unknown element handler thingie: %s' % (frame.handler,))
         
         frame.final()
         
@@ -449,7 +459,7 @@ class NewDebugHandler(SimpleXMLFrame):
                         children={'identifier':str, 'value':int, 'byte-count':int, 'bytes-per-element':int, 'source-code-location':()},
                         handler=self.handle_array)
         self.handle_tag('routine', parent='inform-story-file',
-                        children={'identifier':str, 'address':int, 'source-code-location':()},
+                        children={'identifier':self.handle_ident_artificial, 'address':int, 'source-code-location':()},
                         handler=self.handle_function)
         self.handle_tag('source-code-location', active=False,
                         children={'line':int, 'file-index':int},
@@ -471,8 +481,13 @@ class NewDebugHandler(SimpleXMLFrame):
         self._debugfile.arrays.append(arr)
 
     def handle_function(self, name, attrs, obj):
-        func = NewDebugFunction(obj['identifier'], obj['address'], obj.get('source-code-location'))
+        (ident, artificial) = obj['identifier']
+        func = NewDebugFunction(ident, obj['address'], obj.get('source-code-location'), artificial=artificial)
         self._debugfile.functions.append(func)
+
+    def handle_ident_artificial(self, name, attrs, obj):
+        artificial = attrs.get('artificial')
+        return (obj.strip(), artificial)
 
     def handle_source_code_loc(self, name, attrs, obj):
         if obj.has_key('file-index'):
