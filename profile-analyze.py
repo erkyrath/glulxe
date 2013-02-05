@@ -378,13 +378,24 @@ class NewDebugFile:
     def __init__(self):
         self.globals = []
         self.arrays = []
+        self.constants = {}
+
+class NewDebugConstant:
+    def __init__(self, ident, value=None, sourceloc=None):
+        self.id = ident
+        self.value = value
+        if not sourceloc:
+            sourceloc = 'compiler'
+        self.sourceloc = sourceloc
+    def __repr__(self):
+        return '<Constant "%s": %d (%s)>' % (self.id, self.value, self.sourceloc)
 
 class NewDebugGlobal:
     def __init__(self, ident, address, sourceloc=None):
         self.id = ident
         self.address = address
         if not sourceloc:
-            sourceloc = 'veneer'
+            sourceloc = 'compiler'
         self.sourceloc = sourceloc
     def __repr__(self):
         return '<Global "%s" at %d (%s)>' % (self.id, self.address, self.sourceloc)
@@ -397,7 +408,7 @@ class NewDebugArray:
         self.bytesperel = bytesperel
         self.elcount = bytecount / bytesperel
         if not sourceloc:
-            sourceloc = 'veneer'
+            sourceloc = 'compiler'
         self.sourceloc = sourceloc
     def __repr__(self):
         return '<Array "%s", %d els of %d bytes (%d total), at %d (%s)>' % (self.id, self.elcount, self.bytesperel, self.bytecount, self.address, self.sourceloc)
@@ -416,6 +427,9 @@ class NewDebugHandler(SimpleXMLFrame):
     def init(self):
         self._debugfile = NewDebugFile()
         
+        self.handle_tag('constant', parent='inform-story-file',
+                        children={'identifier':str, 'value':int, 'source-code-location':()},
+                        handler=self.handle_constant)
         self.handle_tag('global-variable', parent='inform-story-file',
                         children={'identifier':str, 'address':int, 'source-code-location':()},
                         handler=self.handle_global_var)
@@ -428,6 +442,10 @@ class NewDebugHandler(SimpleXMLFrame):
 
     def debugfile(self):
         return self._debugfile
+
+    def handle_constant(self, name, attrs, obj):
+        con = NewDebugConstant(obj['identifier'], obj.get('value'), obj.get('source-code-location'))
+        self._debugfile.constants[con.id] = con
 
     def handle_global_var(self, name, attrs, obj):
         glob = NewDebugGlobal(obj['identifier'], obj['address'], obj.get('source-code-location'))
