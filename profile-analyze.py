@@ -326,10 +326,19 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
                 frame.accumobj = {}
         else:
             taghan = self.taghandlers.get(name)
-            if taghan and taghan.active:
-                frame.handler = taghan
-                frame.children = taghan.children
-                frame.accumobj = {}
+            if taghan:
+                active = taghan.active
+                if active:
+                    if taghan.parent is not None:
+                        if not (parframe and parframe.name == taghan.parent):
+                            active = False
+                    if taghan.depth is not None:
+                        if not (frame.depth == taghan.depth):
+                            active = False
+                if active:
+                    frame.handler = taghan
+                    frame.children = taghan.children
+                    frame.accumobj = {}
 
     def characters(self, data):
         frame = self.sstack[-1]
@@ -368,6 +377,30 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
 class NewDebugFile:
     def __init__(self):
         self.globals = []
+        self.arrays = []
+
+class NewDebugGlobal:
+    def __init__(self, ident, address, sourceloc=None):
+        self.id = ident
+        self.address = address
+        if not sourceloc:
+            sourceloc = 'veneer'
+        self.sourceloc = sourceloc
+    def __repr__(self):
+        return '<Global "%s" at %d (%s)>' % (self.id, self.address, self.sourceloc)
+
+class NewDebugArray:
+    def __init__(self, ident, address, bytecount, bytesperel, sourceloc=None):
+        self.id = ident
+        self.address = address
+        self.bytecount = bytecount
+        self.bytesperel = bytesperel
+        self.elcount = bytecount / bytesperel
+        if not sourceloc:
+            sourceloc = 'veneer'
+        self.sourceloc = sourceloc
+    def __repr__(self):
+        return '<Array "%s", %d els of %d bytes (%d total), at %d (%s)>' % (self.id, self.elcount, self.bytesperel, self.bytecount, self.address, self.sourceloc)
 
 class NewDebugSourceLoc:
     def __init__(self, line, fileref=None):
@@ -386,6 +419,9 @@ class NewDebugHandler(SimpleXMLFrame):
         self.handle_tag('global-variable', parent='inform-story-file',
                         children={'identifier':str, 'address':int, 'source-code-location':()},
                         handler=self.handle_global_var)
+        self.handle_tag('array', parent='inform-story-file',
+                        children={'identifier':str, 'value':int, 'byte-count':int, 'bytes-per-element':int, 'source-code-location':()},
+                        handler=self.handle_array)
         self.handle_tag('source-code-location', active=False,
                         children={'line':int, 'file-index':int},
                         handler=self.handle_source_code_loc)
@@ -394,8 +430,12 @@ class NewDebugHandler(SimpleXMLFrame):
         return self._debugfile
 
     def handle_global_var(self, name, attrs, obj):
-        glob = (obj['identifier'], obj['address'], obj.get('source-code-location'))
+        glob = NewDebugGlobal(obj['identifier'], obj['address'], obj.get('source-code-location'))
         self._debugfile.globals.append(glob)
+
+    def handle_array(self, name, attrs, obj):
+        arr = NewDebugArray(obj['identifier'], obj['value'], obj['byte-count'], obj['bytes-per-element'], obj.get('source-code-location'))
+        self._debugfile.arrays.append(arr)
 
     def handle_source_code_loc(self, name, attrs, obj):
         if obj.has_key('file-index'):
