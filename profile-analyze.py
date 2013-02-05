@@ -721,12 +721,14 @@ if (profile_raw):
 
 if (game_file_data):
     # Fill out the sourcemap global, by one of various methods
+    need_function_address_offset = False
     fl = open(game_file_data, 'rb')
     val = fl.read(2)
     fl.close()
     if (not val):
         pass
     elif (val == '\xde\xbf'):
+        need_function_address_offset = True
         fl = open(game_file_data, 'rb')
         debugfile = DebugFile(fl)
         fl.close()
@@ -737,7 +739,14 @@ if (game_file_data):
         han = NewDebugHandler()
         xml.sax.parse(game_file_data, han)
         debugfile = han.debugfile()
+        sourcemap = {}
+        for func in debugfile.functions:
+            linenum = 0
+            if func.sourceloc and isinstance(func.sourceloc, NewDebugSourceLoc):
+                linenum = func.sourceloc.line
+            sourcemap[func.address] = ( linenum, func.id )
     else:
+        need_function_address_offset = True
         fl = open(game_file_data, 'rU')
         parse_inform_assembly(fl)
         fl.close()
@@ -747,6 +756,14 @@ if (profile_raw):
     
     source_start = min([ func.addr for func in functions.values()
         if not func.special ])
+
+    # For old debug formats, all the function addresses are relative to
+    # the start of function memory. For the new format, they're all
+    # correct as-is.
+    if need_function_address_offset:
+        function_address_offset = source_start
+    else:
+        function_address_offset = 0
     
     if (not opts.dumbfrotz):
         print 'Code segment begins at', hex(source_start)
@@ -758,7 +775,7 @@ if (profile_raw):
         for (addr, func) in functions.items():
             if (func.special):
                 continue
-            tup = sourcemap.get(addr-source_start)
+            tup = sourcemap.get(addr-function_address_offset)
             if (not tup):
                 badls.append(addr)
                 continue
@@ -775,7 +792,7 @@ if (profile_raw):
             function_names[func.name] = func
     
     if (sourcemap):
-        uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+source_start) not in functions ]
+        uncalled_funcs = [ funcname for (addr, (linenum, funcname)) in sourcemap.items() if (addr+function_address_offset) not in functions ]
         if (not opts.dumbfrotz):
             print len(uncalled_funcs), 'functions found in', game_file_data, 'were never called'
     
