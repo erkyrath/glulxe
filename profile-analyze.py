@@ -396,10 +396,18 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
 
 class NewDebugFile:
     def __init__(self):
+        self.sourcefiles = {}
         self.constants = {}
         self.globals = []
         self.arrays = []
         self.functions = []
+
+class NewDebugSourceFile:
+    def __init__(self, index, filename):
+        self.index = index
+        self.filename = filename
+    def __repr__(self):
+        return '<SourceFile %d: "%s">' % (self.index, self.filename,)
 
 class NewDebugConstant:
     def __init__(self, ident, value=None, sourceloc=None):
@@ -451,8 +459,10 @@ class NewDebugSourceLoc:
         self.line = line
         self.fileref = fileref
     def __repr__(self):
-        if (self.fileref):
-            return '<SourceLoc line %d of file %d>' % (self.line, self.fileref)
+        if (isinstance(self.fileref, NewDebugSourceFile)):
+            return '<SourceLoc "%s" line %d>' % (self.fileref.filename, self.line)
+        elif (self.fileref):
+            return '<SourceLoc file #%d, line %d>' % (self.fileref, self.line)
         else:
             return '<SourceLoc line %d>' % (self.line,)
 
@@ -460,6 +470,9 @@ class NewDebugHandler(SimpleXMLFrame):
     def init(self):
         self._debugfile = NewDebugFile()
         
+        self.handle_tag('source', parent='inform-story-file',
+                        children={'given-path':str},
+                        handler=self.handle_source_file)
         self.handle_tag('constant', parent='inform-story-file',
                         children={'identifier':str, 'value':int, 'source-code-location':()},
                         handler=self.handle_constant)
@@ -480,6 +493,10 @@ class NewDebugHandler(SimpleXMLFrame):
 
     def debugfile(self):
         return self._debugfile
+
+    def handle_source_file(self, name, attrs, obj):
+        srcfile = NewDebugSourceFile(int(attrs['index']), obj['given-path'])
+        self._debugfile.sourcefiles[srcfile.index] = srcfile
 
     def handle_constant(self, name, attrs, obj):
         con = NewDebugConstant(obj['identifier'], obj.get('value'), obj.get('source-code-location'))
@@ -508,10 +525,12 @@ class NewDebugHandler(SimpleXMLFrame):
         return (obj.strip(), artificial)
 
     def handle_source_code_loc(self, name, attrs, obj):
-        if obj.has_key('file-index'):
-            return NewDebugSourceLoc(obj['line'], obj['file-index'])
-        else:
-            return NewDebugSourceLoc(obj['line'])
+        fileref = obj.get('file-index')
+        if fileref is not None:
+            srcfile = self._debugfile.sourcefiles.get(fileref)
+            if srcfile:
+                fileref = srcfile
+        return NewDebugSourceLoc(obj['line'], fileref)
 
             
 def parse_inform_assembly(fl):
