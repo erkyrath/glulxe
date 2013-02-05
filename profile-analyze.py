@@ -262,8 +262,147 @@ class ProfileRawHandler(xml.sax.handler.ContentHandler):
             func = Function(addr, hexaddr, attrs)
             functions[addr] = func
 
-class NewDebugHandler(xml.sax.handler.ContentHandler):
-    pass
+class SFrameHandler:
+    def __init__(self, tag, parent=None, depth=None, children={}, active=None, handler=None):
+        self.tag = tag
+        self.parent = parent
+        self.depth = depth
+        self.children = children
+        self.handler = handler
+        if active is None:
+            active = (handler is not None)
+        self.active = active
+
+class SFrameFrame:
+    def __init__(self, name, attrs, depth):
+        self.name = name
+        self.attrs = attrs
+        self.depth = depth
+        self.children = None
+        self.handler = None
+        self.accumchar = None
+        self.accumobj = None
+
+    def final(self):
+        self.name = None
+        self.attrs = None
+        self.children = None
+        self.handler = None
+        self.accumchar = None
+        self.accumobj = None
+            
+class SimpleXMLFrame(xml.sax.handler.ContentHandler):
+    def __init__(self):
+        xml.sax.handler.ContentHandler.__init__(self)
+        self.sstack = None
+        self.taghandlers = {}
+        self.init()
+
+    def startDocument(self):
+        self.sstack = []
+
+    def endDocument(self):
+        assert len(self.sstack) == 0
+        
+    def startElement(self, name, attrs):
+        parframe = None
+        if self.sstack:
+            parframe = self.sstack[-1]
+            
+        frame = SFrameFrame(name, attrs, len(self.sstack))
+        self.sstack.append(frame)
+
+        parhan = None
+        if parframe and parframe.children:
+            parhan = parframe.children.get(name)
+        if parhan is not None:
+            frame.handler = parhan
+            if parhan in (int, str):
+                frame.accumchar = []
+            elif parhan is ():
+                taghan = self.taghandlers[name]
+                frame.handler = taghan
+                frame.children = taghan.children
+                frame.accumobj = {}
+        else:
+            taghan = self.taghandlers.get(name)
+            if taghan and taghan.active:
+                frame.handler = taghan
+                frame.children = taghan.children
+                frame.accumobj = {}
+
+    def characters(self, data):
+        frame = self.sstack[-1]
+        if frame.accumchar is not None:
+            frame.accumchar.append(data)
+
+    def endElement(self, name):
+        frame = self.sstack.pop()
+        assert frame.name == name
+        
+        res = None
+        if frame.handler is None:
+            pass
+        elif frame.handler is str:
+            res = ''.join(frame.accumchar)
+        elif frame.handler is int:
+            val = ''.join(frame.accumchar)
+            res = int(val.strip())
+        elif isinstance(frame.handler, SFrameHandler):
+            if frame.handler.handler:
+                res = frame.handler.handler(frame.name, frame.attrs, frame.accumobj)
+            else:
+                res = frame.accumobj
+        
+        frame.final()
+        
+        if self.sstack and res is not None:
+            parframe = self.sstack[-1]
+            if parframe.accumobj is not None:
+                parframe.accumobj[name] = res
+
+    def handle_tag(self, tag, parent=None, depth=None, children={},
+                   active=None, handler=None):
+        self.taghandlers[tag] = SFrameHandler(tag, parent, depth, children, active, handler)
+
+class NewDebugFile:
+    def __init__(self):
+        self.globals = []
+
+class NewDebugSourceLoc:
+    def __init__(self, line, fileref=None):
+        self.line = line
+        self.fileref = fileref
+    def __repr__(self):
+        if (self.fileref):
+            return '<SourceLoc line %d of file %d>' % (self.line, self.fileref)
+        else:
+            return '<SourceLoc line %d>' % (self.line,)
+
+class NewDebugHandler(SimpleXMLFrame):
+    def init(self):
+        self._debugfile = NewDebugFile()
+        
+        self.handle_tag('global-variable', parent='inform-story-file',
+                        children={'identifier':str, 'address':int, 'source-code-location':()},
+                        handler=self.handle_global_var)
+        self.handle_tag('source-code-location', active=False,
+                        children={'line':int, 'file-index':int},
+                        handler=self.handle_source_code_loc)
+
+    def debugfile(self):
+        return self._debugfile
+
+    def handle_global_var(self, name, attrs, obj):
+        glob = (obj['identifier'], obj['address'], obj.get('source-code-location'))
+        self._debugfile.globals.append(glob)
+
+    def handle_source_code_loc(self, name, attrs, obj):
+        if obj.has_key('file-index'):
+            return NewDebugSourceLoc(obj['line'], obj['file-index'])
+        else:
+            return NewDebugSourceLoc(obj['line'])
+
             
 def parse_inform_assembly(fl):
     global sourcemap
@@ -518,7 +657,9 @@ if (game_file_data):
         for func in debugfile.functions.values():
             sourcemap[func.addr] = ( func.linenum[1], func.name )
     elif (val == '<?'):
-        xml.sax.parse(game_file_data, NewDebugHandler())
+        han = NewDebugHandler()
+        xml.sax.parse(game_file_data, han)
+        debugfile = han.debugfile()
     else:
         fl = open(game_file_data, 'rU')
         parse_inform_assembly(fl)
