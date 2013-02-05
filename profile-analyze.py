@@ -376,9 +376,10 @@ class SimpleXMLFrame(xml.sax.handler.ContentHandler):
 
 class NewDebugFile:
     def __init__(self):
+        self.constants = {}
         self.globals = []
         self.arrays = []
-        self.constants = {}
+        self.functions = []
 
 class NewDebugConstant:
     def __init__(self, ident, value=None, sourceloc=None):
@@ -413,6 +414,17 @@ class NewDebugArray:
     def __repr__(self):
         return '<Array "%s", %d els of %d bytes (%d total), at %d (%s)>' % (self.id, self.elcount, self.bytesperel, self.bytecount, self.address, self.sourceloc)
 
+class NewDebugFunction:
+    def __init__(self, ident, address, sourceloc=None, artificial=False):
+        self.id = ident
+        self.address = address
+        if not sourceloc:
+            sourceloc = 'veneer'
+        self.sourceloc = sourceloc
+        self.artificial = '*' if artificial else ''
+    def __repr__(self):
+        return '<Function "%s"%s at %d (%s)>' % (self.id, self.artificial, self.address, self.sourceloc)
+
 class NewDebugSourceLoc:
     def __init__(self, line, fileref=None):
         self.line = line
@@ -436,6 +448,9 @@ class NewDebugHandler(SimpleXMLFrame):
         self.handle_tag('array', parent='inform-story-file',
                         children={'identifier':str, 'value':int, 'byte-count':int, 'bytes-per-element':int, 'source-code-location':()},
                         handler=self.handle_array)
+        self.handle_tag('routine', parent='inform-story-file',
+                        children={'identifier':str, 'address':int, 'source-code-location':()},
+                        handler=self.handle_function)
         self.handle_tag('source-code-location', active=False,
                         children={'line':int, 'file-index':int},
                         handler=self.handle_source_code_loc)
@@ -454,6 +469,10 @@ class NewDebugHandler(SimpleXMLFrame):
     def handle_array(self, name, attrs, obj):
         arr = NewDebugArray(obj['identifier'], obj['value'], obj['byte-count'], obj['bytes-per-element'], obj.get('source-code-location'))
         self._debugfile.arrays.append(arr)
+
+    def handle_function(self, name, attrs, obj):
+        func = NewDebugFunction(obj['identifier'], obj['address'], obj.get('source-code-location'))
+        self._debugfile.functions.append(func)
 
     def handle_source_code_loc(self, name, attrs, obj):
         if obj.has_key('file-index'):
