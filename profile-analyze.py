@@ -398,6 +398,7 @@ class NewDebugFile:
     def __init__(self):
         self.sourcefiles = {}
         self.constants = {}
+        self.objects = []
         self.globals = []
         self.arrays = []
         self.functions = []
@@ -418,6 +419,17 @@ class NewDebugConstant:
         self.sourceloc = sourceloc
     def __repr__(self):
         return '<Constant "%s": %d (%s)>' % (self.id, self.value, self.sourceloc)
+
+class NewDebugObject:
+    def __init__(self, ident, value=None, sourceloc=None, artificial=False):
+        self.id = ident
+        self.value = value
+        if not sourceloc:
+            sourceloc = 'compiler'
+        self.sourceloc = sourceloc
+        self.artificial = '*' if artificial else ''
+    def __repr__(self):
+        return '<Object "%s"%s: %d (%s)>' % (self.id, self.artificial, self.value, self.sourceloc)
 
 class NewDebugGlobal:
     def __init__(self, ident, address, sourceloc=None):
@@ -476,6 +488,9 @@ class NewDebugHandler(SimpleXMLFrame):
         self.handle_tag('constant', parent='inform-story-file',
                         children={'identifier':str, 'value':int, 'source-code-location':()},
                         handler=self.handle_constant)
+        self.handle_tag('object', parent='inform-story-file',
+                        children={'identifier':self.handle_ident_artificial, 'value':int, 'source-code-location':()},
+                        handler=self.handle_object)
         self.handle_tag('global-variable', parent='inform-story-file',
                         children={'identifier':str, 'address':int, 'source-code-location':()},
                         handler=self.handle_global_var)
@@ -501,6 +516,11 @@ class NewDebugHandler(SimpleXMLFrame):
     def handle_constant(self, name, attrs, obj):
         con = NewDebugConstant(obj['identifier'], obj.get('value'), obj.get('source-code-location'))
         self._debugfile.constants[con.id] = con
+
+    def handle_object(self, name, attrs, obj):
+        (ident, artificial) = obj['identifier']
+        con = NewDebugObject(ident, obj.get('value'), obj.get('source-code-location'), artificial=artificial)
+        self._debugfile.objects.append(con)
 
     def handle_global_var(self, name, attrs, obj):
         glob = NewDebugGlobal(obj['identifier'], obj['address'], obj.get('source-code-location'))
