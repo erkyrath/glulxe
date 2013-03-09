@@ -34,6 +34,10 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
+0.5.1 (###):
+    Fixed a bug in glkop.c that prevented get_buffer_stream() from
+    working right.
+
 0.5.0 (Oct 18, 2012):
     Turned on memory-range checking in the default build. (Should have
     done this years ago.)

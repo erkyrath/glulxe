@@ -775,6 +775,7 @@ static void unparse_glk_args(dispatch_splot_t *splot, char **proto, int depth,
 
         switch (typeclass) {
         case 'C':
+          ReleaseCArray(garglist[gargnum].array, varglist[ix], varglist[ix+1], passout);
           gargnum++;
           ix++;
           gargnum++;
