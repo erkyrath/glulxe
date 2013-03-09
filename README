@@ -37,6 +37,9 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 0.5.1 (###):
     Fixed a bug in glkop.c that prevented get_buffer_stream() from
     working right.
+    Updated profile-analyze.py to understand the upcoming, updated I6
+    debug file format. (See http://inform7.com/mantis/view.php?id=1073)
+    The old format is still supported.
 
 0.5.0 (Oct 18, 2012):
     Turned on memory-range checking in the default build. (Should have
