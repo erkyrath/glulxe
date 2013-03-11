@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.5.0
+Version 0.5.1
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://eblong.com/zarf/glulx/index.html
@@ -34,7 +34,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
-0.5.1 (###):
+0.5.1 (Mar 10, 2013):
     Fixed a bug in glkop.c that prevented get_buffer_stream() from
     working right.
     Updated profile-analyze.py to understand the upcoming, updated I6
