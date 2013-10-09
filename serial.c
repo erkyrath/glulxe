@@ -446,7 +446,7 @@ glui32 perform_restore(strid_t str, int fromshell)
 
   while (res == 0 && dest.pos < filestart+filelen) {
     /* Read a chunk and deal with it. */
-    glui32 chunktype, chunkstart, chunklen=0;
+    glui32 chunktype=0, chunkstart=0, chunklen=0;
     unsigned char dummy;
 
     if (res == 0) {
