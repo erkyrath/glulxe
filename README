@@ -1,5 +1,5 @@
 Glulxe: the Glulx VM interpreter
-Version 0.5.1
+Version 0.5.2
 
     Designed by Andrew Plotkin <erkyrath@eblong.com>
     http://eblong.com/zarf/glulx/index.html
@@ -33,6 +33,10 @@ these in. If your platform does not support these functions, you can
 comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
+
+0.5.2 (###):
+    Added acceleration functions 8 through 13, which work correctly when
+    NUM_ATTR_BYTES is changed.
 
 0.5.1 (Mar 10, 2013):
     Fixed a bug in glkop.c that prevented get_buffer_stream() from
