@@ -34,7 +34,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
-0.5.2 (###):
+0.5.2 (Mar 27, 2014):
     Added acceleration functions 8 through 13, which work correctly when
     NUM_ATTR_BYTES is changed.
 
