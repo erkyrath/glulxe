@@ -115,7 +115,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
     if (depth == 0) {
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
-            if (xmlStrcmp(name, (xmlChar *)"inform-story-file")) {
+            if (xmlStrcmp(name, BAD_CAST "inform-story-file")) {
                 printf("Error: This is not an Inform debug info file.\n"); /*###*/
                 context->failed = 1;
             }
@@ -123,12 +123,13 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
         else if (nodetype == XML_ELEMENT_DECL) {
             /* End of document */
             context->curgrouptype = grp_None;
+            context->curfieldtype = grp_None;
         }
     }
     else if (depth == 1) {
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
-            if (xmlStrcmp(name, (xmlChar *)"constant"))
+            if (!xmlStrcmp(name, BAD_CAST "constant"))
                 context->curgrouptype = grp_Constant;
             else
                 context->curgrouptype = grp_None;
@@ -153,9 +154,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
             /* These fields are always simple text nodes. */
-            if (xmlStrcmp(name, (xmlChar *)"identifier"))
+            if (!xmlStrcmp(name, BAD_CAST "identifier"))
                 context->curfieldtype = grp_Identifier;
-            else if (xmlStrcmp(name, (xmlChar *)"value"))
+            else if (!xmlStrcmp(name, BAD_CAST "value"))
                 context->curfieldtype = grp_Value;
         }
         else if (nodetype == XML_TEXT_NODE) {
