@@ -24,6 +24,11 @@ typedef enum grouptype_enum {
     grp_Value = 22,
 } grouptype;
 
+typedef struct infoconstant_struct {
+    const xmlChar *identifier;
+    int32_t value;
+} infoconstant;
+
 typedef struct xmlreadcontext_struct {
     strid_t str;
     int failed;
@@ -139,7 +144,10 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
             switch (context->curgrouptype) {
             case grp_Constant:
                 if (context->tempidentifier && context->tempvalue) {
-                    printf("### constant %s, %s\n", context->tempidentifier, context->tempvalue);
+                    infoconstant *dat = (infoconstant *)malloc(sizeof(infoconstant));
+                    dat->identifier = xmlStrdup(context->tempidentifier);
+                    dat->value = strtol((const char *)context->tempvalue, NULL, 10);
+                    xmlHashAddEntry(context->identifiers, dat->identifier, dat);
                 }
                 break;
             default:
