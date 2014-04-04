@@ -1,3 +1,13 @@
+/* debugger.c: Glulxe debugger functions.
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
+    http://eblong.com/zarf/glulx/index.html
+*/
+
+/* Don't get excited. This is just stub code right now. I'm feeling out
+   how a debugger would fit into the source. I haven't actually written
+   one yet.
+*/
+
 #include "glk.h"
 #include "glulxe.h"
 
