@@ -92,28 +92,6 @@ static int xmlclosefunc(void *rock)
 
 static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
 {
-    /*###
-    const xmlChar *name, *value;
-    name = xmlTextReaderConstName(reader);
-    if (name == NULL)
-        name = BAD_CAST "--";
-    value = xmlTextReaderConstValue(reader);
-    printf("%d %d %s %d %d",
-        xmlTextReaderDepth(reader),
-        xmlTextReaderNodeType(reader),
-        name,
-        xmlTextReaderIsEmptyElement(reader),
-        xmlTextReaderHasValue(reader));
-    if (value == NULL)
-        printf("\n");
-    else {
-        if (xmlStrlen(value) > 40)
-            printf(" %.40s...\n", value);
-        else
-            printf(" %s\n", value);
-    }
-    ###*/
-
     int depth = xmlTextReaderDepth(reader);
     int nodetype = xmlTextReaderNodeType(reader);
 
