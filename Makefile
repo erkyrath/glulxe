@@ -35,7 +35,8 @@ CFLAGS = $(OPTIONS) -I$(GLKINCLUDEDIR)
 LIBS = -L$(GLKLIBDIR) $(GLKLIB) $(LINKLIBS) -lm
 
 OBJS = main.o files.o vm.o exec.o funcs.o operand.o string.o glkop.o \
-  heap.o serial.o search.o accel.o float.o gestalt.o osdepend.o profile.o
+  heap.o serial.o search.o accel.o float.o gestalt.o osdepend.o \
+  profile.o debugger.o
 
 all: glulxe
 

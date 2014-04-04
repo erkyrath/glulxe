@@ -49,6 +49,9 @@ typedef int16_t glsi16;
    written to a data file called "profile-raw". */
 /* #define VM_PROFILING (1) */
 
+/* Uncomment this definition to turn on the Glulx debugger. */
+#define VM_DEBUGGER (1)
+
 /* Comment this definition to turn off floating-point support. You
    might need to do this if you are building on a very limited platform
    with no math library. */
@@ -295,6 +298,10 @@ extern void profile_quit(void);
 #define profile_fail(reason)   (0)
 #define profile_quit()         (0)
 #endif /* VM_PROFILING */
+
+#if VM_DEBUGGER
+extern void debugger_load_info(strid_t stream);
+#endif /* VM_DEBUGGER */
 
 /* accel.c */
 typedef glui32 (*acceleration_func)(glui32 argc, glui32 *argv);

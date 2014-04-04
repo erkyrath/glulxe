@@ -22,6 +22,9 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 #if VM_PROFILING
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
 #endif /* VM_PROFILING */
+#if VM_DEBUGGER
+  { "--gameinfo", glkunix_arg_ValueFollows, "Read debug information from a file." },
+#endif /* VM_DEBUGGER */
 
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
 
@@ -57,6 +60,23 @@ int glkunix_startup_code(glkunix_startup_t *data)
       continue;
     }
 #endif /* VM_PROFILING */
+
+#if VM_DEBUGGER
+    if (!strcmp(data->argv[ix], "--gameinfo")) {
+      ix++;
+      if (ix<data->argc) {
+        strid_t debugstr = glkunix_stream_open_pathname_gen(data->argv[ix], FALSE, FALSE, 1);
+        if (!debugstr) {
+          init_err = "Unable to open gameinfo file.";
+          init_err2 = data->argv[ix];
+          return TRUE;
+        }
+        debugger_load_info(debugstr);
+        glk_stream_close(debugstr, NULL);
+      }
+      continue;
+    }
+#endif /* VM_DEBUGGER */
 
     if (filename) {
       init_err = "You must supply exactly one game file.";
