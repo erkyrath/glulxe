@@ -18,6 +18,10 @@
 typedef enum grouptype_enum {
     grp_None = 0,
     grp_Constant = 1,
+
+    /* These are fields, not groups */
+    grp_Identifier = 21,
+    grp_Value = 22,
 } grouptype;
 
 typedef struct xmlreadcontext_struct {
@@ -25,9 +29,44 @@ typedef struct xmlreadcontext_struct {
     int failed;
 
     grouptype curgrouptype;
+    grouptype curfieldtype;
+    const xmlChar *tempidentifier;
+    const xmlChar *tempvalue;
 
     xmlHashTablePtr identifiers;
 } xmlreadcontext;
+
+static void set_field_identifier(xmlreadcontext *context, const xmlChar *text)
+{
+    if (!text) {
+        if (context->tempidentifier) {
+            xmlFree((void *)context->tempidentifier);
+            context->tempidentifier = NULL;
+        }
+    }
+    else {
+        if (context->tempidentifier) {
+            xmlFree((void *)context->tempidentifier);
+        }
+        context->tempidentifier = xmlStrdup(text);
+    }
+}
+
+static void set_field_value(xmlreadcontext *context, const xmlChar *text)
+{
+    if (!text) {
+        if (context->tempvalue) {
+            xmlFree((void *)context->tempvalue);
+            context->tempvalue = NULL;
+        }
+    }
+    else {
+        if (context->tempvalue) {
+            xmlFree((void *)context->tempvalue);
+        }
+        context->tempvalue = xmlStrdup(text);
+    }
+}
 
 static int xmlreadfunc(void *rock, char *buffer, int len)
 {
@@ -89,7 +128,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
     else if (depth == 1) {
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
-            if (xmlStrcmp(name, (xmlChar *)"identifier"))
+            if (xmlStrcmp(name, (xmlChar *)"constant"))
                 context->curgrouptype = grp_Constant;
             else
                 context->curgrouptype = grp_None;
@@ -98,16 +137,40 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
             /* End of group */
             switch (context->curgrouptype) {
             case grp_Constant:
-                if (context->identifierval && context->valueval) {
-                    printf("### constant %s, %s\n", context->identifierval, context->valueval);
+                if (context->tempidentifier && context->tempvalue) {
+                    printf("### constant %s, %s\n", context->tempidentifier, context->tempvalue);
                 }
                 break;
+            default:
+                break;
             }
+            context->curgrouptype = grp_None;
             set_field_identifier(context, NULL);
             set_field_value(context, NULL);
         }
     }
     else {
+        if (nodetype == XML_ELEMENT_NODE) {
+            const xmlChar *name = xmlTextReaderConstName(reader);
+            /* These fields are always simple text nodes. */
+            if (xmlStrcmp(name, (xmlChar *)"identifier"))
+                context->curfieldtype = grp_Identifier;
+            else if (xmlStrcmp(name, (xmlChar *)"value"))
+                context->curfieldtype = grp_Value;
+        }
+        else if (nodetype == XML_TEXT_NODE) {
+            const xmlChar *text = xmlTextReaderConstValue(reader); 
+            if (context->curfieldtype == grp_Identifier) {
+                set_field_identifier(context, text);
+                context->curfieldtype = grp_None;
+            }
+            else if (context->curfieldtype == grp_Value) {
+                set_field_value(context, text);
+                context->curfieldtype = grp_None;
+            }
+        }
+        else if (nodetype == XML_ELEMENT_DECL) {
+        }
     }
 }
 
@@ -116,7 +179,10 @@ void debugger_load_info(strid_t stream)
     xmlreadcontext *context = (xmlreadcontext *)malloc(sizeof(xmlreadcontext));
     context->str = stream;
     context->failed = 0;
+    context->tempvalue = NULL;
+    context->tempidentifier = NULL;
     context->curgrouptype = grp_None;
+    context->curfieldtype = grp_None;
     context->identifiers = xmlHashCreate(16);
 
     xmlTextReaderPtr reader;
