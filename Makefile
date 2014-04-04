@@ -29,10 +29,13 @@ CC = gcc
 
 OPTIONS = -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-unused -DOS_UNIX
 
+XMLLIB = -lxml2
+XMLLIBINCLUDEDIR = -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/usr/include/libxml2
+
 include $(GLKINCLUDEDIR)/$(GLKMAKEFILE)
 
-CFLAGS = $(OPTIONS) -I$(GLKINCLUDEDIR)
-LIBS = -L$(GLKLIBDIR) $(GLKLIB) $(LINKLIBS) -lm
+CFLAGS = $(OPTIONS) -I$(GLKINCLUDEDIR) $(XMLLIBINCLUDEDIR)
+LIBS = -L$(GLKLIBDIR) $(GLKLIB) $(LINKLIBS) -lm $(XMLLIB)
 
 OBJS = main.o files.o vm.o exec.o funcs.o operand.o string.o glkop.o \
   heap.o serial.o search.o accel.o float.o gestalt.o osdepend.o \

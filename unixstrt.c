@@ -72,7 +72,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
           return TRUE;
         }
         debugger_load_info(debugstr);
-        glk_stream_close(debugstr, NULL);
+        /* That closed debugstr after loading. */
       }
       continue;
     }
