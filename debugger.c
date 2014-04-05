@@ -18,6 +18,7 @@
 typedef enum grouptype_enum {
     grp_None = 0,
     grp_Constant = 1,
+    grp_Routine = 2,
 
     /* These are fields, not groups */
     grp_Identifier = 21,
@@ -29,6 +30,12 @@ typedef struct infoconstant_struct {
     int32_t value;
 } infoconstant;
 
+typedef struct inforoutine_struct {
+    const xmlChar *identifier;
+    int32_t address;
+    int32_t length;
+} inforoutine;
+
 typedef struct xmlreadcontext_struct {
     strid_t str;
     int failed;
@@ -38,7 +45,8 @@ typedef struct xmlreadcontext_struct {
     const xmlChar *tempidentifier;
     const xmlChar *tempvalue;
 
-    xmlHashTablePtr identifiers;
+    xmlHashTablePtr constants;
+    xmlHashTablePtr routines;
 } xmlreadcontext;
 
 static void set_field_identifier(xmlreadcontext *context, const xmlChar *text)
@@ -114,6 +122,8 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
             const xmlChar *name = xmlTextReaderConstName(reader);
             if (!xmlStrcmp(name, BAD_CAST "constant"))
                 context->curgrouptype = grp_Constant;
+            else if (!xmlStrcmp(name, BAD_CAST "routine"))
+                context->curgrouptype = grp_Routine;
             else
                 context->curgrouptype = grp_None;
         }
@@ -125,7 +135,17 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                     infoconstant *dat = (infoconstant *)malloc(sizeof(infoconstant));
                     dat->identifier = xmlStrdup(context->tempidentifier);
                     dat->value = strtol((const char *)context->tempvalue, NULL, 10);
-                    xmlHashAddEntry(context->identifiers, dat->identifier, dat);
+                    xmlHashAddEntry(context->constants, dat->identifier, dat);
+                }
+                break;
+            case grp_Routine:
+                if (context->tempidentifier && context->tempvalue) {
+                    inforoutine *dat = (inforoutine *)malloc(sizeof(inforoutine));
+                    dat->identifier = xmlStrdup(context->tempidentifier);
+                    dat->address = strtol((const char *)context->tempvalue, NULL, 10);
+                    dat->length = 0; /*###*/
+                    printf("### routine %s at %d\n", dat->identifier, dat->address);
+                    xmlHashAddEntry(context->routines, dat->identifier, dat);
                 }
                 break;
             default:
@@ -170,7 +190,8 @@ void debugger_load_info(strid_t stream)
     context->tempidentifier = NULL;
     context->curgrouptype = grp_None;
     context->curfieldtype = grp_None;
-    context->identifiers = xmlHashCreate(16);
+    context->constants = xmlHashCreate(16);
+    context->routines = xmlHashCreate(16);
 
     xmlTextReaderPtr reader;
     reader = xmlReaderForIO(xmlreadfunc, xmlclosefunc, context, 
