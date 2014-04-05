@@ -148,8 +148,10 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
                     xmlChar *text = nod->children->content;
                     if (context->curgrouptype == grp_Constant) {
-                        if (context->tempconstant)
-                            context->tempconstant->identifier = xmlStrdup(text);
+                        if (context->tempconstant) {
+                            if (depth == 2)
+                                context->tempconstant->identifier = xmlStrdup(text);
+                        }
                     }
                     else if (context->curgrouptype == grp_Routine) {
                         if (context->temproutine) {
@@ -164,8 +166,10 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
                     xmlChar *text = xmlStrdup(nod->children->content);
                     if (context->curgrouptype == grp_Constant) {
-                        if (context->tempconstant)
-                            context->tempconstant->value = strtol((char *)text, NULL, 10);
+                        if (context->tempconstant) {
+                            if (depth == 2)
+                                context->tempconstant->value = strtol((char *)text, NULL, 10);
+                        }
                     }
                     else if (context->curgrouptype == grp_Routine) {
                         if (context->temproutine) {
