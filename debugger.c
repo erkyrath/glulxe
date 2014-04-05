@@ -121,7 +121,6 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                 if (context->tempconstant) {
                     infoconstant *dat = context->tempconstant;
                     context->tempconstant = NULL;
-                    printf("### constant '%s' (%d)\n", dat->identifier, dat->value);
                     xmlHashAddEntry(context->constants, dat->identifier, dat);
                 }
                 break;
@@ -129,7 +128,6 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                 if (context->temproutine) {
                     inforoutine *dat = context->temproutine;
                     context->temproutine = NULL;
-                    printf("### routine '%s' (%d, len %d)\n", dat->identifier, dat->address, dat->length);
                     xmlHashAddEntry(context->routines, dat->identifier, dat);
                 }
                 break;
@@ -175,6 +173,18 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                         if (context->temproutine) {
                             if (depth == 2)
                                 context->temproutine->address = strtol((char *)text, NULL, 10);
+                        }
+                    }
+                }
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "byte-count")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    xmlChar *text = xmlStrdup(nod->children->content);
+                    if (context->curgrouptype == grp_Routine) {
+                        if (context->temproutine) {
+                            if (depth == 2)
+                                context->temproutine->length = strtol((char *)text, NULL, 10);
                         }
                     }
                 }
