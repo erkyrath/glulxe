@@ -19,10 +19,6 @@ typedef enum grouptype_enum {
     grp_None = 0,
     grp_Constant = 1,
     grp_Routine = 2,
-
-    /* These are fields, not groups */
-    grp_Identifier = 21,
-    grp_Value = 22,
 } grouptype;
 
 typedef struct infoconstant_struct {
@@ -41,44 +37,29 @@ typedef struct xmlreadcontext_struct {
     int failed;
 
     grouptype curgrouptype;
-    grouptype curfieldtype;
-    const xmlChar *tempidentifier;
-    const xmlChar *tempvalue;
+
+    infoconstant *tempconstant;
+    inforoutine *temproutine;
 
     xmlHashTablePtr constants;
     xmlHashTablePtr routines;
 } xmlreadcontext;
 
-static void set_field_identifier(xmlreadcontext *context, const xmlChar *text)
+static infoconstant *create_infoconstant()
 {
-    if (!text) {
-        if (context->tempidentifier) {
-            xmlFree((void *)context->tempidentifier);
-            context->tempidentifier = NULL;
-        }
-    }
-    else {
-        if (context->tempidentifier) {
-            xmlFree((void *)context->tempidentifier);
-        }
-        context->tempidentifier = xmlStrdup(text);
-    }
+    infoconstant *cons = (infoconstant *)malloc(sizeof(infoconstant));
+    cons->identifier = NULL;
+    cons->value = 0;
+    return cons;
 }
 
-static void set_field_value(xmlreadcontext *context, const xmlChar *text)
+static inforoutine *create_inforoutine()
 {
-    if (!text) {
-        if (context->tempvalue) {
-            xmlFree((void *)context->tempvalue);
-            context->tempvalue = NULL;
-        }
-    }
-    else {
-        if (context->tempvalue) {
-            xmlFree((void *)context->tempvalue);
-        }
-        context->tempvalue = xmlStrdup(text);
-    }
+    inforoutine *cons = (inforoutine *)malloc(sizeof(inforoutine));
+    cons->identifier = NULL;
+    cons->address = 0;
+    cons->length = 0;
+    return cons;
 }
 
 static int xmlreadfunc(void *rock, char *buffer, int len)
@@ -114,37 +95,41 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
         else if (nodetype == XML_ELEMENT_DECL) {
             /* End of document */
             context->curgrouptype = grp_None;
-            context->curfieldtype = grp_None;
+            context->tempconstant = NULL;
+            context->temproutine = NULL;
         }
     }
     else if (depth == 1) {
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
-            if (!xmlStrcmp(name, BAD_CAST "constant"))
+            if (!xmlStrcmp(name, BAD_CAST "constant")) {
                 context->curgrouptype = grp_Constant;
-            else if (!xmlStrcmp(name, BAD_CAST "routine"))
+                context->tempconstant = create_infoconstant();
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "routine")) {
                 context->curgrouptype = grp_Routine;
-            else
+                context->temproutine = create_inforoutine();
+            }
+            else {
                 context->curgrouptype = grp_None;
+            }
         }
         else if (nodetype == XML_ELEMENT_DECL) {
             /* End of group */
             switch (context->curgrouptype) {
             case grp_Constant:
-                if (context->tempidentifier && context->tempvalue) {
-                    infoconstant *dat = (infoconstant *)malloc(sizeof(infoconstant));
-                    dat->identifier = xmlStrdup(context->tempidentifier);
-                    dat->value = strtol((const char *)context->tempvalue, NULL, 10);
+                if (context->tempconstant) {
+                    infoconstant *dat = context->tempconstant;
+                    context->tempconstant = NULL;
+                    printf("### constant '%s' (%d)\n", dat->identifier, dat->value);
                     xmlHashAddEntry(context->constants, dat->identifier, dat);
                 }
                 break;
             case grp_Routine:
-                if (context->tempidentifier && context->tempvalue) {
-                    inforoutine *dat = (inforoutine *)malloc(sizeof(inforoutine));
-                    dat->identifier = xmlStrdup(context->tempidentifier);
-                    dat->address = strtol((const char *)context->tempvalue, NULL, 10);
-                    dat->length = 0; /*###*/
-                    printf("### routine %s at %d\n", dat->identifier, dat->address);
+                if (context->temproutine) {
+                    inforoutine *dat = context->temproutine;
+                    context->temproutine = NULL;
+                    printf("### routine '%s' (%d, len %d)\n", dat->identifier, dat->address, dat->length);
                     xmlHashAddEntry(context->routines, dat->identifier, dat);
                 }
                 break;
@@ -152,31 +137,44 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
                 break;
             }
             context->curgrouptype = grp_None;
-            set_field_identifier(context, NULL);
-            set_field_value(context, NULL);
         }
     }
     else {
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
             /* These fields are always simple text nodes. */
-            if (!xmlStrcmp(name, BAD_CAST "identifier"))
-                context->curfieldtype = grp_Identifier;
-            else if (!xmlStrcmp(name, BAD_CAST "value"))
-                context->curfieldtype = grp_Value;
-        }
-        else if (nodetype == XML_TEXT_NODE) {
-            const xmlChar *text = xmlTextReaderConstValue(reader); 
-            if (context->curfieldtype == grp_Identifier) {
-                set_field_identifier(context, text);
-                context->curfieldtype = grp_None;
+            if (!xmlStrcmp(name, BAD_CAST "identifier")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    xmlChar *text = nod->children->content;
+                    if (context->curgrouptype == grp_Constant) {
+                        if (context->tempconstant)
+                            context->tempconstant->identifier = xmlStrdup(text);
+                    }
+                    else if (context->curgrouptype == grp_Routine) {
+                        if (context->temproutine) {
+                            if (depth == 2)
+                                context->temproutine->identifier = xmlStrdup(text);
+                        }
+                    }
+                }
             }
-            else if (context->curfieldtype == grp_Value) {
-                set_field_value(context, text);
-                context->curfieldtype = grp_None;
+            else if (!xmlStrcmp(name, BAD_CAST "value")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    xmlChar *text = xmlStrdup(nod->children->content);
+                    if (context->curgrouptype == grp_Constant) {
+                        if (context->tempconstant)
+                            context->tempconstant->value = strtol((char *)text, NULL, 10);
+                    }
+                    else if (context->curgrouptype == grp_Routine) {
+                        if (context->temproutine) {
+                            if (depth == 2)
+                                context->temproutine->address = strtol((char *)text, NULL, 10);
+                        }
+                    }
+                }
             }
-        }
-        else if (nodetype == XML_ELEMENT_DECL) {
         }
     }
 }
@@ -186,10 +184,9 @@ void debugger_load_info(strid_t stream)
     xmlreadcontext *context = (xmlreadcontext *)malloc(sizeof(xmlreadcontext));
     context->str = stream;
     context->failed = 0;
-    context->tempvalue = NULL;
-    context->tempidentifier = NULL;
+    context->tempconstant = NULL;
+    context->temproutine = NULL;
     context->curgrouptype = grp_None;
-    context->curfieldtype = grp_None;
     context->constants = xmlHashCreate(16);
     context->routines = xmlHashCreate(16);
 
