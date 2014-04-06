@@ -8,6 +8,12 @@
 #include "glulxe.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
+#if VM_DEBUGGER
+/* This header file may come with the Glk library. If it doesn't, comment
+   out VM_DEBUGGER in glulxe.h -- you won't be able to use debugging. */
+#include "gi_debug.h" 
+#endif /* VM_DEBUGGER */
+
 /* The only command-line argument is the filename. And the profiling switch,
    if that's compiled in. The only *two* command-line arguments are... 
 
@@ -76,6 +82,11 @@ int glkunix_startup_code(glkunix_startup_t *data)
       }
       continue;
     }
+
+#if GIDEBUG_LIBRARY_SUPPORT
+    gidebug_debugging_available();
+#endif /* GIDEBUG_LIBRARY_SUPPORT */
+
 #endif /* VM_DEBUGGER */
 
     if (filename) {

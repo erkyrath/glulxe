@@ -49,7 +49,7 @@ typedef int16_t glsi16;
    written to a data file called "profile-raw". */
 /* #define VM_PROFILING (1) */
 
-/* Uncomment this definition to turn on the Glulx debugger. */
+/* Uncomment this definition to turn on the Glulx debugger. ###debug */
 #define VM_DEBUGGER (1)
 
 /* Comment this definition to turn off floating-point support. You
