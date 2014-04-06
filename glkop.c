@@ -214,7 +214,7 @@ int init_dispatch()
 #ifdef GIDISPATCH_AUTORESTORE_REGISTRY
   gidispatch_set_autorestore_registry(&glulxe_array_locate,
     &glulxe_array_restore);
-#endif // GIDISPATCH_AUTORESTORE_REGISTRY
+#endif /* GIDISPATCH_AUTORESTORE_REGISTRY */
   
   return TRUE;
 }
@@ -1422,7 +1422,7 @@ static long glulxe_array_locate(void *array, glui32 len,
     elemsize = 4;
 
   if (!elemsize || array == NULL) {
-    *elemsizeref = 0; // No need to save the array separately
+    *elemsizeref = 0; /* No need to save the array separately */
     return (unsigned char *)array - memmap;
   }
   

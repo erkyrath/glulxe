@@ -27,7 +27,7 @@
    so we define it as a blank stub. */
 #ifndef GLK_ATTRIBUTE_NORETURN
 #define GLK_ATTRIBUTE_NORETURN
-#endif // GLK_ATTRIBUTE_NORETURN
+#endif /* GLK_ATTRIBUTE_NORETURN */
 
 /* If your system does not have <stdint.h>, you'll have to remove this
     include line. Then edit the definition of glui16 to make sure it's
