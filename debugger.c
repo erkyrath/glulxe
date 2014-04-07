@@ -13,6 +13,7 @@
 
 #if VM_DEBUGGER
 
+#include "gi_debug.h" 
 #include <libxml/xmlreader.h>
 
 typedef enum grouptype_enum {
@@ -233,6 +234,11 @@ void debugger_load_info(strid_t stream)
         /*### free */
         return;
     }
+}
+
+void debugger_cmd_handler(char *cmd)
+{
+    gidebug_output(cmd);
 }
 
 #endif /* VM_DEBUGGER */

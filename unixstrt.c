@@ -84,7 +84,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
     }
 
 #if GIDEBUG_LIBRARY_SUPPORT
-    gidebug_debugging_available();
+    gidebug_debugging_available(debugger_cmd_handler);
 #endif /* GIDEBUG_LIBRARY_SUPPORT */
 
 #endif /* VM_DEBUGGER */

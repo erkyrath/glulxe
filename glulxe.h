@@ -301,6 +301,7 @@ extern void profile_quit(void);
 
 #if VM_DEBUGGER
 extern void debugger_load_info(strid_t stream);
+extern void debugger_cmd_handler(char *cmd);
 #endif /* VM_DEBUGGER */
 
 /* accel.c */
