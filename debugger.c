@@ -34,7 +34,7 @@ typedef struct inforoutine_struct {
     int32_t length;
 } inforoutine;
 
-typedef struct xmlreadcontext_struct {
+typedef struct debuginfofile_struct {
     strid_t str;
     int failed;
 
@@ -45,13 +45,13 @@ typedef struct xmlreadcontext_struct {
 
     xmlHashTablePtr constants;
     xmlHashTablePtr routines;
-} xmlreadcontext;
+} debuginfofile;
 
-static xmlreadcontext *debuginfo = NULL;
+static debuginfofile *debuginfo = NULL;
 
-static xmlreadcontext *create_xmlreadcontext()
+static debuginfofile *create_debuginfofile()
 {
-    xmlreadcontext *context = (xmlreadcontext *)malloc(sizeof(xmlreadcontext));
+    debuginfofile *context = (debuginfofile *)malloc(sizeof(debuginfofile));
     context->str = NULL;
     context->failed = 0;
     context->tempconstant = NULL;
@@ -63,7 +63,7 @@ static xmlreadcontext *create_xmlreadcontext()
     return context;
 }
 
-static void free_xmlreadcontext(xmlreadcontext *context)
+static void free_debuginfofile(debuginfofile *context)
 {
     if (!context)
         return;
@@ -108,7 +108,7 @@ static inforoutine *create_inforoutine()
 
 static int xmlreadfunc(void *rock, char *buffer, int len)
 {
-    xmlreadcontext *context = rock;
+    debuginfofile *context = rock;
     int res = glk_get_buffer_stream(context->str, buffer, len);
     if (res < 0)
         return -1;
@@ -117,13 +117,13 @@ static int xmlreadfunc(void *rock, char *buffer, int len)
 
 static int xmlclosefunc(void *rock)
 {
-    xmlreadcontext *context = rock;
+    debuginfofile *context = rock;
     glk_stream_close(context->str, NULL);
     context->str = NULL;
     return 0;
 }
 
-static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
+static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
 {
     int depth = xmlTextReaderDepth(reader);
     int nodetype = xmlTextReaderNodeType(reader);
@@ -239,7 +239,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
 
 void debugger_load_info(strid_t stream)
 {
-    xmlreadcontext *context = create_xmlreadcontext();
+    debuginfofile *context = create_debuginfofile();
     context->str = stream;
 
     xmlTextReaderPtr reader;
@@ -248,7 +248,7 @@ void debugger_load_info(strid_t stream)
         XML_PARSE_RECOVER|XML_PARSE_NOENT|XML_PARSE_NONET|XML_PARSE_NOCDATA|XML_PARSE_COMPACT);
     if (!reader) {
         printf("Error: Unable to create XML reader.\n"); /*###*/
-        free_xmlreadcontext(context);
+        free_debuginfofile(context);
         return;
     }
 
@@ -269,7 +269,7 @@ void debugger_load_info(strid_t stream)
 
     if (context->failed) {
         printf("Error: Unable to load debug info.\n"); /*###*/
-        free_xmlreadcontext(context);
+        free_debuginfofile(context);
         return;
     }
 
