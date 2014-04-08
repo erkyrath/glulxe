@@ -118,6 +118,12 @@ static winid_t get_error_win()
 */
 void fatal_error_handler(char *str, char *arg, int useval, glsi32 val)
 {
+#if VM_DEBUGGER
+  /* If the debugger is compiled in, try sending the error and stack
+     trace to the debug console. */
+  debugger_error_trace(str);
+#endif /* VM_DEBUGGER */
+
   winid_t win = get_error_win();
   if (win) {
     glk_set_window(win);

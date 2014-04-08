@@ -13,6 +13,7 @@
 
 #if VM_DEBUGGER
 
+#include <string.h>
 #include "gi_debug.h" 
 #include <libxml/xmlreader.h>
 
@@ -236,8 +237,57 @@ void debugger_load_info(strid_t stream)
     }
 }
 
+static char *linebuf = NULL;
+static int linebufsize = 0;
+
+static void ensure_line_buf(int len)
+{
+    len += 1; /* for the closing null */
+    if (linebuf && len <= linebufsize)
+        return;
+
+    linebufsize = linebufsize*2+16;
+    if (linebufsize < len)
+        linebufsize = len+16;
+
+    if (!linebuf)
+        linebuf = malloc(linebufsize * sizeof(char));
+    else
+        linebuf = realloc(linebuf, linebufsize * sizeof(char));
+}
+
+void debugger_error_trace(char *msg)
+{
+    char *prefix = "Glulxe fatal error: ";
+    ensure_line_buf(strlen(prefix) + strlen(msg));
+    strcpy(linebuf, prefix);
+    strcat(linebuf, msg);
+    gidebug_output(linebuf);
+
+    if (stack) {
+        ensure_line_buf(256); /*###*/
+        glui32 curpc = pc;
+        glui32 curframeptr = frameptr;
+        glui32 curstackptr = stackptr;
+        while (1) {
+            sprintf(linebuf, "### frameptr $%.2X, stackptr $%.2X, pc $%.2X", curframeptr, curstackptr, curpc);
+            gidebug_output(linebuf);
+
+            curstackptr = curframeptr;
+            if (curstackptr < 16)
+                break;
+            curstackptr -= 16;
+            glui32 newframeptr = Stk4(curstackptr+12);
+            glui32 newpc = Stk4(curstackptr+8);
+            curframeptr = newframeptr;
+            curpc = newpc;
+        }
+    }
+}
+
 void debugger_cmd_handler(char *cmd)
 {
+    /*###debug stuff! */
     gidebug_output(cmd);
 }
 
