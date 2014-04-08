@@ -47,6 +47,48 @@ typedef struct xmlreadcontext_struct {
     xmlHashTablePtr routines;
 } xmlreadcontext;
 
+static xmlreadcontext *debuginfo = NULL;
+
+static xmlreadcontext *create_xmlreadcontext()
+{
+    xmlreadcontext *context = (xmlreadcontext *)malloc(sizeof(xmlreadcontext));
+    context->str = NULL;
+    context->failed = 0;
+    context->tempconstant = NULL;
+    context->temproutine = NULL;
+    context->curgrouptype = grp_None;
+    context->constants = xmlHashCreate(16);
+    context->routines = xmlHashCreate(16);
+
+    return context;
+}
+
+static void free_xmlreadcontext(xmlreadcontext *context)
+{
+    if (!context)
+        return;
+
+    context->str = NULL;
+    context->tempconstant = NULL;
+    context->temproutine = NULL;
+ 
+    /* We don't bother to free the member structures, because this
+       only happens once at startup and then only on error
+       conditions. */
+
+    if (context->constants) {
+        xmlHashFree(context->constants, NULL);
+        context->constants = NULL;
+    }
+
+    if (context->routines) {
+        xmlHashFree(context->routines, NULL);
+        context->routines = NULL;
+    }
+
+    free(context);
+}
+
 static infoconstant *create_infoconstant()
 {
     infoconstant *cons = (infoconstant *)malloc(sizeof(infoconstant));
@@ -197,14 +239,8 @@ static void xmlhandlenode(xmlTextReaderPtr reader, xmlreadcontext *context)
 
 void debugger_load_info(strid_t stream)
 {
-    xmlreadcontext *context = (xmlreadcontext *)malloc(sizeof(xmlreadcontext));
+    xmlreadcontext *context = create_xmlreadcontext();
     context->str = stream;
-    context->failed = 0;
-    context->tempconstant = NULL;
-    context->temproutine = NULL;
-    context->curgrouptype = grp_None;
-    context->constants = xmlHashCreate(16);
-    context->routines = xmlHashCreate(16);
 
     xmlTextReaderPtr reader;
     reader = xmlReaderForIO(xmlreadfunc, xmlclosefunc, context, 
@@ -212,7 +248,7 @@ void debugger_load_info(strid_t stream)
         XML_PARSE_RECOVER|XML_PARSE_NOENT|XML_PARSE_NONET|XML_PARSE_NOCDATA|XML_PARSE_COMPACT);
     if (!reader) {
         printf("Error: Unable to create XML reader.\n"); /*###*/
-        /*### free */
+        free_xmlreadcontext(context);
         return;
     }
 
@@ -229,12 +265,15 @@ void debugger_load_info(strid_t stream)
     }
 
     xmlFreeTextReader(reader);
+    context->str = NULL; /* the reader closed it */
 
     if (context->failed) {
         printf("Error: Unable to load debug info.\n"); /*###*/
-        /*### free */
+        free_xmlreadcontext(context);
         return;
     }
+
+    debuginfo = context;
 }
 
 static char *linebuf = NULL;
