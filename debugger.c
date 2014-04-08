@@ -52,6 +52,8 @@ typedef struct debuginfofile_struct {
 
 static debuginfofile *debuginfo = NULL;
 
+static int finalize_debuginfo(debuginfofile *context);
+
 static debuginfofile *create_debuginfofile()
 {
     debuginfofile *context = (debuginfofile *)malloc(sizeof(debuginfofile));
@@ -268,7 +270,7 @@ static int sort_routines_table(const void *obj1, const void *obj2)
     return ((*routine1)->address - (*routine2)->address);
 }
 
-void debugger_load_info(strid_t stream)
+int debugger_load_info_stream(strid_t stream)
 {
     debuginfofile *context = create_debuginfofile();
     context->str = stream;
@@ -280,7 +282,7 @@ void debugger_load_info(strid_t stream)
     if (!reader) {
         printf("Error: Unable to create XML reader.\n"); /*###*/
         free_debuginfofile(context);
-        return;
+        return 0;
     }
 
     while (1) {
@@ -301,12 +303,22 @@ void debugger_load_info(strid_t stream)
     if (context->failed) {
         printf("Error: Unable to load debug info.\n"); /*###*/
         free_debuginfofile(context);
-        return;
+        return 0;
     }
 
     /* Now that all the data is loaded in, we go through and create some
        indexes that will be handy. */
+    return finalize_debuginfo(context);
+}
 
+int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len)
+{
+    /*###debug*/
+    return 0;
+}
+
+static int finalize_debuginfo(debuginfofile *context)
+{
     context->numroutines = xmlHashSize(context->routines);
     context->routinelist = (inforoutine **)malloc(context->numroutines * sizeof(inforoutine *));
     context->tempcounter = 0;
@@ -314,8 +326,11 @@ void debugger_load_info(strid_t stream)
     if (context->tempcounter != context->numroutines) 
         printf("### array underflow!\n"); /*###*/
     qsort(context->routinelist, context->numroutines, sizeof(inforoutine *), sort_routines_table);
+    printf("### %d routines, %d constants\n", xmlHashSize(context->routines), xmlHashSize(context->constants));
 
+    /* Install into global. */
     debuginfo = context;
+    return 1;
 }
 
 static char *linebuf = NULL;

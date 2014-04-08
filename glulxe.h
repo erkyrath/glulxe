@@ -300,7 +300,8 @@ extern void profile_quit(void);
 #endif /* VM_PROFILING */
 
 #if VM_DEBUGGER
-extern void debugger_load_info(strid_t stream);
+extern int debugger_load_info_stream(strid_t stream);
+extern int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len);
 extern void debugger_cmd_handler(char *cmd);
 extern void debugger_error_trace(char *msg);
 #endif /* VM_DEBUGGER */
