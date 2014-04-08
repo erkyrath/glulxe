@@ -40,11 +40,14 @@ typedef struct debuginfofile_struct {
 
     grouptype curgrouptype;
 
+    int tempcounter;
     infoconstant *tempconstant;
     inforoutine *temproutine;
 
     xmlHashTablePtr constants;
     xmlHashTablePtr routines;
+    int numroutines;
+    inforoutine **routinelist; /* array, ordered by address */
 } debuginfofile;
 
 static debuginfofile *debuginfo = NULL;
@@ -59,6 +62,8 @@ static debuginfofile *create_debuginfofile()
     context->curgrouptype = grp_None;
     context->constants = xmlHashCreate(16);
     context->routines = xmlHashCreate(16);
+    context->numroutines = 0;
+    context->routinelist = NULL;
 
     return context;
 }
@@ -84,6 +89,11 @@ static void free_debuginfofile(debuginfofile *context)
     if (context->routines) {
         xmlHashFree(context->routines, NULL);
         context->routines = NULL;
+    }
+
+    if (context->routinelist) {
+        free(context->routinelist);
+        context->routinelist = NULL;
     }
 
     free(context);
@@ -237,6 +247,27 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
     }
 }
 
+static void add_routine_to_table(void *obj, void *rock, xmlChar *name)
+{
+    debuginfofile *context = rock;
+    inforoutine *routine = obj;
+
+    if (context->tempcounter >= context->numroutines) {
+        printf("### array overflow!\n"); /*###*/
+        return;
+    }
+
+    context->routinelist[context->tempcounter++] = routine;
+}
+
+static int sort_routines_table(const void *obj1, const void *obj2)
+{
+    inforoutine **routine1 = (inforoutine **)obj1;
+    inforoutine **routine2 = (inforoutine **)obj2;
+
+    return ((*routine1)->address - (*routine2)->address);
+}
+
 void debugger_load_info(strid_t stream)
 {
     debuginfofile *context = create_debuginfofile();
@@ -272,6 +303,17 @@ void debugger_load_info(strid_t stream)
         free_debuginfofile(context);
         return;
     }
+
+    /* Now that all the data is loaded in, we go through and create some
+       indexes that will be handy. */
+
+    context->numroutines = xmlHashSize(context->routines);
+    context->routinelist = (inforoutine **)malloc(context->numroutines * sizeof(inforoutine *));
+    context->tempcounter = 0;
+    xmlHashScan(context->routines, add_routine_to_table, context);
+    if (context->tempcounter != context->numroutines) 
+        printf("### array underflow!\n"); /*###*/
+    qsort(context->routinelist, context->numroutines, sizeof(inforoutine *), sort_routines_table);
 
     debuginfo = context;
 }
