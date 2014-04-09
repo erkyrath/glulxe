@@ -36,6 +36,8 @@ typedef struct inforoutine_struct {
 
 typedef struct debuginfofile_struct {
     strid_t str;
+    int32_t strread;
+    int32_t strreadmax;
     int failed;
 
     grouptype curgrouptype;
@@ -118,12 +120,27 @@ static inforoutine *create_inforoutine()
     return cons;
 }
 
-static int xmlreadfunc(void *rock, char *buffer, int len)
+static int xmlreadstreamfunc(void *rock, char *buffer, int len)
 {
     debuginfofile *context = rock;
     int res = glk_get_buffer_stream(context->str, buffer, len);
     if (res < 0)
         return -1;
+    return res;
+}
+
+static int xmlreadchunkfunc(void *rock, char *buffer, int len)
+{
+    debuginfofile *context = rock;
+    if (context->strread >= context->strreadmax)
+        return -1;
+
+    if (len > context->strreadmax - context->strread)
+        len = context->strreadmax - context->strread;
+    int res = glk_get_buffer_stream(context->str, buffer, len);
+    if (res < 0)
+        return -1;
+    context->strread += res;
     return res;
 }
 
@@ -273,9 +290,11 @@ int debugger_load_info_stream(strid_t stream)
 {
     debuginfofile *context = create_debuginfofile();
     context->str = stream;
+    context->strread = 0; /* not used */
+    context->strreadmax = 0; /* not used */
 
     xmlTextReaderPtr reader;
-    reader = xmlReaderForIO(xmlreadfunc, xmlclosefunc, context, 
+    reader = xmlReaderForIO(xmlreadstreamfunc, xmlclosefunc, context, 
         NULL, NULL, 
         XML_PARSE_RECOVER|XML_PARSE_NOENT|XML_PARSE_NONET|XML_PARSE_NOCDATA|XML_PARSE_COMPACT);
     if (!reader) {
@@ -312,8 +331,47 @@ int debugger_load_info_stream(strid_t stream)
 
 int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len)
 {
-    /*###debug*/
-    return 0;
+    debuginfofile *context = create_debuginfofile();
+    context->str = stream;
+    context->strread = 0;
+    context->strreadmax = len;
+
+    glk_stream_set_position(stream, pos, seekmode_Start);
+
+    xmlTextReaderPtr reader;
+    reader = xmlReaderForIO(xmlreadchunkfunc, xmlclosefunc, context, 
+        NULL, NULL, 
+        XML_PARSE_RECOVER|XML_PARSE_NOENT|XML_PARSE_NONET|XML_PARSE_NOCDATA|XML_PARSE_COMPACT);
+    if (!reader) {
+        printf("Error: Unable to create XML reader.\n"); /*###*/
+        free_debuginfofile(context);
+        return 0;
+    }
+
+    while (1) {
+        int res = xmlTextReaderRead(reader);
+        if (res < 0) {
+            context->failed = 1;
+            break; /* error */
+        }
+        if (res == 0) {
+            break; /* EOF */
+        }
+        xmlhandlenode(reader, context);
+    }
+
+    xmlFreeTextReader(reader);
+    context->str = NULL; /* the reader didn't close it, but we're done with it. */
+
+    if (context->failed) {
+        printf("Error: Unable to load debug info.\n"); /*###*/
+        free_debuginfofile(context);
+        return 0;
+    }
+
+    /* Now that all the data is loaded in, we go through and create some
+       indexes that will be handy. */
+    return finalize_debuginfo(context);
 }
 
 static int finalize_debuginfo(debuginfofile *context)
