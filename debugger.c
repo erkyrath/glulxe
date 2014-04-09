@@ -145,6 +145,18 @@ static int sort_routines_table(const void *obj1, const void *obj2)
     return ((*routine1)->address - (*routine2)->address);
 }
 
+static int find_routine_in_table(const void *keyptr, const void *obj)
+{
+    glui32 addr = *(glui32 *)(keyptr);
+    inforoutine **routine = (inforoutine **)obj;
+
+    if (addr < (*routine)->address)
+        return -1;
+    if (addr >= (*routine)->address + (*routine)->length)
+        return 1;
+    return 0;
+}
+
 int debugger_load_info_stream(strid_t stream)
 {
     debuginfofile *context = create_debuginfofile();
@@ -416,15 +428,30 @@ static void ensure_line_buf(int len)
         linebuf = realloc(linebuf, linebufsize * sizeof(char));
 }
 
+static inforoutine *find_routine_for_address(glui32 addr)
+{
+    if (!debuginfo)
+        return NULL;
+
+    inforoutine **res = bsearch(&addr, debuginfo->routinelist, debuginfo->numroutines, sizeof(inforoutine *), find_routine_in_table);
+    if (!res)
+        return NULL;
+    return *res;
+}
+
 static void debugcmd_backtrace()
 {
     if (stack) {
-        ensure_line_buf(256); /*###*/
+        ensure_line_buf(256);
         glui32 curpc = pc;
         glui32 curframeptr = frameptr;
         glui32 curstackptr = stackptr;
         while (1) {
-            sprintf(linebuf, "### frameptr $%.2X, stackptr $%.2X, pc $%.2X", curframeptr, curstackptr, curpc);
+            inforoutine *routine = find_routine_for_address(curpc);
+            if (!routine)
+                snprintf(linebuf, linebufsize, "?()  (pc=$%.2X)", curpc);
+            else
+                snprintf(linebuf, linebufsize, "%s()  (pc=$%.2X)", routine->identifier, curpc);
             gidebug_output(linebuf);
 
             curstackptr = curframeptr;
