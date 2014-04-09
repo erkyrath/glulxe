@@ -416,14 +416,8 @@ static void ensure_line_buf(int len)
         linebuf = realloc(linebuf, linebufsize * sizeof(char));
 }
 
-void debugger_error_trace(char *msg)
+static void debugcmd_backtrace()
 {
-    char *prefix = "Glulxe fatal error: ";
-    ensure_line_buf(strlen(prefix) + strlen(msg));
-    strcpy(linebuf, prefix);
-    strcat(linebuf, msg);
-    gidebug_output(linebuf);
-
     if (stack) {
         ensure_line_buf(256); /*###*/
         glui32 curpc = pc;
@@ -445,10 +439,85 @@ void debugger_error_trace(char *msg)
     }
 }
 
+static void debugcmd_print(char *arg)
+{
+    while (*arg == ' ')
+        arg++;
+
+    if (*arg == '\0') {
+        gidebug_output("What do you want to print?");        
+        return;
+    }
+
+    /* Symbol recognition should be case-insensitive */
+
+    if (debuginfo) {
+        infoconstant *cons = xmlHashLookup(debuginfo->constants, BAD_CAST arg);
+        if (cons) {
+            ensure_line_buf(128);
+            snprintf(linebuf, linebufsize, "%d ($%X): constant", cons->value, cons->value);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    if (debuginfo) {
+        inforoutine *routine = xmlHashLookup(debuginfo->routines, BAD_CAST arg);
+        if (routine) {
+            ensure_line_buf(128);
+            snprintf(linebuf, linebufsize, "%d ($%X): routine", routine->address, routine->address);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    gidebug_output("Symbol not found");
+}
+
 void debugger_cmd_handler(char *cmd)
 {
-    /*###debug stuff! */
-    gidebug_output(cmd);
+    /* Trim spaces from start */
+    while (*cmd == ' ')
+        cmd++;
+    /* Trim spaces from end */
+    int len = strlen(cmd);
+    while (len > 0 && cmd[len-1] == ' ') {
+        cmd[len-1] = '\0';
+        len--;
+    }
+
+    if (*cmd == '\0')
+        return; /* empty command */
+
+    char *cx;
+    for (cx=cmd; *cx && *cx != ' '; cx++) { }
+    len = (cx - cmd);
+
+    if (len == 2 && !strncmp(cmd, "bt", len)) {
+        debugcmd_backtrace();
+        return;
+    }
+
+    if (len == 5 && !strncmp(cmd, "print", len)) {
+        debugcmd_print(cx);
+        return;
+    }
+
+    ensure_line_buf(strlen(cmd) + 64);
+    snprintf(linebuf, linebufsize, "Unknown debug command: %s", cmd);
+    gidebug_output(linebuf);
 }
+
+void debugger_error_trace(char *msg)
+{
+    char *prefix = "Glulxe fatal error: ";
+    ensure_line_buf(strlen(prefix) + strlen(msg));
+    strcpy(linebuf, prefix);
+    strcat(linebuf, msg);
+    gidebug_output(linebuf);
+
+    debugcmd_backtrace();
+}
+
 
 #endif /* VM_DEBUGGER */
