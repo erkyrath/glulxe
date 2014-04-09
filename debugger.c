@@ -135,6 +135,8 @@ static int xmlreadchunkfunc(void *rock, char *buffer, int len)
     if (context->strread >= context->strreadmax)
         return -1;
 
+    /* Something goes screwy with this read pathway, and I don't know
+       what. An identifier node gets skipped. I blame xmllib. */
     if (len > context->strreadmax - context->strread)
         len = context->strreadmax - context->strread;
     int res = glk_get_buffer_stream(context->str, buffer, len);
