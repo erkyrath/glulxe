@@ -117,6 +117,8 @@ void setup_vm()
 
   /* Set up the initial machine state. */
   vm_restart();
+
+  /* ###debug: if debug data is present, check that it matches the game */
 }
 
 /* finalize_vm():
