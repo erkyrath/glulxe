@@ -130,7 +130,6 @@ static int xmlreadfunc(void *rock, char *buffer, int len)
 static int xmlclosefunc(void *rock)
 {
     debuginfofile *context = rock;
-    glk_stream_close(context->str, NULL);
     context->str = NULL;
     return 0;
 }
@@ -298,7 +297,7 @@ int debugger_load_info_stream(strid_t stream)
     }
 
     xmlFreeTextReader(reader);
-    context->str = NULL; /* the reader closed it */
+    context->str = NULL; /* the reader didn't close it, but we're done with it. */
 
     if (context->failed) {
         printf("Error: Unable to load debug info.\n"); /*###*/

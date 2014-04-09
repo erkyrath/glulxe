@@ -115,13 +115,17 @@ int glkunix_startup_code(glkunix_startup_t *data)
       nonfatal_warning("Unable to open gameinfo file for debug data.");
     }
     else {
-      int bres = debugger_load_info_stream(debugstr); /* loads and closes debugstr */
+      int bres = debugger_load_info_stream(debugstr);
+      glk_stream_close(debugstr, NULL);
       if (!bres)
         nonfatal_warning("Unable to parse game info.");
       else
         gameinfoloaded = TRUE;
     }
   }
+
+  /* Report debugging available, whether a game info file is loaded or not. */
+  gidebug_debugging_available(debugger_cmd_handler);
 #endif /* VM_DEBUGGER */
 
   /* Now we have to check to see if it's a Blorb file. */
@@ -160,7 +164,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
         nonfatal_warning("Unable to locate game info data chunk in Blorb.");
       }
       else {
-        int bres = debugger_load_info_chunk(gamefile, blorbres.data.startpos, blorbres.length); /* loads but does not close the file */
+        int bres = debugger_load_info_chunk(gamefile, blorbres.data.startpos, blorbres.length);
         if (!bres)
           nonfatal_warning("Unable to parse game info.");
         else
