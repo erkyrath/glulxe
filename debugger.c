@@ -14,6 +14,7 @@
 #if VM_DEBUGGER
 
 #include <string.h>
+#include <sys/time.h>
 #include "gi_debug.h" 
 #include <libxml/xmlreader.h>
 
@@ -429,7 +430,8 @@ static void ensure_line_buf(int len)
 }
 
 static int track_cpu = FALSE;
-glui32 debugger_opcount = 0; 
+glui32 debugger_opcount = 0; /* incremented in exec.c */
+static struct timeval debugger_timer;
 
 void debugger_track_cpu(int flag)
 {
@@ -545,18 +547,25 @@ void debugger_cmd_handler(char *cmd)
 
 void debugger_cycle_handler(int cycle)
 {
+    struct timeval now;
+    double diff;
+
     if (track_cpu) {
         switch (cycle) {
         case gidebug_cycle_Start:
             debugger_opcount = 0;
+            gettimeofday(&debugger_timer, NULL);
             break;
         case gidebug_cycle_InputWait:
+            gettimeofday(&now, NULL);
+            diff = (now.tv_sec - debugger_timer.tv_sec) * 1000.0 + (now.tv_usec - debugger_timer.tv_usec) / 1000.0;
             ensure_line_buf(64);
-            snprintf(linebuf, linebufsize, "VM cycles: %d", debugger_opcount);
+            snprintf(linebuf, linebufsize, "VM: %d cycles in %.3f ms", debugger_opcount, diff);
             gidebug_output(linebuf);
             break;
         case gidebug_cycle_InputAccept:
             debugger_opcount = 0;
+            gettimeofday(&debugger_timer, NULL);
             break;
         }
     }
