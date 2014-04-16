@@ -428,6 +428,14 @@ static void ensure_line_buf(int len)
         linebuf = realloc(linebuf, linebufsize * sizeof(char));
 }
 
+static int track_cpu = FALSE;
+glui32 debugger_opcount = 0; 
+
+void debugger_track_cpu(int flag)
+{
+    track_cpu = flag;
+}
+
 static inforoutine *find_routine_for_address(glui32 addr)
 {
     if (!debuginfo)
@@ -537,11 +545,21 @@ void debugger_cmd_handler(char *cmd)
 
 void debugger_cycle_handler(int cycle)
 {
-    /*###
-    ensure_line_buf(64);
-    snprintf(linebuf, linebufsize, "### Cycle %d", cycle);
-    gidebug_output(linebuf);
-    ### */
+    if (track_cpu) {
+        switch (cycle) {
+        case gidebug_cycle_Start:
+            debugger_opcount = 0;
+            break;
+        case gidebug_cycle_InputWait:
+            ensure_line_buf(64);
+            snprintf(linebuf, linebufsize, "VM cycles: %d", debugger_opcount);
+            gidebug_output(linebuf);
+            break;
+        case gidebug_cycle_InputAccept:
+            debugger_opcount = 0;
+            break;
+        }
+    }
 }
 
 void debugger_error_trace(char *msg)

@@ -33,6 +33,7 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 #if VM_DEBUGGER
   { "--gameinfo", glkunix_arg_ValueFollows, "Read debug information from a file." },
   { "--gameinfodata", glkunix_arg_NumberValue, "Read debug information from a DATA chunk." },
+  { "--cpu", glkunix_arg_NoValue, "Display CPU usage of each command (debug)." },
 #endif /* VM_DEBUGGER */
 
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
@@ -85,6 +86,10 @@ int glkunix_startup_code(glkunix_startup_t *data)
       ix++;
       if (ix<data->argc)
         gameinfochunknum = atoi(data->argv[ix]);
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--cpu")) {
+      debugger_track_cpu(TRUE);
       continue;
     }
 #endif /* VM_DEBUGGER */

@@ -32,6 +32,7 @@ void execute_loop()
   while (!done_executing) {
 
     profile_tick();
+    debugger_tick();
     /* Do OS-specific processing, if appropriate. */
     glk_tick();
     
