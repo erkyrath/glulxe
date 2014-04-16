@@ -29,8 +29,8 @@ CC = gcc
 
 OPTIONS = -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-unused -DOS_UNIX
 
-XMLLIB = -lxml2
-XMLLIBINCLUDEDIR = -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/usr/include/libxml2
+XMLLIB = -L/usr/local/Cellar/libxml2/2.9.1/lib -lxml2
+XMLLIBINCLUDEDIR = -I/usr/local/Cellar/libxml2/2.9.1/include/libxml2
 
 include $(GLKINCLUDEDIR)/$(GLKMAKEFILE)
 
