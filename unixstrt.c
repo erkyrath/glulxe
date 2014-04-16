@@ -125,7 +125,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
   }
 
   /* Report debugging available, whether a game info file is loaded or not. */
-  gidebug_debugging_available(debugger_cmd_handler);
+  gidebug_debugging_available(debugger_cmd_handler, debugger_cycle_handler);
 #endif /* VM_DEBUGGER */
 
   /* Now we have to check to see if it's a Blorb file. */

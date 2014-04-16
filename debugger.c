@@ -535,6 +535,15 @@ void debugger_cmd_handler(char *cmd)
     gidebug_output(linebuf);
 }
 
+void debugger_cycle_handler(int cycle)
+{
+    /*###
+    ensure_line_buf(64);
+    snprintf(linebuf, linebufsize, "### Cycle %d", cycle);
+    gidebug_output(linebuf);
+    ### */
+}
+
 void debugger_error_trace(char *msg)
 {
     char *prefix = "Glulxe fatal error: ";
