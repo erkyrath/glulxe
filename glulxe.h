@@ -300,7 +300,7 @@ extern void profile_quit(void);
 #endif /* VM_PROFILING */
 
 #if VM_DEBUGGER
-extern glui32 debugger_opcount;
+extern unsigned long debugger_opcount;
 #define debugger_tick() (debugger_opcount++)
 extern int debugger_load_info_stream(strid_t stream);
 extern int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len);

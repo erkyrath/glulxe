@@ -430,7 +430,7 @@ static void ensure_line_buf(int len)
 }
 
 static int track_cpu = FALSE;
-glui32 debugger_opcount = 0; /* incremented in exec.c */
+unsigned long debugger_opcount = 0; /* incremented in exec.c */
 static struct timeval debugger_timer;
 
 void debugger_track_cpu(int flag)
@@ -560,7 +560,7 @@ void debugger_cycle_handler(int cycle)
             gettimeofday(&now, NULL);
             diff = (now.tv_sec - debugger_timer.tv_sec) * 1000.0 + (now.tv_usec - debugger_timer.tv_usec) / 1000.0;
             ensure_line_buf(64);
-            snprintf(linebuf, linebufsize, "VM: %d cycles in %.3f ms", debugger_opcount, diff);
+            snprintf(linebuf, linebufsize, "VM: %ld cycles in %.3f ms", debugger_opcount, diff);
             gidebug_output(linebuf);
             break;
         case gidebug_cycle_InputAccept:
