@@ -75,6 +75,12 @@ by the entire program; its max_depth is zero.
 
 #if VM_PROFILING
 
+/* Macros needed for timeradd() etc to be defined, on Linux. I hear that
+   _BSD_SOURCE is going to be deprecated at some point, but I'm not 
+   worrying about it today. */
+#define _BSD_SOURCE (1)
+#define _DEFAULT_SOURCE (1)
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
