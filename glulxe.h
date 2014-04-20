@@ -46,7 +46,9 @@ typedef int16_t glsi16;
 
 /* Uncomment this definition to turn on Glulx VM profiling. In this
    mode, all function calls are timed, and the timing information is
-   written to a data file called "profile-raw". */
+   written to a data file called "profile-raw".
+   (Build note: on Linux, glibc may require you to also define
+   _BSD_SOURCE or _DEFAULT_SOURCE or both for the timeradd() macro.) */
 /* #define VM_PROFILING (1) */
 
 /* Uncomment this definition to turn on the Glulx debugger. ###debug */
