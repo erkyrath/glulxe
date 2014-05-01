@@ -46,8 +46,6 @@ typedef struct debuginfofile_struct {
     int tempcounter;
     infoconstant *tempconstant;
     inforoutine *temproutine;
-    int savetemptext;
-    const xmlChar *temptext;
 
     xmlHashTablePtr constants;
     xmlHashTablePtr routines;
@@ -70,8 +68,6 @@ static debuginfofile *create_debuginfofile()
     context->failed = 0;
     context->tempconstant = NULL;
     context->temproutine = NULL;
-    context->savetemptext = FALSE;
-    context->temptext = NULL;
     context->curgrouptype = grp_None;
     context->constants = xmlHashCreate(16);
     context->routines = xmlHashCreate(16);
@@ -342,108 +338,54 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
     else {
         if (nodetype == XML_ELEMENT_NODE) {
             const xmlChar *name = xmlTextReaderConstName(reader);
+            /* These fields are always simple text nodes. */
             if (!xmlStrcmp(name, BAD_CAST "identifier")) {
-                if (context->curgrouptype == grp_Constant) {
-                    if (context->tempconstant) {
-                        if (depth == 2)
-                            context->savetemptext = TRUE;
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    xmlChar *text = nod->children->content;
+                    if (context->curgrouptype == grp_Constant) {
+                        if (context->tempconstant) {
+                            if (depth == 2)
+                                context->tempconstant->identifier = xmlStrdup(text);
+                        }
                     }
-                }
-                else if (context->curgrouptype == grp_Routine) {
-                    if (context->temproutine) {
-                        if (depth == 2)
-                            context->savetemptext = TRUE;
+                    else if (context->curgrouptype == grp_Routine) {
+                        if (context->temproutine) {
+                            if (depth == 2)
+                                context->temproutine->identifier = xmlStrdup(text);
+                        }
                     }
                 }
             }
             else if (!xmlStrcmp(name, BAD_CAST "value")) {
-                if (context->curgrouptype == grp_Constant) {
-                    if (context->tempconstant) {
-                        if (depth == 2)
-                            context->savetemptext = TRUE;
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    xmlChar *text = xmlStrdup(nod->children->content);
+                    if (context->curgrouptype == grp_Constant) {
+                        if (context->tempconstant) {
+                            if (depth == 2)
+                                context->tempconstant->value = strtol((char *)text, NULL, 10);
+                        }
                     }
-                }
-                else if (context->curgrouptype == grp_Routine) {
-                    if (context->temproutine) {
-                        if (depth == 2)
-                            context->savetemptext = TRUE;
+                    else if (context->curgrouptype == grp_Routine) {
+                        if (context->temproutine) {
+                            if (depth == 2)
+                                context->temproutine->address = strtol((char *)text, NULL, 10);
+                        }
                     }
                 }
             }
             else if (!xmlStrcmp(name, BAD_CAST "byte-count")) {
-                if (context->curgrouptype == grp_Routine) {
-                    if (context->temproutine) {
-                        if (depth == 2)
-                            context->savetemptext = TRUE;
-                    }
-                }
-            }
-        }
-        else if (nodetype == XML_ELEMENT_DECL) {
-            /* End of... */
-            const xmlChar *name = xmlTextReaderConstName(reader);
-            if (!xmlStrcmp(name, BAD_CAST "identifier")) {
-                if (context->temptext) {
-                    if (context->curgrouptype == grp_Constant) {
-                        if (context->tempconstant) {
-                            if (depth == 2)
-                                context->tempconstant->identifier = xmlStrdup(context->temptext);
-                        }
-                    }
-                    else if (context->curgrouptype == grp_Routine) {
-                        if (context->temproutine) {
-                            if (depth == 2)
-                                context->temproutine->identifier = xmlStrdup(context->temptext);
-                        }
-                    }
-                }
-                context->savetemptext = FALSE;
-                if (context->temptext) {
-                    xmlFree((void *)context->temptext);
-                    context->temptext = NULL;
-                }
-            }
-            if (!xmlStrcmp(name, BAD_CAST "value")) {
-                if (context->temptext) {
-                    if (context->curgrouptype == grp_Constant) {
-                        if (context->tempconstant) {
-                            if (depth == 2)
-                                context->tempconstant->value = strtol((char *)context->temptext, NULL, 10);
-                        }
-                    }
-                    else if (context->curgrouptype == grp_Routine) {
-                        if (context->temproutine) {
-                            if (depth == 2)
-                                context->temproutine->address = strtol((char *)context->temptext, NULL, 10);
-                        }
-                    }
-                }
-                context->savetemptext = FALSE;
-                if (context->temptext) {
-                    xmlFree((void *)context->temptext);
-                    context->temptext = NULL;
-                }
-            }
-            if (!xmlStrcmp(name, BAD_CAST "byte-count")) {
-                if (context->temptext) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    xmlChar *text = xmlStrdup(nod->children->content);
                     if (context->curgrouptype == grp_Routine) {
                         if (context->temproutine) {
                             if (depth == 2)
-                                context->temproutine->length = strtol((char *)context->temptext, NULL, 10);
+                                context->temproutine->length = strtol((char *)text, NULL, 10);
                         }
                     }
                 }
-                context->savetemptext = FALSE;
-                if (context->temptext) {
-                    xmlFree((void *)context->temptext);
-                    context->temptext = NULL;
-                }
-            }
-        }
-        else if (nodetype == XML_TEXT_NODE) {
-            if (context->savetemptext && !context->temptext) {
-                const xmlChar *text = xmlTextReaderConstValue(reader);
-                context->temptext = xmlStrdup(text);
             }
         }
     }
@@ -451,7 +393,6 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
 
 static int finalize_debuginfo(debuginfofile *context)
 {
-    printf("### %d constants, %d routines\n", xmlHashSize(context->constants), xmlHashSize(context->routines)); /*####*/
     context->numroutines = xmlHashSize(context->routines);
     context->routinelist = (inforoutine **)malloc(context->numroutines * sizeof(inforoutine *));
     context->tempcounter = 0;
