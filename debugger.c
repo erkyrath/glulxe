@@ -414,6 +414,72 @@ static int finalize_debuginfo(debuginfofile *context)
     return 1;
 }
 
+/* Compare main memory to the story-file-prefix we found. If it doesn't
+   match, display a warning. */
+void debugger_check_story_file()
+{
+    if (!debuginfo || !debuginfo->storyfileprefix)
+        return;
+
+    /* Decode the storyfileprefix, which is in base64. */
+
+    const unsigned char *cx;
+    int pos = 0;
+    int count = 0;
+    uint32_t word = 0;
+    int fail = FALSE;
+
+    for (cx = debuginfo->storyfileprefix; *cx && *cx != '='; cx++) {
+        unsigned int sixbit = 0;
+        if (*cx >= 'A' && *cx <= 'Z')
+            sixbit = (*cx) - 'A';
+        else if (*cx >= 'a' && *cx <= 'z')
+            sixbit = ((*cx) - 'a') + 26;
+        else if (*cx >= '0' && *cx <= '9')
+            sixbit = ((*cx) - '0') + 52;
+        else if (*cx == '+')
+            sixbit = 62;
+        else if (*cx == '/')
+            sixbit = 63;
+        else
+            sixbit = 0;
+
+        switch (count) {
+        case 0:
+            word = (sixbit << 18);
+            break;
+        case 1:
+            word |= (sixbit << 12);
+            break;
+        case 2:
+            word |= (sixbit << 6);
+            break;
+        case 3:
+            word |= (sixbit);
+            break;
+        }
+
+        count++;
+        if (count == 4) {
+            unsigned char byte;
+            byte = (word >> 16) & 0xFF;
+            if (byte != Mem1(pos))
+                fail = TRUE;
+            byte = (word >> 8) & 0xFF;
+            if (byte != Mem1(pos+1))
+                fail = TRUE;
+            byte = (word) & 0xFF;
+            if (byte != Mem1(pos+2))
+                fail = TRUE;
+            pos += 3;
+            count = 0;
+        }
+    }
+
+    if (fail)
+        gidebug_output("Warning: debug info <story-file-prefix> does not match this game file.");
+}
+
 /* The rest of this file is the debugger itself. */
 
 static char *linebuf = NULL;

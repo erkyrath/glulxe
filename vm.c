@@ -118,7 +118,11 @@ void setup_vm()
   /* Set up the initial machine state. */
   vm_restart();
 
-  /* ###debug: if debug data is present, check that it matches the game */
+#if VM_DEBUGGER
+  /* If the debugger is compiled in, check that the debug data matches
+     the game. (This only prints warnings for mismatch.) */
+  debugger_check_story_file();
+#endif /* VM_DEBUGGER */
 }
 
 /* finalize_vm():
