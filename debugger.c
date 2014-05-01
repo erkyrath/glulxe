@@ -47,6 +47,7 @@ typedef struct debuginfofile_struct {
     infoconstant *tempconstant;
     inforoutine *temproutine;
 
+    const xmlChar *storyfileprefix;
     xmlHashTablePtr constants;
     xmlHashTablePtr routines;
     int numroutines;
@@ -73,6 +74,7 @@ static debuginfofile *create_debuginfofile()
     context->routines = xmlHashCreate(16);
     context->numroutines = 0;
     context->routinelist = NULL;
+    context->storyfileprefix = NULL;
 
     return context;
 }
@@ -307,6 +309,12 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "routine")) {
                 context->curgrouptype = grp_Routine;
                 context->temproutine = create_inforoutine();
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "story-file-prefix")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    context->storyfileprefix = xmlStrdup(nod->children->content);
+                }
             }
             else {
                 context->curgrouptype = grp_None;
