@@ -263,10 +263,8 @@ static int xmlreadchunkfunc(void *rock, char *buffer, int len)
 {
     debuginfofile *context = rock;
     if (context->strread >= context->strreadmax)
-        return -1;
+        return 0;
 
-    /* Something goes screwy with this read pathway, and I don't know
-       what. An identifier node gets skipped. I blame xmllib. */
     if (len > context->strreadmax - context->strread)
         len = context->strreadmax - context->strread;
     int res = glk_get_buffer_stream(context->str, buffer, len);
@@ -325,7 +323,6 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 if (context->tempconstant) {
                     infoconstant *dat = context->tempconstant;
                     context->tempconstant = NULL;
-                    if (!dat->identifier) printf("### %s %d\n", dat->identifier, dat->value); /*####*/
                     xmlHashAddEntry(context->constants, dat->identifier, dat);
                 }
                 break;
