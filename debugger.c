@@ -377,7 +377,6 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                     context->temproutine = NULL;
                     if (context->tempnumlocals && context->templocals) {
                         int ix;
-                        printf("### %s():\n", dat->identifier);
                         dat->numlocals = context->tempnumlocals;
                         dat->locals = (infoconstant *)malloc(context->tempnumlocals * sizeof(infoconstant));
                         for (ix=0; ix<context->tempnumlocals; ix++) {
@@ -385,7 +384,6 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                             dat->locals[ix].value = context->templocals[ix].value;
                             context->templocals[ix].identifier = NULL;
                             context->templocals[ix].value = 0;
-                            printf("###   (%d) %s\n", dat->locals[ix].value, dat->locals[ix].identifier);
                         }
                     }
                     context->tempnumlocals = 0;
@@ -446,6 +444,31 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                         if (context->temproutine) {
                             if (depth == 2)
                                 context->temproutine->length = strtol((char *)text, NULL, 10);
+                        }
+                    }
+                }
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "local-variable")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod) {
+                    if (!context->templocals) {
+                        context->templocalssize = 8;
+                        context->templocals = (infoconstant *)malloc(context->templocalssize * sizeof(infoconstant));
+                    }
+                    if (context->tempnumlocals >= context->templocalssize) {
+                        context->templocalssize = 2*context->tempnumlocals + 4;
+                        context->templocals = (infoconstant *)realloc(context->templocals, context->templocalssize * sizeof(infoconstant));
+                    }
+                    infoconstant *templocal = &(context->templocals[context->tempnumlocals]);
+                    context->tempnumlocals += 1;
+                    for (nod = nod->children; nod; nod=nod->next) {
+                        if (nod->type == XML_ELEMENT_NODE) {
+                            if (!xmlStrcmp(nod->name, BAD_CAST "identifier") && nod->children && nod->children->type == XML_TEXT_NODE) {
+                                templocal->identifier = xmlStrdup(nod->children->content);
+                            }
+                            if (!xmlStrcmp(nod->name, BAD_CAST "frame-offset") && nod->children && nod->children->type == XML_TEXT_NODE) {
+                                templocal->value = strtol((char *)nod->children->content, NULL, 10);
+                            }
                         }
                     }
                 }
