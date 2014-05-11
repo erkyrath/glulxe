@@ -18,6 +18,8 @@
 #include "gi_debug.h" 
 #include <libxml/xmlreader.h>
 
+/* Data structures to store the debug info in memory. */
+
 typedef enum grouptype_enum {
     grp_None = 0,
     grp_Constant = 1,
@@ -54,7 +56,10 @@ typedef struct debuginfofile_struct {
     inforoutine **routinelist; /* array, ordered by address */
 } debuginfofile;
 
+/* This global holds the loaded debug info, if we have any. */
 static debuginfofile *debuginfo = NULL;
+
+/* Internal functions used while loading the debug info. */
 
 static int xmlreadstreamfunc(void *rock, char *buffer, int len);
 static int xmlreadchunkfunc(void *rock, char *buffer, int len);
@@ -160,6 +165,12 @@ static int find_routine_in_table(const void *keyptr, const void *obj)
     return 0;
 }
 
+/* Top-level function for loading debug info from a Glk stream.
+   The debug data must take up the entire file; this will read until EOF.
+   If successful, fills out the debuginfo global and returns true.
+   If not, reports an error and returns false.
+   (The stream will not be closed.)
+ */
 int debugger_load_info_stream(strid_t stream)
 {
     debuginfofile *context = create_debuginfofile();
@@ -203,6 +214,12 @@ int debugger_load_info_stream(strid_t stream)
     return finalize_debuginfo(context);
 }
 
+/* Top-level function for loading debug info from a segment of a Glk stream.
+   This starts at position pos in the file and reads len bytes.
+   If successful, fills out the debuginfo global and returns true.
+   If not, reports an error and returns false.
+   (The stream will not be closed.)
+ */
 int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len)
 {
     debuginfofile *context = create_debuginfofile();
@@ -248,6 +265,7 @@ int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len)
     return finalize_debuginfo(context);
 }
 
+/* xmlReader callback to read from a stream (until EOF). */
 static int xmlreadstreamfunc(void *rock, char *buffer, int len)
 {
     debuginfofile *context = rock;
@@ -257,6 +275,7 @@ static int xmlreadstreamfunc(void *rock, char *buffer, int len)
     return res;
 }
 
+/* xmlReader callback to read from a stream (until a given position). */
 static int xmlreadchunkfunc(void *rock, char *buffer, int len)
 {
     debuginfofile *context = rock;
@@ -272,6 +291,8 @@ static int xmlreadchunkfunc(void *rock, char *buffer, int len)
     return res;
 }
 
+/* xmlReader callback to stop reading a stream. We don't actually close
+   the stream here, just discard the reference. */
 static int xmlclosefunc(void *rock)
 {
     debuginfofile *context = rock;
@@ -279,6 +300,12 @@ static int xmlclosefunc(void *rock)
     return 0;
 }
 
+/* xmlReader callback: an XML node has arrived. (Might be the beginning of
+   a tag, the end of a tag, or a block of text.) 
+
+   All the work of parsing the debug format happens here, which is why this
+   function is big and ugly.
+*/
 static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
 {
     int depth = xmlTextReaderDepth(reader);
@@ -399,6 +426,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
     }
 }
 
+/* This is called after the XML data is parsed. We wrap up what we've
+   found and store it in the debuginfo global. Returns 1 on success.
+*/
 static int finalize_debuginfo(debuginfofile *context)
 {
     context->numroutines = xmlHashSize(context->routines);
@@ -485,6 +515,9 @@ void debugger_check_story_file()
 static char *linebuf = NULL;
 static int linebufsize = 0;
 
+/* Expand the output line buffer to a given length, if necessary.
+   If you want to write an N-character string, call ensure_line_buf(N).
+   Then use snprintf() just to be safe. */
 static void ensure_line_buf(int len)
 {
     len += 1; /* for the closing null */
@@ -505,6 +538,9 @@ static int track_cpu = FALSE;
 unsigned long debugger_opcount = 0; /* incremented in exec.c */
 static struct timeval debugger_timer;
 
+/* Set the track-CPU flag. (In fact we always track the VM CPU usage.
+   This flag determines whether we report it to the debug console.)
+*/
 void debugger_track_cpu(int flag)
 {
     track_cpu = flag;
@@ -583,6 +619,9 @@ static void debugcmd_print(char *arg)
     gidebug_output("Symbol not found");
 }
 
+/* Debug console callback: This is invoked whenever the user enters a debug
+   command.
+*/
 void debugger_cmd_handler(char *cmd)
 {
     /* Trim spaces from start */
@@ -617,6 +656,12 @@ void debugger_cmd_handler(char *cmd)
     gidebug_output(linebuf);
 }
 
+/* Debug console callback: This is invoked when the game starts, when it
+   ends, and when each input cycle begins and ends.
+
+   We take this opportunity to report CPU usage, if the track_cpu flag
+   is set.
+*/
 void debugger_cycle_handler(int cycle)
 {
     struct timeval now;
@@ -643,6 +688,9 @@ void debugger_cycle_handler(int cycle)
     }
 }
 
+/* Report a fatal error to the debug console, along with the current
+   stack trace. 
+*/
 void debugger_error_trace(char *msg)
 {
     char *prefix = "Glulxe fatal error: ";
