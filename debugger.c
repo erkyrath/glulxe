@@ -53,6 +53,9 @@ typedef struct debuginfofile_struct {
     int tempcounter;
     infoconstant *tempconstant;
     inforoutine *temproutine;
+    int tempnumlocals;
+    int templocalssize;
+    infoconstant *templocals;
 
     const xmlChar *storyfileprefix;
     xmlHashTablePtr constants;
@@ -79,6 +82,9 @@ static debuginfofile *create_debuginfofile()
     context->failed = 0;
     context->tempconstant = NULL;
     context->temproutine = NULL;
+    context->tempnumlocals = 0;
+    context->templocals = NULL;
+    context->templocalssize = 0;
     context->curgrouptype = grp_None;
     context->constants = xmlHashCreate(16);
     context->routines = xmlHashCreate(16);
@@ -343,6 +349,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "routine")) {
                 context->curgrouptype = grp_Routine;
                 context->temproutine = create_inforoutine();
+                context->tempnumlocals = 0;
             }
             else if (!xmlStrcmp(name, BAD_CAST "story-file-prefix")) {
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
@@ -368,6 +375,20 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 if (context->temproutine) {
                     inforoutine *dat = context->temproutine;
                     context->temproutine = NULL;
+                    if (context->tempnumlocals && context->templocals) {
+                        int ix;
+                        printf("### %s():\n", dat->identifier);
+                        dat->numlocals = context->tempnumlocals;
+                        dat->locals = (infoconstant *)malloc(context->tempnumlocals * sizeof(infoconstant));
+                        for (ix=0; ix<context->tempnumlocals; ix++) {
+                            dat->locals[ix].identifier = context->templocals[ix].identifier;
+                            dat->locals[ix].value = context->templocals[ix].value;
+                            context->templocals[ix].identifier = NULL;
+                            context->templocals[ix].value = 0;
+                            printf("###   (%d) %s\n", dat->locals[ix].value, dat->locals[ix].identifier);
+                        }
+                    }
+                    context->tempnumlocals = 0;
                     xmlHashAddEntry(context->routines, dat->identifier, dat);
                 }
                 break;
@@ -445,6 +466,13 @@ static int finalize_debuginfo(debuginfofile *context)
     if (context->tempcounter != context->numroutines) 
         printf("### array underflow!\n"); /*###*/
     qsort(context->routinelist, context->numroutines, sizeof(inforoutine *), sort_routines_table);
+
+    if (context->templocals) {
+        free(context->templocals);
+        context->templocals = NULL;
+    }
+    context->templocalssize = 0;
+    context->tempnumlocals = 0;
 
     /* Install into global. */
     debuginfo = context;
