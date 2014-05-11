@@ -375,6 +375,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 if (context->temproutine) {
                     inforoutine *dat = context->temproutine;
                     context->temproutine = NULL;
+                    /* Copy the list of locals into the inforoutine structure.
+                       This loop totally assumes that locals are found
+                       in order in the debug file! */
                     if (context->tempnumlocals && context->templocals) {
                         int ix;
                         dat->numlocals = context->tempnumlocals;
@@ -622,12 +625,37 @@ static void debugcmd_backtrace()
         glui32 curpc = pc;
         glui32 curframeptr = frameptr;
         glui32 curstackptr = stackptr;
+        glui32 curvalstackbase = valstackbase;
+        glui32 curlocalsbase = localsbase;
+        glui32 locptr, locnum;
         while (1) {
             inforoutine *routine = find_routine_for_address(curpc);
             if (!routine)
-                snprintf(linebuf, linebufsize, "?()  (pc=$%.2X)", curpc);
+                snprintf(linebuf, linebufsize, "%s()  (pc=$%.2X)", "???", curpc);
             else
                 snprintf(linebuf, linebufsize, "%s()  (pc=$%.2X)", routine->identifier, curpc);
+            gidebug_output(linebuf);
+
+            strcpy(linebuf, "  ");
+            /* Again, this loop assumes that all locals are 4 bytes. */
+            for (locptr = curlocalsbase, locnum = 0; locptr < curvalstackbase; locptr += 4, locnum++) {
+                int tmplen = strlen(linebuf);
+                ensure_line_buf(tmplen+32);
+                if (!routine || !routine->locals || locnum >= routine->numlocals)
+                    snprintf(linebuf+tmplen, linebufsize-tmplen, "%sloc#%d=", (locnum?"; ":""), locnum);
+                else
+                    snprintf(linebuf+tmplen, linebufsize-tmplen, "%s%s=", (locnum?"; ":""), routine->locals[locnum].identifier);
+                
+                glui32 val = Stk4(locptr);
+                /* I should use some nice display routine that detects 
+                   routine and array addresses (etc). */
+                tmplen = strlen(linebuf);
+                ensure_line_buf(tmplen+32);
+                snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
+            }
+            if (!locnum) {
+                strcat(linebuf, "(no locals)");
+            }
             gidebug_output(linebuf);
 
             curstackptr = curframeptr;
@@ -638,6 +666,8 @@ static void debugcmd_backtrace()
             glui32 newpc = Stk4(curstackptr+8);
             curframeptr = newframeptr;
             curpc = newpc;
+            curvalstackbase = curframeptr + Stk4(curframeptr);
+            curlocalsbase = curframeptr + Stk4(curframeptr+4);
         }
     }
 }
@@ -651,6 +681,9 @@ static void debugcmd_print(char *arg)
         gidebug_output("What do you want to print?");        
         return;
     }
+
+    /* ### for plain numbers, and $HEX numbers, print it with some nice
+       output routine, recognizing routine addresses etc */
 
     /* Symbol recognition should be case-insensitive */
 
