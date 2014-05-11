@@ -35,6 +35,11 @@ typedef struct inforoutine_struct {
     const xmlChar *identifier;
     int32_t address;
     int32_t length;
+    /* The locals is a block of infoconstants where the value is 
+       frame-offset. We adopt Inform's assumption that locals are
+       always 4 bytes long. */
+    int32_t numlocals;
+    infoconstant *locals;
 } inforoutine;
 
 typedef struct debuginfofile_struct {
@@ -129,6 +134,8 @@ static inforoutine *create_inforoutine()
     cons->identifier = NULL;
     cons->address = 0;
     cons->length = 0;
+    cons->numlocals = 0;
+    cons->locals = NULL;
     return cons;
 }
 
