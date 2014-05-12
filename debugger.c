@@ -627,7 +627,8 @@ static void debugcmd_backtrace()
         glui32 curstackptr = stackptr;
         glui32 curvalstackbase = valstackbase;
         glui32 curlocalsbase = localsbase;
-        glui32 locptr, locnum;
+        glui32 locptr;
+        int locnum;
         while (1) {
             inforoutine *routine = find_routine_for_address(curpc);
             if (!routine)
@@ -687,6 +688,31 @@ static void debugcmd_print(char *arg)
 
     /* Symbol recognition should be case-insensitive */
 
+    /* Is it a local variable name? */
+    if (debuginfo) {
+        glui32 curpc = pc;
+        glui32 curlocalsbase = localsbase;
+        /* Should have a way to trawl up and down the stack. Although that's
+           not meaningful when debug commands are received one at a time?
+           Use the cycle handler to reset our stack knowledge? */
+        inforoutine *routine = find_routine_for_address(curpc);
+        if (routine && routine->locals) {
+            int ix;
+            for (ix=0; ix<routine->numlocals; ix++) {
+                if (!xmlStrcmp(routine->locals[ix].identifier, BAD_CAST arg)) {
+                    glui32 locptr = curlocalsbase + 4*ix;
+                    glui32 val = Stk4(locptr);
+                    /* Nice display routine */
+                    ensure_line_buf(128);
+                    snprintf(linebuf, linebufsize, "local %s = %d ($%X)", routine->locals[ix].identifier, val, val);
+                    gidebug_output(linebuf);
+                    return;
+                }
+            }
+        }
+    }
+
+    /* Is it a constant name? */
     if (debuginfo) {
         infoconstant *cons = xmlHashLookup(debuginfo->constants, BAD_CAST arg);
         if (cons) {
@@ -697,6 +723,7 @@ static void debugcmd_print(char *arg)
         }
     }
 
+    /* Is it a routine name? */
     if (debuginfo) {
         inforoutine *routine = xmlHashLookup(debuginfo->routines, BAD_CAST arg);
         if (routine) {
