@@ -39,8 +39,8 @@ typedef enum grouptype_enum {
     grp_Array = 5,
 } grouptype;
 
-/* Used for constants, globals, locals -- the meaning of the value field
-   varies. */
+/* Used for constants, globals, locals, objects -- the meaning of the value
+   field varies. */
 typedef struct infoconstant_struct {
     const xmlChar *identifier;
     int32_t value;
@@ -57,6 +57,12 @@ typedef struct inforoutine_struct {
     infoconstant *locals;
 } inforoutine;
 
+typedef struct infoarray_struct {
+    const xmlChar *identifier;
+    int32_t address;
+    /* should have byte length, element size, starts-with-length */
+} infoarray;
+
 typedef struct debuginfofile_struct {
     strid_t str;
     int32_t strread;
@@ -68,6 +74,7 @@ typedef struct debuginfofile_struct {
     int tempcounter;
     infoconstant *tempconstant;
     inforoutine *temproutine;
+    infoarray *temparray;
     int tempnumlocals;
     int templocalssize;
     infoconstant *templocals;
@@ -76,6 +83,7 @@ typedef struct debuginfofile_struct {
     xmlHashTablePtr constants;
     xmlHashTablePtr globals;
     xmlHashTablePtr objects;
+    xmlHashTablePtr arrays;
     xmlHashTablePtr routines;
     int numroutines;
     inforoutine **routinelist; /* array, ordered by address */
@@ -98,6 +106,7 @@ static debuginfofile *create_debuginfofile()
     context->str = NULL;
     context->failed = 0;
     context->tempconstant = NULL;
+    context->temparray = NULL;
     context->temproutine = NULL;
     context->tempnumlocals = 0;
     context->templocals = NULL;
@@ -106,6 +115,7 @@ static debuginfofile *create_debuginfofile()
     context->constants = xmlHashCreate(16);
     context->globals = xmlHashCreate(16);
     context->objects = xmlHashCreate(16);
+    context->arrays = xmlHashCreate(16);
     context->routines = xmlHashCreate(16);
     context->numroutines = 0;
     context->routinelist = NULL;
@@ -121,6 +131,7 @@ static void free_debuginfofile(debuginfofile *context)
 
     context->str = NULL;
     context->tempconstant = NULL;
+    context->temparray = NULL;
     context->temproutine = NULL;
  
     /* We don't bother to free the member structures, because this
@@ -142,6 +153,11 @@ static void free_debuginfofile(debuginfofile *context)
         context->objects = NULL;
     }
 
+    if (context->arrays) {
+        xmlHashFree(context->arrays, NULL);
+        context->arrays = NULL;
+    }
+
     if (context->routines) {
         xmlHashFree(context->routines, NULL);
         context->routines = NULL;
@@ -160,6 +176,15 @@ static infoconstant *create_infoconstant()
     infoconstant *cons = (infoconstant *)malloc(sizeof(infoconstant));
     cons->identifier = NULL;
     cons->value = 0;
+    return cons;
+}
+
+static infoarray *create_infoarray()
+{
+    infoarray *cons = (infoarray *)malloc(sizeof(infoarray));
+    cons->identifier = NULL;
+    cons->address = 0;
+    /* more fields */
     return cons;
 }
 
@@ -365,6 +390,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             /* End of document */
             context->curgrouptype = grp_None;
             context->tempconstant = NULL;
+            context->temparray = NULL;
             context->temproutine = NULL;
         }
     }
@@ -387,6 +413,10 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "object")) {
                 context->curgrouptype = grp_Object;
                 context->tempconstant = create_infoconstant();
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "array")) {
+                context->curgrouptype = grp_Array;
+                context->temparray = create_infoarray();
             }
             else if (!xmlStrcmp(name, BAD_CAST "story-file-prefix")) {
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
@@ -420,6 +450,13 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                     infoconstant *dat = context->tempconstant;
                     context->tempconstant = NULL;
                     xmlHashAddEntry(context->objects, dat->identifier, dat);
+                }
+                break;
+            case grp_Array:
+                if (context->temparray) {
+                    infoarray *dat = context->temparray;
+                    context->temparray = NULL;
+                    xmlHashAddEntry(context->arrays, dat->identifier, dat);
                 }
                 break;
             case grp_Routine:
@@ -476,6 +513,12 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                                 context->tempconstant->identifier = xmlStrdup(text);
                         }
                     }
+                    else if (context->curgrouptype == grp_Array) {
+                        if (context->temparray) {
+                            if (depth == 2)
+                                context->temparray->identifier = xmlStrdup(text);
+                        }
+                    }
                     else if (context->curgrouptype == grp_Routine) {
                         if (context->temproutine) {
                             if (depth == 2)
@@ -498,6 +541,12 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                         if (context->tempconstant) {
                             if (depth == 2)
                                 context->tempconstant->value = strtol((char *)text, NULL, 10);
+                        }
+                    }
+                    else if (context->curgrouptype == grp_Array) {
+                        if (context->temparray) {
+                            if (depth == 2)
+                                context->temparray->address = strtol((char *)text, NULL, 10);
                         }
                     }
                     else if (context->curgrouptype == grp_Routine) {
@@ -814,6 +863,17 @@ static void debugcmd_print(char *arg)
         if (cons) {
             ensure_line_buf(128);
             snprintf(linebuf, linebufsize, "%d ($%X): object", cons->value, cons->value);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    /* Is it an array name? */
+    if (debuginfo) {
+        infoarray *arr = xmlHashLookup(debuginfo->arrays, BAD_CAST arg);
+        if (arr) {
+            ensure_line_buf(128);
+            snprintf(linebuf, linebufsize, "%d ($%X): array", arr->address, arr->address);
             gidebug_output(linebuf);
             return;
         }
