@@ -3,9 +3,19 @@
     http://eblong.com/zarf/glulx/index.html
 */
 
-/* Don't get excited. This is just stub code right now. I'm feeling out
-   how a debugger would fit into the source. I haven't actually written
-   one yet.
+/* Don't get excited. This is the bare rudiments of a source-level debugger.
+   I mostly want to feel out how the API works. (It has to plug into the
+   Glk library in a general way.)
+
+   The big hole right now: we want to pause the game and dig around in the
+   state, including "up" and "down" the stack. But we can't save information
+   about the state between commands. Do we use cycle_handler to inform us
+   when the VM is running? Is that an adequate guarantee that the stack
+   won't change?
+
+   We also want the VM to be able to jump into "debug forever" mode
+   (on crash or @debugtrap). Then Glk should just send debug commands
+   until we decide otherwise? Or until the user-via-Glk decides otherwise?
 */
 
 #include "glk.h"
@@ -692,9 +702,7 @@ static void debugcmd_print(char *arg)
     if (debuginfo) {
         glui32 curpc = pc;
         glui32 curlocalsbase = localsbase;
-        /* Should have a way to trawl up and down the stack. Although that's
-           not meaningful when debug commands are received one at a time?
-           Use the cycle handler to reset our stack knowledge? */
+        /* Should have a way to trawl up and down the stack. */
         inforoutine *routine = find_routine_for_address(curpc);
         if (routine && routine->locals) {
             int ix;
