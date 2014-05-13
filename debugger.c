@@ -782,10 +782,24 @@ static inforoutine *find_routine_for_address(glui32 addr)
 
 static void render_value_linebuf(glui32 val)
 {
-    /* Always display the decimal and hex. */
-    int tmplen = strlen(linebuf);
+    int tmplen;
+
+    /* Special case for single-digit numbers: display the decimal
+       digit and stop. */
+    if (val < 10) {
+        tmplen = strlen(linebuf);
+        ensure_line_buf(tmplen+4);
+        snprintf(linebuf+tmplen, linebufsize-tmplen, "%d", val);
+        return;
+    }
+
+    /* Always display the signed decimal and unsigned hex. */
+    tmplen = strlen(linebuf);
     ensure_line_buf(tmplen+40);
-    snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
+    if (val <= 0x7FFFFFFF)
+        snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
+    else
+        snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", -(int)(0x100000000-val), val);
 
     /* If the address of a function, display it. (But not addresses in
        the middle of a function.) */
