@@ -754,6 +754,13 @@ static inforoutine *find_routine_for_address(glui32 addr)
     return *res;
 }
 
+static void render_value_linebuf(glui32 val)
+{
+    int tmplen = strlen(linebuf);
+    ensure_line_buf(tmplen+32);
+    snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
+}
+
 static void debugcmd_backtrace()
 {
     if (stack) {
@@ -784,11 +791,7 @@ static void debugcmd_backtrace()
                     snprintf(linebuf+tmplen, linebufsize-tmplen, "%s%s=", (locnum?"; ":""), routine->locals[locnum].identifier);
                 
                 glui32 val = Stk4(locptr);
-                /* I should use some nice display routine that detects 
-                   routine and array addresses (etc). */
-                tmplen = strlen(linebuf);
-                ensure_line_buf(tmplen+32);
-                snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
+                render_value_linebuf(val);
             }
             if (!locnum) {
                 strcat(linebuf, "(no locals)");
@@ -811,6 +814,8 @@ static void debugcmd_backtrace()
 
 static void debugcmd_print(char *arg)
 {
+    ensure_line_buf(128); /* for a start */
+
     while (*arg == ' ')
         arg++;
 
@@ -819,8 +824,50 @@ static void debugcmd_print(char *arg)
         return;
     }
 
-    /* ### for plain numbers, and $HEX numbers, print it with some nice
-       output routine, recognizing routine addresses etc */
+    /* For plain numbers, and $HEX numbers, we print the value directly. */
+
+    if (arg[0] == '$') {
+        char *cx;
+        glui32 val = 0;
+        for (cx=arg+1; *cx; cx++) {
+            if (*cx >= '0' && *cx <= '9') {
+                val = 16 * val + (*cx - '0');
+                continue;
+            }
+            if (*cx >= 'A' && *cx <= 'F') {
+                val = 16 * val + (*cx - 'A' + 10);
+                continue;
+            }
+            if (*cx >= 'a' && *cx <= 'f') {
+                val = 16 * val + (*cx - 'a' + 10);
+                continue;
+            }
+            snprintf(linebuf, linebufsize, "Invalid hex number");
+            gidebug_output(linebuf);
+            return;
+        }
+        strcpy(linebuf, "");
+        render_value_linebuf(val);
+        gidebug_output(linebuf);
+        return;
+    }
+    else if (arg[0] >= '0' && arg[0] <= '9') {
+        char *cx;
+        glui32 val = 0;
+        for (cx=arg; *cx; cx++) {
+            if (*cx >= '0' && *cx <= '9') {
+                val = 10 * val + (*cx - '0');
+                continue;
+            }
+            snprintf(linebuf, linebufsize, "Invalid number");
+            gidebug_output(linebuf);
+            return;
+        }
+        strcpy(linebuf, "");
+        render_value_linebuf(val);
+        gidebug_output(linebuf);
+        return;
+    }
 
     /* Symbol recognition should be case-insensitive */
 
@@ -836,9 +883,8 @@ static void debugcmd_print(char *arg)
                 if (!xmlStrcmp(routine->locals[ix].identifier, BAD_CAST arg)) {
                     glui32 locptr = curlocalsbase + 4*ix;
                     glui32 val = Stk4(locptr);
-                    /* Nice display routine */
-                    ensure_line_buf(128);
-                    snprintf(linebuf, linebufsize, "local %s = %d ($%X)", routine->locals[ix].identifier, val, val);
+                    snprintf(linebuf, linebufsize, "local %s = ", routine->locals[ix].identifier);
+                    render_value_linebuf(val);
                     gidebug_output(linebuf);
                     return;
                 }
@@ -850,7 +896,6 @@ static void debugcmd_print(char *arg)
     if (debuginfo) {
         infoconstant *cons = xmlHashLookup(debuginfo->constants, BAD_CAST arg);
         if (cons) {
-            ensure_line_buf(128);
             snprintf(linebuf, linebufsize, "%d ($%X): constant", cons->value, cons->value);
             gidebug_output(linebuf);
             return;
@@ -861,7 +906,6 @@ static void debugcmd_print(char *arg)
     if (debuginfo) {
         infoconstant *cons = xmlHashLookup(debuginfo->objects, BAD_CAST arg);
         if (cons) {
-            ensure_line_buf(128);
             snprintf(linebuf, linebufsize, "%d ($%X): object", cons->value, cons->value);
             gidebug_output(linebuf);
             return;
@@ -872,7 +916,6 @@ static void debugcmd_print(char *arg)
     if (debuginfo) {
         infoarray *arr = xmlHashLookup(debuginfo->arrays, BAD_CAST arg);
         if (arr) {
-            ensure_line_buf(128);
             snprintf(linebuf, linebufsize, "%d ($%X): array", arr->address, arr->address);
             gidebug_output(linebuf);
             return;
@@ -884,9 +927,8 @@ static void debugcmd_print(char *arg)
         infoconstant *cons = xmlHashLookup(debuginfo->globals, BAD_CAST arg);
         if (cons) {
             glui32 val = Mem4(cons->value);
-            /* Nice display routine */
-            ensure_line_buf(128);
-            snprintf(linebuf, linebufsize, "global %s = %d ($%X)", cons->identifier, val, val);
+            snprintf(linebuf, linebufsize, "global %s = ", cons->identifier);
+            render_value_linebuf(val);
             gidebug_output(linebuf);
             return;
         }
@@ -896,7 +938,6 @@ static void debugcmd_print(char *arg)
     if (debuginfo) {
         inforoutine *routine = xmlHashLookup(debuginfo->routines, BAD_CAST arg);
         if (routine) {
-            ensure_line_buf(128);
             snprintf(linebuf, linebufsize, "%d ($%X): routine", routine->address, routine->address);
             gidebug_output(linebuf);
             return;
