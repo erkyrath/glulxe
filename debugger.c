@@ -50,6 +50,11 @@ typedef struct inforoutine_struct {
     const xmlChar *identifier;
     int32_t address;
     int32_t length;
+
+    /* Address of the next higher function. May be beyond length if there
+       are gaps. */
+    int32_t nextaddress; 
+
     /* The locals is a block of infoconstants where the value is 
        frame-offset. We adopt Inform's assumption that locals are
        always 4 bytes long. */
@@ -194,6 +199,7 @@ static inforoutine *create_inforoutine()
     cons->identifier = NULL;
     cons->address = 0;
     cons->length = 0;
+    cons->nextaddress = 0;
     cons->numlocals = 0;
     cons->locals = NULL;
     return cons;
@@ -222,12 +228,15 @@ static int sort_routines_table(const void *obj1, const void *obj2)
 
 static int find_routine_in_table(const void *keyptr, const void *obj)
 {
+    /* Binary-search callback. We rely on address and nextaddress so
+       that there are no gaps. */
+
     glui32 addr = *(glui32 *)(keyptr);
     inforoutine **routine = (inforoutine **)obj;
 
     if (addr < (*routine)->address)
         return -1;
-    if (addr >= (*routine)->address + (*routine)->length)
+    if (addr >= (*routine)->nextaddress)
         return 1;
     return 0;
 }
@@ -615,13 +624,25 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
 */
 static int finalize_debuginfo(debuginfofile *context)
 {
+    int ix;
+
     context->numroutines = xmlHashSize(context->routines);
     context->routinelist = (inforoutine **)malloc(context->numroutines * sizeof(inforoutine *));
+
     context->tempcounter = 0;
     xmlHashScan(context->routines, add_routine_to_table, context);
     if (context->tempcounter != context->numroutines) 
         printf("### array underflow!\n"); /*###*/
     qsort(context->routinelist, context->numroutines, sizeof(inforoutine *), sort_routines_table);
+
+    for (ix=0; ix<context->numroutines; ix++) {
+        if (ix+1 < context->numroutines) {
+            context->routinelist[ix]->nextaddress = context->routinelist[ix+1]->address;
+        }
+        else {
+            context->routinelist[ix]->nextaddress = context->routinelist[ix]->length;
+        }
+    }
 
     if (context->templocals) {
         free(context->templocals);
@@ -751,13 +772,18 @@ static inforoutine *find_routine_for_address(glui32 addr)
     inforoutine **res = bsearch(&addr, debuginfo->routinelist, debuginfo->numroutines, sizeof(inforoutine *), find_routine_in_table);
     if (!res)
         return NULL;
-    return *res;
+
+    inforoutine *func = *res;
+    if (addr < func->address || addr >= func->address + func->length)
+        return NULL;
+
+    return func;
 }
 
 static void render_value_linebuf(glui32 val)
 {
     int tmplen = strlen(linebuf);
-    ensure_line_buf(tmplen+32);
+    ensure_line_buf(tmplen+40);
     snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
 }
 
