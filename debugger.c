@@ -65,7 +65,14 @@ typedef struct inforoutine_struct {
 typedef struct infoarray_struct {
     const xmlChar *identifier;
     int32_t address;
-    /* should have byte length, element size, starts-with-length */
+    int32_t bytelength;
+    int32_t bytesize; /* per element */
+    int32_t count;
+    int lengthfield; /* true if the zeroth element is the length */
+
+    /* Address of the next higher function. May be beyond length if there
+       are gaps. */
+    int32_t nextaddress; 
 } infoarray;
 
 typedef struct debuginfofile_struct {
@@ -189,7 +196,11 @@ static infoarray *create_infoarray()
     infoarray *cons = (infoarray *)malloc(sizeof(infoarray));
     cons->identifier = NULL;
     cons->address = 0;
-    /* more fields */
+    cons->bytelength = 0;
+    cons->bytesize = 1;
+    cons->count = 0;
+    cons->lengthfield = 0;
+    cons->nextaddress = 0;
     return cons;
 }
 
@@ -465,6 +476,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 if (context->temparray) {
                     infoarray *dat = context->temparray;
                     context->temparray = NULL;
+                    dat->count = dat->bytelength / dat->bytesize;
                     xmlHashAddEntry(context->arrays, dat->identifier, dat);
                 }
                 break;
@@ -539,29 +551,28 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "value")) {
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
-                    xmlChar *text = xmlStrdup(nod->children->content);
                     if (context->curgrouptype == grp_Constant) {
                         if (context->tempconstant) {
                             if (depth == 2)
-                                context->tempconstant->value = strtol((char *)text, NULL, 10);
+                                context->tempconstant->value = strtol((char *)nod->children->content, NULL, 10);
                         }
                     }
                     else if (context->curgrouptype == grp_Object) {
                         if (context->tempconstant) {
                             if (depth == 2)
-                                context->tempconstant->value = strtol((char *)text, NULL, 10);
+                                context->tempconstant->value = strtol((char *)nod->children->content, NULL, 10);
                         }
                     }
                     else if (context->curgrouptype == grp_Array) {
                         if (context->temparray) {
                             if (depth == 2)
-                                context->temparray->address = strtol((char *)text, NULL, 10);
+                                context->temparray->address = strtol((char *)nod->children->content, NULL, 10);
                         }
                     }
                     else if (context->curgrouptype == grp_Routine) {
                         if (context->temproutine) {
                             if (depth == 2)
-                                context->temproutine->address = strtol((char *)text, NULL, 10);
+                                context->temproutine->address = strtol((char *)nod->children->content, NULL, 10);
                         }
                     }
                 }
@@ -569,11 +580,10 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "address")) {
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
-                    xmlChar *text = xmlStrdup(nod->children->content);
                     if (context->curgrouptype == grp_Global) {
                         if (context->tempconstant) {
                             if (depth == 2)
-                                context->tempconstant->value = strtol((char *)text, NULL, 10);
+                                context->tempconstant->value = strtol((char *)nod->children->content, NULL, 10);
                         }
                     }
                 }
@@ -581,11 +591,39 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "byte-count")) {
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
-                    xmlChar *text = xmlStrdup(nod->children->content);
                     if (context->curgrouptype == grp_Routine) {
                         if (context->temproutine) {
                             if (depth == 2)
-                                context->temproutine->length = strtol((char *)text, NULL, 10);
+                                context->temproutine->length = strtol((char *)nod->children->content, NULL, 10);
+                        }
+                    }
+                    else if (context->curgrouptype == grp_Array) {
+                        if (context->temparray) {
+                            if (depth == 2)
+                                context->temparray->bytelength = strtol((char *)nod->children->content, NULL, 10);
+                        }
+                    }
+                }
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "bytes-per-element")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    if (context->curgrouptype == grp_Array) {
+                        if (context->temparray) {
+                            if (depth == 2)
+                                context->temparray->bytesize = strtol((char *)nod->children->content, NULL, 10);
+                        }
+                    }
+                }
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "zeroth-element-holds-length")) {
+                xmlNodePtr nod = xmlTextReaderExpand(reader);
+                if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
+                    if (context->curgrouptype == grp_Array) {
+                        if (context->temparray) {
+                            if (depth == 2)
+                                if (!xmlStrcmp(nod->children->content, BAD_CAST "true"))
+                                    context->temparray->lengthfield = 1;
                         }
                     }
                 }
