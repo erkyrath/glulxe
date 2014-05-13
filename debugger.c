@@ -640,7 +640,7 @@ static int finalize_debuginfo(debuginfofile *context)
             context->routinelist[ix]->nextaddress = context->routinelist[ix+1]->address;
         }
         else {
-            context->routinelist[ix]->nextaddress = context->routinelist[ix]->length;
+            context->routinelist[ix]->nextaddress = context->routinelist[ix]->address + context->routinelist[ix]->length;
         }
     }
 
@@ -782,9 +782,21 @@ static inforoutine *find_routine_for_address(glui32 addr)
 
 static void render_value_linebuf(glui32 val)
 {
+    /* Always display the decimal and hex. */
     int tmplen = strlen(linebuf);
     ensure_line_buf(tmplen+40);
     snprintf(linebuf+tmplen, linebufsize-tmplen, "%d ($%X)", val, val);
+
+    /* If the address of a function, display it. (But not addresses in
+       the middle of a function.) */
+    inforoutine *func = find_routine_for_address(val);
+    if (func) {
+        if (val == func->address) {
+            tmplen = strlen(linebuf);
+            ensure_line_buf(tmplen+40);
+            snprintf(linebuf+tmplen, linebufsize-tmplen, ", %s()", func->identifier);
+        }
+    }
 }
 
 static void debugcmd_backtrace()
