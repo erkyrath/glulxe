@@ -1095,7 +1095,7 @@ static void debugcmd_print(char *arg)
     if (debuginfo) {
         infoarray *arr = xmlHashLookup(debuginfo->arrays, BAD_CAST arg);
         if (arr) {
-            snprintf(linebuf, linebufsize, "%d ($%X): array", arr->address, arr->address);
+            snprintf(linebuf, linebufsize, "%d ($%X): array[%d] of %d-byte values", arr->address, arr->address, arr->count, arr->bytesize);
             gidebug_output(linebuf);
             return;
         }
