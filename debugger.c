@@ -96,6 +96,8 @@ typedef struct debuginfofile_struct {
     xmlHashTablePtr globals;
     xmlHashTablePtr objects;
     xmlHashTablePtr arrays;
+    int numarrays;
+    infoarray **arraylist; /* array, ordered by address */
     xmlHashTablePtr routines;
     int numroutines;
     inforoutine **routinelist; /* array, ordered by address */
@@ -128,6 +130,8 @@ static debuginfofile *create_debuginfofile()
     context->globals = xmlHashCreate(16);
     context->objects = xmlHashCreate(16);
     context->arrays = xmlHashCreate(16);
+    context->numarrays = 0;
+    context->arraylist = NULL;
     context->routines = xmlHashCreate(16);
     context->numroutines = 0;
     context->routinelist = NULL;
@@ -168,6 +172,11 @@ static void free_debuginfofile(debuginfofile *context)
     if (context->arrays) {
         xmlHashFree(context->arrays, NULL);
         context->arrays = NULL;
+    }
+
+    if (context->arraylist) {
+        free(context->arraylist);
+        context->arraylist = NULL;
     }
 
     if (context->routines) {
@@ -214,6 +223,42 @@ static inforoutine *create_inforoutine()
     cons->numlocals = 0;
     cons->locals = NULL;
     return cons;
+}
+
+static void add_array_to_table(void *obj, void *rock, xmlChar *name)
+{
+    debuginfofile *context = rock;
+    infoarray *array = obj;
+
+    if (context->tempcounter >= context->numarrays) {
+        printf("### array overflow!\n"); /*###*/
+        return;
+    }
+
+    context->arraylist[context->tempcounter++] = array;
+}
+
+static int sort_arrays_table(const void *obj1, const void *obj2)
+{
+    infoarray **array1 = (infoarray **)obj1;
+    infoarray **array2 = (infoarray **)obj2;
+
+    return ((*array1)->address - (*array2)->address);
+}
+
+static int find_array_in_table(const void *keyptr, const void *obj)
+{
+    /* Binary-search callback. We rely on address and nextaddress so
+       that there are no gaps. */
+
+    glui32 addr = *(glui32 *)(keyptr);
+    infoarray **array = (infoarray **)obj;
+
+    if (addr < (*array)->address)
+        return -1;
+    if (addr >= (*array)->nextaddress)
+        return 1;
+    return 0;
 }
 
 static void add_routine_to_table(void *obj, void *rock, xmlChar *name)
@@ -664,6 +709,24 @@ static int finalize_debuginfo(debuginfofile *context)
 {
     int ix;
 
+    context->numarrays = xmlHashSize(context->arrays);
+    context->arraylist = (infoarray **)malloc(context->numarrays * sizeof(infoarray *));
+
+    context->tempcounter = 0;
+    xmlHashScan(context->arrays, add_array_to_table, context);
+    if (context->tempcounter != context->numarrays) 
+        printf("### array underflow!\n"); /*###*/
+    qsort(context->arraylist, context->numarrays, sizeof(infoarray *), sort_arrays_table);
+
+    for (ix=0; ix<context->numarrays; ix++) {
+        if (ix+1 < context->numarrays) {
+            context->arraylist[ix]->nextaddress = context->arraylist[ix+1]->address;
+        }
+        else {
+            context->arraylist[ix]->nextaddress = context->arraylist[ix]->address + context->arraylist[ix]->bytelength;
+        }
+    }
+
     context->numroutines = xmlHashSize(context->routines);
     context->routinelist = (inforoutine **)malloc(context->numroutines * sizeof(inforoutine *));
 
@@ -802,6 +865,22 @@ void debugger_track_cpu(int flag)
     track_cpu = flag;
 }
 
+static infoarray *find_array_for_address(glui32 addr)
+{
+    if (!debuginfo)
+        return NULL;
+
+    infoarray **res = bsearch(&addr, debuginfo->arraylist, debuginfo->numarrays, sizeof(infoarray *), find_array_in_table);
+    if (!res)
+        return NULL;
+
+    infoarray *arr = *res;
+    if (addr < arr->address || addr >= arr->address + arr->bytelength)
+        return NULL;
+
+    return arr;
+}
+
 static inforoutine *find_routine_for_address(glui32 addr)
 {
     if (!debuginfo)
@@ -847,6 +926,16 @@ static void render_value_linebuf(glui32 val)
             tmplen = strlen(linebuf);
             ensure_line_buf(tmplen+40);
             snprintf(linebuf+tmplen, linebufsize-tmplen, ", %s()", func->identifier);
+        }
+    }
+
+    /* If the address of an array, display it. */
+    infoarray *arr = find_array_for_address(val);
+    if (arr) {
+        if (val == arr->address) {
+            tmplen = strlen(linebuf);
+            ensure_line_buf(tmplen+40);
+            snprintf(linebuf+tmplen, linebufsize-tmplen, ", %s[%d]", arr->identifier, arr->count);
         }
     }
 }
