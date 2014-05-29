@@ -58,6 +58,15 @@ typedef struct inforoutine_struct {
     infoconstant *locals;
 } inforoutine;
 
+typedef struct infoobject_struct {
+    const xmlChar *identifier;
+    int32_t address;
+
+    /* Address of the next higher function. May be beyond length if there
+       are gaps. */
+    int32_t nextaddress;
+} infoobject;
+
 typedef struct infoarray_struct {
     const xmlChar *identifier;
     int32_t address;
@@ -83,6 +92,7 @@ typedef struct debuginfofile_struct {
     infoconstant *tempconstant;
     inforoutine *temproutine;
     infoarray *temparray;
+    infoobject *tempobject;
     int tempnumlocals;
     int templocalssize;
     infoconstant *templocals;
@@ -91,6 +101,8 @@ typedef struct debuginfofile_struct {
     xmlHashTablePtr constants;
     xmlHashTablePtr globals;
     xmlHashTablePtr objects;
+    int numobjects;
+    infoobject **objectlist; /* array, ordered by address */
     xmlHashTablePtr arrays;
     int numarrays;
     infoarray **arraylist; /* array, ordered by address */
@@ -117,6 +129,7 @@ static debuginfofile *create_debuginfofile()
     context->failed = 0;
     context->tempconstant = NULL;
     context->temparray = NULL;
+    context->tempobject = NULL;
     context->temproutine = NULL;
     context->tempnumlocals = 0;
     context->templocals = NULL;
@@ -125,6 +138,8 @@ static debuginfofile *create_debuginfofile()
     context->constants = xmlHashCreate(16);
     context->globals = xmlHashCreate(16);
     context->objects = xmlHashCreate(16);
+    context->numobjects = 0;
+    context->objectlist = NULL;
     context->arrays = xmlHashCreate(16);
     context->numarrays = 0;
     context->arraylist = NULL;
@@ -144,6 +159,7 @@ static void free_debuginfofile(debuginfofile *context)
     context->str = NULL;
     context->tempconstant = NULL;
     context->temparray = NULL;
+    context->tempobject = NULL;
     context->temproutine = NULL;
  
     /* We don't bother to free the member structures, because this
@@ -163,6 +179,11 @@ static void free_debuginfofile(debuginfofile *context)
     if (context->objects) {
         xmlHashFree(context->objects, NULL);
         context->objects = NULL;
+    }
+
+    if (context->objectlist) {
+        free(context->objectlist);
+        context->objectlist = NULL;
     }
 
     if (context->arrays) {
@@ -196,29 +217,74 @@ static infoconstant *create_infoconstant()
     return cons;
 }
 
+static infoobject *create_infoobject()
+{
+    infoobject *object = (infoobject *)malloc(sizeof(infoobject));
+    object->identifier = NULL;
+    object->address = 0;
+    object->nextaddress = 0;
+    return object;
+}
+
 static infoarray *create_infoarray()
 {
-    infoarray *cons = (infoarray *)malloc(sizeof(infoarray));
-    cons->identifier = NULL;
-    cons->address = 0;
-    cons->bytelength = 0;
-    cons->bytesize = 1;
-    cons->count = 0;
-    cons->lengthfield = 0;
-    cons->nextaddress = 0;
-    return cons;
+    infoarray *arr = (infoarray *)malloc(sizeof(infoarray));
+    arr->identifier = NULL;
+    arr->address = 0;
+    arr->bytelength = 0;
+    arr->bytesize = 1;
+    arr->count = 0;
+    arr->lengthfield = 0;
+    arr->nextaddress = 0;
+    return arr;
 }
 
 static inforoutine *create_inforoutine()
 {
-    inforoutine *cons = (inforoutine *)malloc(sizeof(inforoutine));
-    cons->identifier = NULL;
-    cons->address = 0;
-    cons->length = 0;
-    cons->nextaddress = 0;
-    cons->numlocals = 0;
-    cons->locals = NULL;
-    return cons;
+    inforoutine *func = (inforoutine *)malloc(sizeof(inforoutine));
+    func->identifier = NULL;
+    func->address = 0;
+    func->length = 0;
+    func->nextaddress = 0;
+    func->numlocals = 0;
+    func->locals = NULL;
+    return func;
+}
+
+static void add_object_to_table(void *obj, void *rock, xmlChar *name)
+{
+    debuginfofile *context = rock;
+    infoobject *object = obj;
+
+    if (context->tempcounter >= context->numobjects) {
+        printf("### object overflow!\n"); /*###*/
+        return;
+    }
+
+    context->objectlist[context->tempcounter++] = object;
+}
+
+static int sort_objects_table(const void *obj1, const void *obj2)
+{
+    infoobject **object1 = (infoobject **)obj1;
+    infoobject **object2 = (infoobject **)obj2;
+
+    return ((*object1)->address - (*object2)->address);
+}
+
+static int find_object_in_table(const void *keyptr, const void *obj)
+{
+    /* Binary-search callback. We rely on address and nextaddress so
+       that there are no gaps. */
+
+    glui32 addr = *(glui32 *)(keyptr);
+    infoobject **object = (infoobject **)obj;
+
+    if (addr < (*object)->address)
+        return -1;
+    if (addr >= (*object)->nextaddress)
+        return 1;
+    return 0;
 }
 
 static void add_array_to_table(void *obj, void *rock, xmlChar *name)
@@ -452,6 +518,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             context->curgrouptype = grp_None;
             context->tempconstant = NULL;
             context->temparray = NULL;
+            context->tempobject = NULL;
             context->temproutine = NULL;
         }
     }
@@ -473,7 +540,7 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             }
             else if (!xmlStrcmp(name, BAD_CAST "object")) {
                 context->curgrouptype = grp_Object;
-                context->tempconstant = create_infoconstant();
+                context->tempobject = create_infoobject();
             }
             else if (!xmlStrcmp(name, BAD_CAST "array")) {
                 context->curgrouptype = grp_Array;
@@ -507,9 +574,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 }
                 break;
             case grp_Object:
-                if (context->tempconstant) {
-                    infoconstant *dat = context->tempconstant;
-                    context->tempconstant = NULL;
+                if (context->tempobject) {
+                    infoobject *dat = context->tempobject;
+                    context->tempobject = NULL;
                     xmlHashAddEntry(context->objects, dat->identifier, dat);
                 }
                 break;
@@ -570,9 +637,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                         }
                     }
                     else if (context->curgrouptype == grp_Object) {
-                        if (context->tempconstant) {
+                        if (context->tempobject) {
                             if (depth == 2)
-                                context->tempconstant->identifier = xmlStrdup(text);
+                                context->tempobject->identifier = xmlStrdup(text);
                         }
                     }
                     else if (context->curgrouptype == grp_Array) {
@@ -599,9 +666,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                         }
                     }
                     else if (context->curgrouptype == grp_Object) {
-                        if (context->tempconstant) {
+                        if (context->tempobject) {
                             if (depth == 2)
-                                context->tempconstant->value = strtol((char *)nod->children->content, NULL, 10);
+                                context->tempobject->address = strtol((char *)nod->children->content, NULL, 10);
                         }
                     }
                     else if (context->curgrouptype == grp_Array) {
@@ -720,6 +787,24 @@ static int finalize_debuginfo(debuginfofile *context)
         }
         else {
             context->arraylist[ix]->nextaddress = context->arraylist[ix]->address + context->arraylist[ix]->bytelength;
+        }
+    }
+
+    context->numobjects = xmlHashSize(context->objects);
+    context->objectlist = (infoobject **)malloc(context->numobjects * sizeof(infoobject *));
+
+    context->tempcounter = 0;
+    xmlHashScan(context->objects, add_object_to_table, context);
+    if (context->tempcounter != context->numobjects) 
+        printf("### object underflow!\n"); /*###*/
+    qsort(context->objectlist, context->numobjects, sizeof(infoobject *), sort_objects_table);
+
+    for (ix=0; ix<context->numobjects; ix++) {
+        if (ix+1 < context->numobjects) {
+            context->objectlist[ix]->nextaddress = context->objectlist[ix+1]->address;
+        }
+        else {
+            context->objectlist[ix]->nextaddress = context->objectlist[ix]->address + 1;
         }
     }
 
@@ -885,6 +970,22 @@ static infoarray *find_array_for_address(glui32 addr)
     return arr;
 }
 
+static infoobject *find_object_for_address(glui32 addr)
+{
+    if (!debuginfo)
+        return NULL;
+
+    infoobject **res = bsearch(&addr, debuginfo->objectlist, debuginfo->numobjects, sizeof(infoobject *), find_object_in_table);
+    if (!res)
+        return NULL;
+
+    infoobject *arr = *res;
+    if (addr != arr->address)
+        return NULL;
+
+    return arr;
+}
+
 static inforoutine *find_routine_for_address(glui32 addr)
 {
     if (!debuginfo)
@@ -940,6 +1041,16 @@ static void render_value_linebuf(glui32 val)
             tmplen = strlen(linebuf);
             ensure_line_buf(tmplen+40);
             snprintf(linebuf+tmplen, linebufsize-tmplen, ", %s[%d]", arr->identifier, arr->count);
+        }
+    }
+
+    /* If the address of an object, display it. */
+    infoobject *object = find_object_for_address(val);
+    if (arr) {
+        if (val == object->address) {
+            tmplen = strlen(linebuf);
+            ensure_line_buf(tmplen+40);
+            snprintf(linebuf+tmplen, linebufsize-tmplen, ", %s", object->identifier);
         }
     }
 }
@@ -1087,9 +1198,9 @@ static void debugcmd_print(char *arg)
 
     /* Is it an object name? */
     if (debuginfo) {
-        infoconstant *cons = xmlHashLookup(debuginfo->objects, BAD_CAST arg);
+        infoobject *cons = xmlHashLookup(debuginfo->objects, BAD_CAST arg);
         if (cons) {
-            snprintf(linebuf, linebufsize, "%d ($%X): object", cons->value, cons->value);
+            snprintf(linebuf, linebufsize, "%d ($%X): object", cons->address, cons->address);
             gidebug_output(linebuf);
             return;
         }
