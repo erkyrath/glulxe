@@ -316,6 +316,7 @@ extern void debugger_handle_crash(char *msg);
 #else /* VM_DEBUGGER */
 #define debugger_tick()             (0)
 #define debugger_check_story_file() (0)
+#define debugger_handle_crash(msg)  (0)
 #endif /* VM_DEBUGGER */
 
 /* accel.c */
