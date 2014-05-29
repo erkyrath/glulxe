@@ -1179,21 +1179,27 @@ void debugger_cycle_handler(int cycle)
 
     if (track_cpu) {
         switch (cycle) {
+
         case gidebug_cycle_Start:
             debugger_opcount = 0;
             gettimeofday(&debugger_timer, NULL);
             break;
+
         case gidebug_cycle_InputWait:
+        case gidebug_cycle_DebugPause:
             gettimeofday(&now, NULL);
             diff = (now.tv_sec - debugger_timer.tv_sec) * 1000.0 + (now.tv_usec - debugger_timer.tv_usec) / 1000.0;
             ensure_line_buf(64);
             snprintf(linebuf, linebufsize, "VM: %ld cycles in %.3f ms", debugger_opcount, diff);
             gidebug_output(linebuf);
             break;
+
         case gidebug_cycle_InputAccept:
+        case gidebug_cycle_DebugUnpause:
             debugger_opcount = 0;
             gettimeofday(&debugger_timer, NULL);
             break;
+
         }
     }
 }
