@@ -564,7 +564,12 @@ void execute_loop()
         break;
 
       case op_debugtrap:
+#if VM_DEBUGGER
+        debugger_block_and_debug("user debugtrap, pausing...");
+        break;
+#else /* VM_DEBUGGER */
         fatal_error_i("user debugtrap encountered.", inst[0].value);
+#endif /* VM_DEBUGGER */
 
       case op_jumpabs:
         pc = inst[0].value;

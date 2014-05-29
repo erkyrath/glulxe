@@ -12,10 +12,6 @@
    about the state between commands. Do we use cycle_handler to inform us
    when the VM is running? Is that an adequate guarantee that the stack
    won't change?
-
-   We also want the VM to be able to jump into "debug forever" mode
-   (on crash or @debugtrap). Then Glk should just send debug commands
-   until we decide otherwise? Or until the user-via-Glk decides otherwise?
 */
 
 #include "glk.h"
@@ -1128,8 +1124,9 @@ static void debugcmd_print(char *arg)
 
 /* Debug console callback: This is invoked whenever the user enters a debug
    command.
+   Returns 0 for most commands, 1 if the command ends a debugger pause.
 */
-void debugger_cmd_handler(char *cmd)
+int debugger_cmd_handler(char *cmd)
 {
     /* Trim spaces from start */
     while (*cmd == ' ')
@@ -1142,7 +1139,7 @@ void debugger_cmd_handler(char *cmd)
     }
 
     if (*cmd == '\0')
-        return; /* empty command */
+        return 0; /* empty command */
 
     char *cx;
     for (cx=cmd; *cx && *cx != ' '; cx++) { }
@@ -1150,17 +1147,23 @@ void debugger_cmd_handler(char *cmd)
 
     if (len == 2 && !strncmp(cmd, "bt", len)) {
         debugcmd_backtrace();
-        return;
+        return 0;
     }
 
     if (len == 5 && !strncmp(cmd, "print", len)) {
         debugcmd_print(cx);
-        return;
+        return 0;
+    }
+
+    if (len == 4 && !strncmp(cmd, "cont", len)) {
+        gidebug_output("Continuing...");
+        return 1;
     }
 
     ensure_line_buf(strlen(cmd) + 64);
     snprintf(linebuf, linebufsize, "Unknown debug command: %s", cmd);
     gidebug_output(linebuf);
+    return 0;
 }
 
 /* Debug console callback: This is invoked when the game starts, when it
@@ -1193,6 +1196,14 @@ void debugger_cycle_handler(int cycle)
             break;
         }
     }
+}
+
+/* Invoke the library's debug-block mechanism.
+*/
+void debugger_block_and_debug(char *msg)
+{
+    gidebug_output(msg);
+    gidebug_pause();
 }
 
 /* Report a fatal error to the debug console, along with the current
