@@ -1046,7 +1046,7 @@ static void render_value_linebuf(glui32 val)
 
     /* If the address of an object, display it. */
     infoobject *object = find_object_for_address(val);
-    if (arr) {
+    if (object) {
         if (val == object->address) {
             tmplen = strlen(linebuf);
             ensure_line_buf(tmplen+40);
