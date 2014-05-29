@@ -850,6 +850,7 @@ static void ensure_line_buf(int len)
 }
 
 static int track_cpu = FALSE;
+static int crash_trap = FALSE;
 unsigned long debugger_opcount = 0; /* incremented in exec.c */
 static struct timeval debugger_timer;
 
@@ -859,6 +860,13 @@ static struct timeval debugger_timer;
 void debugger_track_cpu(int flag)
 {
     track_cpu = flag;
+}
+
+/* Set the block-on-crash flag.
+*/
+void debugger_set_crash_trap(int flag)
+{
+    crash_trap = flag;
 }
 
 static infoarray *find_array_for_address(glui32 addr)
@@ -1213,9 +1221,9 @@ void debugger_block_and_debug(char *msg)
 }
 
 /* Report a fatal error to the debug console, along with the current
-   stack trace. 
+   stack trace. Depending on preferences, we may then enter full-on debug mode.
 */
-void debugger_error_trace(char *msg)
+void debugger_handle_crash(char *msg)
 {
     char *prefix = "Glulxe fatal error: ";
     ensure_line_buf(strlen(prefix) + strlen(msg));
@@ -1224,6 +1232,10 @@ void debugger_error_trace(char *msg)
     gidebug_output(linebuf);
 
     debugcmd_backtrace();
+
+    if (crash_trap) {
+        gidebug_pause();
+    }
 }
 
 
