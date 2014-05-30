@@ -565,11 +565,15 @@ void execute_loop()
 
       case op_debugtrap:
 #if VM_DEBUGGER
-        debugger_block_and_debug("user debugtrap, pausing...");
-        break;
-#else /* VM_DEBUGGER */
-        fatal_error_i("user debugtrap encountered.", inst[0].value);
+        /* We block and handle debug commands, but only if the
+           library has invoked debug features. (Meaning, has
+           the cycle handler ever been called.) */
+        if (debugger_ever_invoked()) {
+          debugger_block_and_debug("user debugtrap, pausing...");
+          break;
+        }
 #endif /* VM_DEBUGGER */
+        fatal_error_i("user debugtrap encountered.", inst[0].value);
 
       case op_jumpabs:
         pc = inst[0].value;

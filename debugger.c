@@ -954,6 +954,7 @@ static void ensure_line_buf(int len)
 
 static int track_cpu = FALSE;
 static int crash_trap = FALSE;
+static int debugger_invoked = FALSE; /* true if cycle handler called */
 unsigned long debugger_opcount = 0; /* incremented in exec.c */
 static struct timeval debugger_timer;
 
@@ -970,6 +971,14 @@ void debugger_track_cpu(int flag)
 void debugger_set_crash_trap(int flag)
 {
     crash_trap = flag;
+}
+
+/* Has the library activated debugger features? If not, we assume
+   that the debug console is entirely hidden from the user.
+*/
+int debugger_ever_invoked()
+{
+    return debugger_invoked;
 }
 
 /* Returns 1 if this is a (hex or decimal) numeric constant; 0 if not;
@@ -1491,6 +1500,8 @@ void debugger_cycle_handler(int cycle)
 {
     struct timeval now;
     double diff;
+
+    debugger_invoked = TRUE;
 
     if (track_cpu) {
         switch (cycle) {
