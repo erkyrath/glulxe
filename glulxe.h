@@ -51,8 +51,10 @@ typedef int16_t glsi16;
    _BSD_SOURCE or _DEFAULT_SOURCE or both for the timeradd() macro.) */
 /* #define VM_PROFILING (1) */
 
-/* Uncomment this definition to turn on the Glulx debugger. ###debug */
-#define VM_DEBUGGER (1)
+/* Uncomment this definition to turn on the Glulx debugger. You should
+   only do this when debugging facilities are desired; it slows down
+   the interpreter. */
+/* #define VM_DEBUGGER (1) */
 
 /* Comment this definition to turn off floating-point support. You
    might need to do this if you are building on a very limited platform
