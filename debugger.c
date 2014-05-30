@@ -1252,6 +1252,74 @@ static void debugcmd_set_breakpoint(char *arg)
 
 static void debugcmd_clear_breakpoint(char *arg)
 {
+    while (*arg == ' ')
+        arg++;
+
+    if (*arg == '\0') {
+        gidebug_output("What function do you want to set a breakpoint at?");
+        return;
+    }
+
+    int found = FALSE;
+    glui32 addr = 0;
+
+    if (!found) {
+        int res = parse_numeric_constant(arg, &addr);
+        if (res < 0)
+            return;
+        if (res > 0) {
+            found = TRUE;
+            /* If possible, check whether this looks like a function
+               address. But if it doesn't, just print a warning. */
+            if (debuginfo) {
+                inforoutine *routine = find_routine_for_address(addr);
+                if (!routine || routine->address != addr) {
+                    ensure_line_buf(128);
+                    strcpy(linebuf, "This does not look like a function address: ");
+                    render_value_linebuf(addr);
+                    gidebug_output(linebuf);
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        if (!debuginfo) {
+            gidebug_output("No debug info; cannot look up functions by name");
+            return;
+        }
+        inforoutine *routine = xmlHashLookup(debuginfo->routines, BAD_CAST arg);
+        if (!routine) {
+            ensure_line_buf(128);
+            snprintf(linebuf, linebufsize, "Not a function name: %s", arg);
+            gidebug_output(linebuf);
+            return;
+        }
+        found = TRUE;
+        addr = routine->address;
+    }
+
+    if (!found)
+        return;
+
+    breakpoint **bpp;
+    for (bpp = &funcbreakpoints; *bpp; bpp=&((*bpp)->next)) {
+        if ((*bpp)->address == addr) {
+            breakpoint *bp = *bpp;
+            *bpp = bp->next;
+            free(bp);
+            ensure_line_buf(128);
+            strcpy(linebuf, "Cleared breakpoint for function: ");
+            render_value_linebuf(addr);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    ensure_line_buf(128);
+    strcpy(linebuf, "No breakpoint found for function: ");
+    render_value_linebuf(addr);
+    gidebug_output(linebuf);
 }
 
 static void debugcmd_print(char *arg)
