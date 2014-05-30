@@ -115,12 +115,13 @@ typedef struct debuginfofile_struct {
     xmlHashTablePtr routines;
     int numroutines;
     inforoutine **routinelist; /* array, ordered by address */
-
-    breakpoint *funcbreakpoints; /* linked list */
 } debuginfofile;
 
 /* This global holds the loaded debug info, if we have any. */
 static debuginfofile *debuginfo = NULL;
+
+/* Lists of breakpoints. */
+static breakpoint *funcbreakpoints = NULL; /* linked list */
 
 /* Internal functions used while loading the debug info. */
 
@@ -155,7 +156,6 @@ static debuginfofile *create_debuginfofile()
     context->numroutines = 0;
     context->routinelist = NULL;
     context->storyfileprefix = NULL;
-    context->funcbreakpoints = NULL;
 
     return context;
 }
@@ -215,12 +215,6 @@ static void free_debuginfofile(debuginfofile *context)
         context->routinelist = NULL;
     }
 
-    while (context->funcbreakpoints) {
-        breakpoint *bp = context->funcbreakpoints;
-        context->funcbreakpoints = bp->next;
-        free(bp);
-    }
-
     free(context);
 }
 
@@ -264,6 +258,15 @@ static inforoutine *create_inforoutine()
     func->numlocals = 0;
     func->locals = NULL;
     return func;
+}
+
+static breakpoint *create_breakpoint(glui32 addr)
+{
+    breakpoint *bp = (breakpoint *)malloc(sizeof(breakpoint));
+    bp->func = NULL; /* useful? */
+    bp->address = addr;
+    bp->next = NULL;
+    return bp;
 }
 
 static void add_object_to_table(void *obj, void *rock, xmlChar *name)
@@ -969,6 +972,56 @@ void debugger_set_crash_trap(int flag)
     crash_trap = flag;
 }
 
+/* Returns 1 if this is a (hex or decimal) numeric constant; 0 if not;
+   -1 if it looks like a constant but is malformed. 
+
+   On 1, the number itself is returned in res.
+*/
+static int parse_numeric_constant(char *arg, glui32 *res)
+{
+    if (arg[0] == '$') {
+        char *cx;
+        glui32 val = 0;
+        for (cx=arg+1; *cx; cx++) {
+            if (*cx >= '0' && *cx <= '9') {
+                val = 16 * val + (*cx - '0');
+                continue;
+            }
+            if (*cx >= 'A' && *cx <= 'F') {
+                val = 16 * val + (*cx - 'A' + 10);
+                continue;
+            }
+            if (*cx >= 'a' && *cx <= 'f') {
+                val = 16 * val + (*cx - 'a' + 10);
+                continue;
+            }
+            snprintf(linebuf, linebufsize, "Invalid hex number");
+            gidebug_output(linebuf);
+            return -1;
+        }
+        *res = val;
+        return 1;
+    }
+
+    if (arg[0] >= '0' && arg[0] <= '9') {
+        char *cx;
+        glui32 val = 0;
+        for (cx=arg; *cx; cx++) {
+            if (*cx >= '0' && *cx <= '9') {
+                val = 10 * val + (*cx - '0');
+                continue;
+            }
+            snprintf(linebuf, linebufsize, "Invalid number");
+            gidebug_output(linebuf);
+            return -1;
+        }
+        *res = val;
+        return 1;
+    }
+
+    return 0;
+}
+
 static infoarray *find_array_for_address(glui32 addr)
 {
     if (!debuginfo)
@@ -1070,7 +1123,7 @@ static void render_value_linebuf(glui32 val)
     }
 }
 
-static void debugcmd_backtrace()
+static void debugcmd_backtrace(int wholestack)
 {
     if (stack) {
         ensure_line_buf(256);
@@ -1107,6 +1160,9 @@ static void debugcmd_backtrace()
             }
             gidebug_output(linebuf);
 
+            if (!wholestack)
+                break;
+
             curstackptr = curframeptr;
             if (curstackptr < 16)
                 break;
@@ -1119,6 +1175,83 @@ static void debugcmd_backtrace()
             curlocalsbase = curframeptr + Stk4(curframeptr+4);
         }
     }
+}
+
+static void debugcmd_set_breakpoint(char *arg)
+{
+    while (*arg == ' ')
+        arg++;
+
+    if (*arg == '\0') {
+        gidebug_output("What function do you want to set a breakpoint at?");
+        return;
+    }
+
+    int found = FALSE;
+    glui32 addr = 0;
+
+    if (!found) {
+        int res = parse_numeric_constant(arg, &addr);
+        if (res < 0)
+            return;
+        if (res > 0) {
+            found = TRUE;
+            /* If possible, check whether this looks like a function
+               address. But if it doesn't, just print a warning. */
+            if (debuginfo) {
+                inforoutine *routine = find_routine_for_address(addr);
+                if (!routine || routine->address != addr) {
+                    ensure_line_buf(128);
+                    strcpy(linebuf, "This does not look like a function address: ");
+                    render_value_linebuf(addr);
+                    gidebug_output(linebuf);
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        if (!debuginfo) {
+            gidebug_output("No debug info; cannot look up functions by name");
+            return;
+        }
+        inforoutine *routine = xmlHashLookup(debuginfo->routines, BAD_CAST arg);
+        if (!routine) {
+            ensure_line_buf(128);
+            snprintf(linebuf, linebufsize, "Not a function name: %s", arg);
+            gidebug_output(linebuf);
+            return;
+        }
+        found = TRUE;
+        addr = routine->address;
+    }
+
+    if (!found)
+        return;
+
+    breakpoint *bp;
+    for (bp = funcbreakpoints; bp; bp=bp->next) {
+        if (bp->address == addr) {
+            ensure_line_buf(128);
+            strcpy(linebuf, "Breakpoint is already set for function: ");
+            render_value_linebuf(addr);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    bp = create_breakpoint(addr);
+    bp->next = funcbreakpoints;
+    funcbreakpoints = bp;
+
+    ensure_line_buf(128);
+    strcpy(linebuf, "Breakpoint set for function: ");
+    render_value_linebuf(addr);
+    gidebug_output(linebuf);
+}
+
+static void debugcmd_clear_breakpoint(char *arg)
+{
 }
 
 static void debugcmd_print(char *arg)
@@ -1135,47 +1268,17 @@ static void debugcmd_print(char *arg)
 
     /* For plain numbers, and $HEX numbers, we print the value directly. */
 
-    if (arg[0] == '$') {
-        char *cx;
+    {
         glui32 val = 0;
-        for (cx=arg+1; *cx; cx++) {
-            if (*cx >= '0' && *cx <= '9') {
-                val = 16 * val + (*cx - '0');
-                continue;
-            }
-            if (*cx >= 'A' && *cx <= 'F') {
-                val = 16 * val + (*cx - 'A' + 10);
-                continue;
-            }
-            if (*cx >= 'a' && *cx <= 'f') {
-                val = 16 * val + (*cx - 'a' + 10);
-                continue;
-            }
-            snprintf(linebuf, linebufsize, "Invalid hex number");
+        int res = parse_numeric_constant(arg, &val);
+        if (res < 0)
+            return;
+        if (res > 0) {
+            strcpy(linebuf, "");
+            render_value_linebuf(val);
             gidebug_output(linebuf);
             return;
         }
-        strcpy(linebuf, "");
-        render_value_linebuf(val);
-        gidebug_output(linebuf);
-        return;
-    }
-    else if (arg[0] >= '0' && arg[0] <= '9') {
-        char *cx;
-        glui32 val = 0;
-        for (cx=arg; *cx; cx++) {
-            if (*cx >= '0' && *cx <= '9') {
-                val = 10 * val + (*cx - '0');
-                continue;
-            }
-            snprintf(linebuf, linebufsize, "Invalid number");
-            gidebug_output(linebuf);
-            return;
-        }
-        strcpy(linebuf, "");
-        render_value_linebuf(val);
-        gidebug_output(linebuf);
-        return;
     }
 
     /* Symbol recognition should be case-insensitive */
@@ -1280,12 +1383,22 @@ int debugger_cmd_handler(char *cmd)
     len = (cx - cmd);
 
     if (len == 2 && !strncmp(cmd, "bt", len)) {
-        debugcmd_backtrace();
+        debugcmd_backtrace(1);
         return 0;
     }
 
     if (len == 5 && !strncmp(cmd, "print", len)) {
         debugcmd_print(cx);
+        return 0;
+    }
+
+    if (len == 5 && !strncmp(cmd, "break", len)) {
+        debugcmd_set_breakpoint(cx);
+        return 0;
+    }
+
+    if (len == 5 && !strncmp(cmd, "clear", len)) {
+        debugcmd_clear_breakpoint(cx);
         return 0;
     }
 
@@ -1346,12 +1459,11 @@ void debugger_check_func_breakpoint(glui32 addr)
     int pause = FALSE;
     breakpoint *bp;
 
-    if (!debuginfo)
-        return;
-
-    for (bp = debuginfo->funcbreakpoints; bp; bp=bp->next) {
+    for (bp = funcbreakpoints; bp; bp=bp->next) {
         if (bp->address == addr) {
             pause = TRUE;
+            gidebug_output("Breakpoint:");
+            debugcmd_backtrace(0);
             break;
         }
     }
@@ -1380,7 +1492,7 @@ void debugger_handle_crash(char *msg)
     strcat(linebuf, msg);
     gidebug_output(linebuf);
 
-    debugcmd_backtrace();
+    debugcmd_backtrace(1);
 
     if (crash_trap) {
         gidebug_pause();
