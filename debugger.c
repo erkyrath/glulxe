@@ -1256,7 +1256,7 @@ static void debugcmd_clear_breakpoint(char *arg)
         arg++;
 
     if (*arg == '\0') {
-        gidebug_output("What function do you want to set a breakpoint at?");
+        gidebug_output("What function do you want to clear a breakpoint at?");
         return;
     }
 
