@@ -311,12 +311,14 @@ extern void debugger_set_crash_trap(int flag);
 extern void debugger_check_story_file(void);
 extern int debugger_cmd_handler(char *cmd);
 extern void debugger_cycle_handler(int cycle);
+extern void debugger_check_func_breakpoint(glui32 addr);
 extern void debugger_block_and_debug(char *msg);
 extern void debugger_handle_crash(char *msg);
 #else /* VM_DEBUGGER */
-#define debugger_tick()             (0)
-#define debugger_check_story_file() (0)
-#define debugger_handle_crash(msg)  (0)
+#define debugger_tick()              (0)
+#define debugger_check_story_file()  (0)
+#define debugger_check_func_breakpoint(addr)  (0)
+#define debugger_handle_crash(msg)   (0)
 #endif /* VM_DEBUGGER */
 
 /* accel.c */

@@ -80,6 +80,12 @@ typedef struct infoarray_struct {
     int32_t nextaddress; 
 } infoarray;
 
+typedef struct breakpoint_struct {
+    inforoutine *func;
+    int32_t address;
+    struct breakpoint_struct *next; /* linked list of breakpoints */
+} breakpoint;
+
 typedef struct debuginfofile_struct {
     strid_t str;
     int32_t strread;
@@ -109,6 +115,8 @@ typedef struct debuginfofile_struct {
     xmlHashTablePtr routines;
     int numroutines;
     inforoutine **routinelist; /* array, ordered by address */
+
+    breakpoint *funcbreakpoints; /* linked list */
 } debuginfofile;
 
 /* This global holds the loaded debug info, if we have any. */
@@ -147,6 +155,7 @@ static debuginfofile *create_debuginfofile()
     context->numroutines = 0;
     context->routinelist = NULL;
     context->storyfileprefix = NULL;
+    context->funcbreakpoints = NULL;
 
     return context;
 }
@@ -204,6 +213,12 @@ static void free_debuginfofile(debuginfofile *context)
     if (context->routinelist) {
         free(context->routinelist);
         context->routinelist = NULL;
+    }
+
+    while (context->funcbreakpoints) {
+        breakpoint *bp = context->funcbreakpoints;
+        context->funcbreakpoints = bp->next;
+        free(bp);
     }
 
     free(context);
@@ -1320,6 +1335,29 @@ void debugger_cycle_handler(int cycle)
             break;
 
         }
+    }
+}
+
+/* Check whether we've set a breakpoint at this function address.
+   If so, block and debug.
+*/
+void debugger_check_func_breakpoint(glui32 addr)
+{
+    int pause = FALSE;
+    breakpoint *bp;
+
+    if (!debuginfo)
+        return;
+
+    for (bp = debuginfo->funcbreakpoints; bp; bp=bp->next) {
+        if (bp->address == addr) {
+            pause = TRUE;
+            break;
+        }
+    }
+
+    if (pause) {
+        gidebug_pause();
     }
 }
 
