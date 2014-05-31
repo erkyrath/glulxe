@@ -857,7 +857,8 @@ static int finalize_debuginfo(debuginfofile *context)
 }
 
 /* Compare main memory to the story-file-prefix we found. If it doesn't
-   match, display a warning. */
+   match, display a warning. 
+*/
 void debugger_check_story_file()
 {
     if (!debuginfo || !debuginfo->storyfileprefix)
@@ -1538,6 +1539,20 @@ void debugger_cycle_handler(int cycle)
     }
 }
 
+/* Do any start-time setup. This is called after VM memory is loaded,
+   but before execution begins. 
+*/
+void debugger_setup_start_state(void)
+{
+    if (start_trap) {
+        /* Block and debug right now. This doesn't install a trap, it
+           just calls gidebug_pause() directly. */
+        gidebug_output("Break at start:");
+        debugcmd_backtrace(0);
+        gidebug_pause();
+    }
+}
+
 /* Check whether we've set a breakpoint at this function address.
    If so, block and debug.
 */
@@ -1549,13 +1564,13 @@ void debugger_check_func_breakpoint(glui32 addr)
     for (bp = funcbreakpoints; bp; bp=bp->next) {
         if (bp->address == addr) {
             pause = TRUE;
-            gidebug_output("Breakpoint:");
-            debugcmd_backtrace(0);
             break;
         }
     }
 
     if (pause) {
+        gidebug_output("Breakpoint:");
+        debugcmd_backtrace(0);
         gidebug_pause();
     }
 }

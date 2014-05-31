@@ -121,6 +121,9 @@ void setup_vm()
   /* If the debugger is compiled in, check that the debug data matches
      the game. (This only prints warnings for mismatch.) */
   debugger_check_story_file();
+  /* Also, set up any start-time debugger state. This may do a block-
+     and-debug, if the user has requested that. */
+  debugger_setup_start_state();
 }
 
 /* finalize_vm():
