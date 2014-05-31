@@ -35,7 +35,14 @@
 
    The debugger is currently pretty minimal. You can display the stack
    (including local variables), display global variables, and set
-   breakpoints (only at the beginning of a function).
+   breakpoints (only at the beginning of a function). Type "help" into
+   the debug console for the command list.
+
+   (If you've compiled with CheapGlk, then the "debug console" is just
+   standard output. Enter a line beginning with "/" to send a debug
+   command -- "/help", etc.) (This "/" convention is *only* used in
+   CheapGlk. Other libraries will have debug interfaces that don't
+   suck.)
 */
 
 #include "glk.h"
