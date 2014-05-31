@@ -1469,6 +1469,17 @@ static void debugcmd_print(char *arg)
     gidebug_output("Symbol not found");
 }
 
+static void debugcmd_help(char *arg)
+{
+    gidebug_output("Glulxe built-in debugger. Commands:");
+    gidebug_output("- print <val>: Print a symbol or number.");
+    gidebug_output("- bt: Display the current stack backtrace, with local variables.");
+    gidebug_output("- break <func>: Set a breakpoint. (Must be a function name or the address of a function. Breakpoints currently only work at the start of a function.)");
+    gidebug_output("- clear <func>: Clear a breakpoint.");
+    gidebug_output("- cont: Continue execution. (From a breakpoint or other trap.)");
+    gidebug_output("- help/?: This list.");
+}
+
 /* Debug console callback: This is invoked whenever the user enters a debug
    command.
    Returns 0 for most commands, 1 if the command ends a debugger pause.
@@ -1515,6 +1526,16 @@ int debugger_cmd_handler(char *cmd)
     if (len == 4 && !strncmp(cmd, "cont", len)) {
         gidebug_output("Continuing...");
         return 1;
+    }
+
+    if (len == 4 && !strncmp(cmd, "help", len)) {
+        debugcmd_help(cx);
+        return 0;
+    }
+
+    if (len == 1 && !strncmp(cmd, "?", len)) {
+        debugcmd_help(cx);
+        return 0;
     }
 
     ensure_line_buf(strlen(cmd) + 64);
