@@ -29,8 +29,10 @@ CC = gcc
 
 OPTIONS = -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-unused -DOS_UNIX
 
-XMLLIB = -L/usr/local/Cellar/libxml2/2.9.1/lib -lxml2
-XMLLIBINCLUDEDIR = -I/usr/local/Cellar/libxml2/2.9.1/include/libxml2
+# Locate the XML2 library. You only need these lines if you are using
+# the VM_DEBUGGER option. If so, uncomment these and set appropriately.
+#XMLLIB = -L/usr/local/lib -lxml2
+#XMLLIBINCLUDEDIR = -I/usr/local/include/libxml2
 
 include $(GLKINCLUDEDIR)/$(GLKMAKEFILE)
 
