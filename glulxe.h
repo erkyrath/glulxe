@@ -53,7 +53,8 @@ typedef int16_t glsi16;
 
 /* Uncomment this definition to turn on the Glulx debugger. You should
    only do this when debugging facilities are desired; it slows down
-   the interpreter. */
+   the interpreter. If you do, you will need to build with libxml2;
+   see the Makefile. */
 /* #define VM_DEBUGGER (1) */
 
 /* Comment this definition to turn off floating-point support. You
