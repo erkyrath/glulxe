@@ -309,6 +309,7 @@ extern unsigned long debugger_opcount;
 extern int debugger_load_info_stream(strid_t stream);
 extern int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len);
 extern void debugger_track_cpu(int flag);
+extern void debugger_set_start_trap(int flag);
 extern void debugger_set_crash_trap(int flag);
 extern void debugger_check_story_file(void);
 extern int debugger_ever_invoked(void);

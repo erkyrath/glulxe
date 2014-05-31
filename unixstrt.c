@@ -34,6 +34,7 @@ glkunix_argumentlist_t glkunix_arguments[] = {
   { "--gameinfo", glkunix_arg_ValueFollows, "Read debug information from a file." },
   { "--gameinfodata", glkunix_arg_NumberValue, "Read debug information from a DATA chunk." },
   { "--cpu", glkunix_arg_NoValue, "Display CPU usage of each command (debug)." },
+  { "--starttrap", glkunix_arg_NoValue, "Enter debug mode at startup time (debug)." },
   { "--crashtrap", glkunix_arg_NoValue, "Enter debug mode on any fatal error (debug)." },
 #endif /* VM_DEBUGGER */
 
@@ -91,6 +92,10 @@ int glkunix_startup_code(glkunix_startup_t *data)
     }
     if (!strcmp(data->argv[ix], "--cpu")) {
       debugger_track_cpu(TRUE);
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--starttrap")) {
+      debugger_set_start_trap(TRUE);
       continue;
     }
     if (!strcmp(data->argv[ix], "--crashtrap")) {
