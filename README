@@ -34,6 +34,10 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
+0.5.3###:
+    Added an internal debugger. Compile with "#define VM_DEBUGGER" 
+    (and a debug-supporting Glk library) to use it.
+
 0.5.2 (Mar 27, 2014):
     Added acceleration functions 8 through 13, which work correctly when
     NUM_ATTR_BYTES is changed.
