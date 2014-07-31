@@ -195,6 +195,7 @@ special_functions = {
 glk_functions = {}
 
 functions = None
+callcounts = None
 sourcemap = None
 
 class Function:
@@ -228,9 +229,11 @@ class Function:
             self.max_depth     = int(attrs['max_depth'])
         if (attrs.has_key('max_stack_use')):
             self.max_stack_use = int(attrs['max_stack_use'])
+        self.incalls = {}
+        self.outcalls = {}
         
     def __repr__(self):
-        return '<Function $' + self.hexaddr + ' ' + repr(self.name) + '>'
+        return '<Function $' + self.hexaddr + ' "' + self.name + '">'
 
     def dump(self):
         print '%s:' % (self.name,)
@@ -252,6 +255,27 @@ class Function:
             percent2 = "%3d%%" % pc2
         print '%-36s %s %-10lu %s %-10lu %-10lu %-4d' % (self.name, percent1, self.self_ops, percent2, self.total_ops, self.call_count, self.max_depth)
 
+    def show_calls(self):
+        print '%s:' % (self.name,)
+        val = ''
+        if (self.accel_count):
+            val = ' (%d accelerated)' % (self.accel_count,)
+        print '  at $%06x (line %d); called %d times%s' % (self.addr, self.linenum, self.call_count, val)
+        ls = list(self.incalls.items())
+        ls.sort()  # by addr
+        val = sum([count for (addr, count) in ls])
+        print '  %d incalls' % (val,)
+        for (addr, count) in ls:
+            func = functions.get(addr, '<???>')
+            print '    %d from %s' % (count, func)
+        ls = list(self.outcalls.items())
+        ls.sort()  # by addr
+        val = sum([count for (addr, count) in ls])
+        print '  %d outcalls' % (val,)
+        for (addr, count) in ls:
+            func = functions.get(addr, '<???>')
+            print '    %d to %s' % (count, func)
+
 class DispatchDumpHandler(xml.sax.handler.ContentHandler):
     def startElement(self, name, attrs):
         if (name == 'function'):
@@ -260,15 +284,23 @@ class DispatchDumpHandler(xml.sax.handler.ContentHandler):
         
 class ProfileRawHandler(xml.sax.handler.ContentHandler):
     def startElement(self, name, attrs):
-        global functions
+        global functions, callcounts
         
         if (name == 'profile'):
             functions = {}
+            callcounts = {}
         if (name == 'function'):
             hexaddr = attrs.get('addr')
             addr = int(hexaddr, 16)
             func = Function(addr, hexaddr, attrs)
             functions[addr] = func
+        if (name == 'calls'):
+            hexaddr = attrs.get('fromaddr')
+            fromaddr = int(hexaddr, 16)
+            hexaddr = attrs.get('toaddr')
+            toaddr = int(hexaddr, 16)
+            count = int(attrs.get('count'))
+            callcounts[(fromaddr, toaddr)] = count
 
 class SFrameHandler:
     def __init__(self, tag, parent=None, depth=None, children={}, active=None, handler=None):
@@ -848,6 +880,15 @@ if (profile_raw):
     if (not opts.dumbfrotz):
         print 'Code segment begins at', hex(source_start)
         print len(functions), 'called functions found in', profile_raw
+
+    for (tup, count) in callcounts.items():
+        (fromaddr, toaddr) = tup
+        fromfunc = functions.get(fromaddr)
+        tofunc = functions.get(toaddr)
+        if (fromfunc):
+            fromfunc.outcalls[toaddr] = count
+        if (tofunc):
+            tofunc.incalls[fromaddr] = count
     
     if (sourcemap):
         badls = []
