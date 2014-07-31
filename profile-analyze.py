@@ -69,9 +69,16 @@ interactively:
 
 % python -i profile-analyze.py profile-raw game.asm --glk dispatch_dump.xml
 
-After it runs, you'll be left at a Python prompt. The environment
-will contain mappings called "functions" (mapping addresses to
-function objects), and "function_names" (names to function objects).
+After it runs, you'll be left at a Python prompt. You might want to list
+functions sorted in other ways:
+
+>>> list_by('total_time')      # top 10 by total time including children
+>>> list_by('total_ops')       # top 10 by total CPU cycles including children
+>>> list_by('self_ops', 20)    # top 20 by CPU cycles excluding children
+
+You can also dig into the data directly. The environment will contain
+mappings called "functions" (mapping addresses to function objects), and
+"function_names" (names to function objects).
 
 >>> functions[0x3c]
 <Function $3c 'Main__'>
@@ -828,7 +835,13 @@ class DebugFile:
             func = InformFunc(funcnum)
             self.functions[funcnum] = func
         return func
-                        
+
+def list_by(key='self_time', limit=10):
+    ls = functions.values()
+    ls.sort(lambda x1, x2: cmp(getattr(x2, key), getattr(x1, key)))
+    for func in ls[:limit]:
+        func.dump()
+
 # Read in the various files
             
 if (opts.dispatchfile):
