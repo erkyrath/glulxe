@@ -28,7 +28,8 @@ The data file is an XML file of the form
 
 The calls lines are only included if you use the "--profcalls" option.
 These simply describe the number of times any function (identified by
-VM address) called any other function.
+VM address) called any other function. There will be at most one such
+line for each (fromaddr, toaddr) pair.
 
 The function list includes every function which was called during the
 program's run. Each function tag includes the following attributes:
