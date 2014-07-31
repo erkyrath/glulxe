@@ -22,8 +22,9 @@ Using this script is currently a nuisance. The requirements:
   option).
 - (If you want function names) you should compile your Inform 6 source
   using the -k switch. This generates a "gameinfo.dbg" file.
-- Run Glulxe, using the "--profile profile-raw" option. Play some of
-  the game, and quit. This generates a data file called "profile-raw".
+- Run Glulxe, using the "--profile profile-raw" option. (Optionally,
+  also the "--profcalls" option.) Play some of the game, and quit. This
+  generates a data file called "profile-raw".
 - Run this script, giving gameinfo.dbg and profile-raw as arguments.
 - You can provide "--glk dispatch_dump.xml" as an optional extra argument.
   This file gives the names of Glk functions; it is available from
@@ -56,14 +57,28 @@ If you leave off the "--glk dispatch_dump.xml" argument, everything will
 still work, but @glk function entries will be listed by number rather
 than by name.
 
+If you included the "--profcalls" argument when running Glulxe, the
+function information will include the number of times it called, and was
+called by, every other function. This is rather slow, so it distorts
+the function timing information. Only use "--profcalls" when you are
+interested in specific call patterns (i.e., trying to identify where
+a particular function is being called from).
+
 You can explore the profiling data in more detail by running the script
 interactively:
 
 % python -i profile-analyze.py profile-raw game.asm --glk dispatch_dump.xml
 
-After it runs, you'll be left at a Python prompt. The environment
-will contain mappings called "functions" (mapping addresses to
-function objects), and "function_names" (names to function objects).
+After it runs, you'll be left at a Python prompt. You might want to list
+functions sorted in other ways:
+
+>>> list_by('total_time')      # top 10 by total time including children
+>>> list_by('total_ops')       # top 10 by total CPU cycles including children
+>>> list_by('self_ops', 20)    # top 20 by CPU cycles excluding children
+
+You can also dig into the data directly. The environment will contain
+mappings called "functions" (mapping addresses to function objects), and
+"function_names" (names to function objects).
 
 >>> functions[0x3c]
 <Function $3c 'Main__'>
@@ -74,6 +89,14 @@ Main__:
   at $00003c (line 0); called 1 times
   0.000067 sec (1 ops) spent executing
   6.273244 sec (117578 ops) including child calls
+>>> function_names['Main__'].show_calls()
+Main__:
+  at $00003c (line 0); called 1 times:
+  made 1 calls to other functions:
+    1 to <Function $48 "Main">
+
+(Again, the show_calls() information is only available if you use the
+"--profcalls" argument when running Glulxe.)
 
 A Function object has lots of attributes:
  
@@ -187,6 +210,7 @@ special_functions = {
 glk_functions = {}
 
 functions = None
+callcounts = None
 sourcemap = None
 
 class Function:
@@ -220,9 +244,11 @@ class Function:
             self.max_depth     = int(attrs['max_depth'])
         if (attrs.has_key('max_stack_use')):
             self.max_stack_use = int(attrs['max_stack_use'])
+        self.incalls = {}
+        self.outcalls = {}
         
     def __repr__(self):
-        return '<Function $' + self.hexaddr + ' ' + repr(self.name) + '>'
+        return '<Function $' + self.hexaddr + ' "' + self.name + '">'
 
     def dump(self):
         print '%s:' % (self.name,)
@@ -244,6 +270,27 @@ class Function:
             percent2 = "%3d%%" % pc2
         print '%-36s %s %-10lu %s %-10lu %-10lu %-4d' % (self.name, percent1, self.self_ops, percent2, self.total_ops, self.call_count, self.max_depth)
 
+    def show_calls(self):
+        if not callcounts:
+            raise Exception('Profile data did not include call counts!')
+        print '%s:' % (self.name,)
+        val = ''
+        if (self.accel_count):
+            val = ' (%d accelerated)' % (self.accel_count,)
+        print '  at $%06x (line %d); called %d times%s:' % (self.addr, self.linenum, self.call_count, val)
+        ls = list(self.incalls.items())
+        ls.sort()  # by addr
+        for (addr, count) in ls:
+            func = functions.get(addr, '<???>')
+            print '    %d from %s' % (count, func)
+        ls = list(self.outcalls.items())
+        ls.sort()  # by addr
+        val = sum([count for (addr, count) in ls])
+        print '  made %d calls to other functions:' % (val,)
+        for (addr, count) in ls:
+            func = functions.get(addr, '<???>')
+            print '    %d to %s' % (count, func)
+
 class DispatchDumpHandler(xml.sax.handler.ContentHandler):
     def startElement(self, name, attrs):
         if (name == 'function'):
@@ -252,15 +299,23 @@ class DispatchDumpHandler(xml.sax.handler.ContentHandler):
         
 class ProfileRawHandler(xml.sax.handler.ContentHandler):
     def startElement(self, name, attrs):
-        global functions
+        global functions, callcounts
         
         if (name == 'profile'):
             functions = {}
+            callcounts = {}
         if (name == 'function'):
             hexaddr = attrs.get('addr')
             addr = int(hexaddr, 16)
             func = Function(addr, hexaddr, attrs)
             functions[addr] = func
+        if (name == 'calls'):
+            hexaddr = attrs.get('fromaddr')
+            fromaddr = int(hexaddr, 16)
+            hexaddr = attrs.get('toaddr')
+            toaddr = int(hexaddr, 16)
+            count = int(attrs.get('count'))
+            callcounts[(fromaddr, toaddr)] = count
 
 class SFrameHandler:
     def __init__(self, tag, parent=None, depth=None, children={}, active=None, handler=None):
@@ -780,7 +835,13 @@ class DebugFile:
             func = InformFunc(funcnum)
             self.functions[funcnum] = func
         return func
-                        
+
+def list_by(key='self_time', limit=10):
+    ls = functions.values()
+    ls.sort(lambda x1, x2: cmp(getattr(x2, key), getattr(x1, key)))
+    for func in ls[:limit]:
+        func.dump()
+
 # Read in the various files
             
 if (opts.dispatchfile):
@@ -840,6 +901,15 @@ if (profile_raw):
     if (not opts.dumbfrotz):
         print 'Code segment begins at', hex(source_start)
         print len(functions), 'called functions found in', profile_raw
+
+    for (tup, count) in callcounts.items():
+        (fromaddr, toaddr) = tup
+        fromfunc = functions.get(fromaddr)
+        tofunc = functions.get(toaddr)
+        if (fromfunc):
+            fromfunc.outcalls[toaddr] = count
+        if (tofunc):
+            tofunc.incalls[fromaddr] = count
     
     if (sourcemap):
         badls = []

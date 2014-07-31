@@ -289,6 +289,7 @@ extern glui32 find_id_for_schannel(schanid_t schan);
 /* profile.c */
 extern void setup_profile(strid_t stream, char *filename);
 extern int init_profile(void);
+extern void profile_set_call_counts(int flag);
 #if VM_PROFILING
 extern glui32 profile_opcount;
 #define profile_tick() (profile_opcount++)
