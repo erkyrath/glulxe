@@ -82,6 +82,14 @@ Main__:
   at $00003c (line 0); called 1 times
   0.000067 sec (1 ops) spent executing
   6.273244 sec (117578 ops) including child calls
+>>> function_names['Main__'].show_calls()
+Main__:
+  at $00003c (line 0); called 1 times:
+  made 1 calls to other functions:
+    1 to <Function $48 "Main">
+
+(Again, the show_calls() information is only available if you use the
+"--profcalls" argument when running Glulxe.)
 
 A Function object has lots of attributes:
  
@@ -256,22 +264,22 @@ class Function:
         print '%-36s %s %-10lu %s %-10lu %-10lu %-4d' % (self.name, percent1, self.self_ops, percent2, self.total_ops, self.call_count, self.max_depth)
 
     def show_calls(self):
+        if not callcounts:
+            raise Exception('Profile data did not include call counts!')
         print '%s:' % (self.name,)
         val = ''
         if (self.accel_count):
             val = ' (%d accelerated)' % (self.accel_count,)
-        print '  at $%06x (line %d); called %d times%s' % (self.addr, self.linenum, self.call_count, val)
+        print '  at $%06x (line %d); called %d times%s:' % (self.addr, self.linenum, self.call_count, val)
         ls = list(self.incalls.items())
         ls.sort()  # by addr
-        val = sum([count for (addr, count) in ls])
-        print '  %d incalls' % (val,)
         for (addr, count) in ls:
             func = functions.get(addr, '<???>')
             print '    %d from %s' % (count, func)
         ls = list(self.outcalls.items())
         ls.sort()  # by addr
         val = sum([count for (addr, count) in ls])
-        print '  %d outcalls' % (val,)
+        print '  made %d calls to other functions:' % (val,)
         for (addr, count) in ls:
             func = functions.get(addr, '<???>')
             print '    %d to %s' % (count, func)
