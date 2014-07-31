@@ -244,6 +244,24 @@ void profile_in(glui32 addr, glui32 stackuse, int accel)
 
   /* printf("### IN: %lx%s\n", addr, (accel?" accel":"")); */
 
+  if (profiling_call_counts && current_frame) {
+    function_t *parfunc = current_frame->func;
+    callcount_t **ccref;
+    for (ccref = &parfunc->outcalls; *ccref; ccref = &((*ccref)->next)) {
+      if ((*ccref)->toaddr == addr) 
+        break;
+    }
+    if (*ccref) {
+      (*ccref)->count += 1;
+    }
+    else {
+      *ccref = glulx_malloc(sizeof(callcount_t));
+      (*ccref)->toaddr = addr;
+      (*ccref)->count = 1;
+      (*ccref)->next = NULL;
+    }
+  }
+
   gettimeofday(&now, NULL);
 
   func = get_function(addr);
@@ -378,6 +396,7 @@ void profile_quit()
 
   for (bucknum=0; bucknum<FUNC_HASH_SIZE; bucknum++) {
     char total_buf[20], self_buf[20];
+    callcount_t *cc;
 
     for (func = functions[bucknum]; func; func=func->hash_next) {
       /* ###
@@ -396,6 +415,11 @@ void profile_quit()
         timeprint(&func->self_time, self_buf),
         (long)func->max_depth, (long)func->max_stack_use);
       glk_put_string_stream(profstr, linebuf);
+      for (cc = func->outcalls; cc; cc = cc->next) {
+        sprintf(linebuf, "  <calls fromaddr=\"%lx\" toaddr=\"%lx\" count=\"%ld\" />\n",
+          (unsigned long)func->addr, (unsigned long)cc->toaddr, (long)cc->count);
+        glk_put_string_stream(profstr, linebuf);
+      }
     }
   }
 

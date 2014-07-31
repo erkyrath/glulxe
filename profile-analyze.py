@@ -22,8 +22,9 @@ Using this script is currently a nuisance. The requirements:
   option).
 - (If you want function names) you should compile your Inform 6 source
   using the -k switch. This generates a "gameinfo.dbg" file.
-- Run Glulxe, using the "--profile profile-raw" option. Play some of
-  the game, and quit. This generates a data file called "profile-raw".
+- Run Glulxe, using the "--profile profile-raw" option. (Optionally,
+  also the "--profcalls" option.) Play some of the game, and quit. This
+  generates a data file called "profile-raw".
 - Run this script, giving gameinfo.dbg and profile-raw as arguments.
 - You can provide "--glk dispatch_dump.xml" as an optional extra argument.
   This file gives the names of Glk functions; it is available from
@@ -55,6 +56,13 @@ with game files larger than 16 megabytes.
 If you leave off the "--glk dispatch_dump.xml" argument, everything will
 still work, but @glk function entries will be listed by number rather
 than by name.
+
+If you included the "--profcalls" argument when running Glulxe, the
+function information will include the number of times it called, and was
+called by, every other function. This is rather slow, so it distorts
+the function timing information. Only use "--profcalls" when you are
+interested in specific call patterns (i.e., trying to identify where
+a particular function is being called from).
 
 You can explore the profiling data in more detail by running the script
 interactively:
