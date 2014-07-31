@@ -19,10 +19,16 @@ interrupted, the data file will be created (empty) but never filled in.
 The data file is an XML file of the form
 
 <profile>
-  <function ... />
-  <function ... />
+  <function addr=HEX ... />
+  <calls fromaddr=HEX toaddr=HEX count=INT />
+  <function addr=HEX ... />
+  <calls fromaddr=HEX toaddr=HEX count=INT />
   ...
 </profile>
+
+The calls lines are only included if you use the "--profcalls" option.
+These simply describe the number of times any function (identified by
+VM address) called any other function.
 
 The function list includes every function which was called during the
 program's run. Each function tag includes the following attributes:
@@ -83,6 +89,7 @@ by the entire program; its max_depth is zero.
 static int profiling_active = FALSE;
 static char *profiling_filename = NULL;
 static strid_t profiling_stream = NULL;
+static int profiling_call_counts = FALSE;
 
 typedef struct function_struct {
   glui32 addr;
@@ -99,8 +106,16 @@ typedef struct function_struct {
   struct timeval self_time;
   glui32 self_ops;
 
+  struct callcount_struct *outcalls;
+
   struct function_struct *hash_next;
 } function_t;
+
+typedef struct callcount_struct {
+  glui32 toaddr;
+  glui32 count;
+  struct callcount_struct *next;
+} callcount_t;
 
 typedef struct frame_struct {
   struct frame_struct *parent;
@@ -173,6 +188,11 @@ int init_profile()
   return TRUE;
 }
 
+void profile_set_call_counts(int flag)
+{
+  profiling_call_counts = flag;
+}
+
 static function_t *get_function(glui32 addr)
 {
   int bucknum = (addr % FUNC_HASH_SIZE);
@@ -201,6 +221,7 @@ static function_t *get_function(glui32 addr)
     func->self_ops = 0;
     func->max_depth = 0;
     func->max_stack_use = 0;
+    func->outcalls = NULL;
   }
 
   return func;
@@ -382,6 +403,7 @@ void profile_quit()
 
   glk_stream_close(profstr, NULL);
 
+  /* ### Ought to free the function structures, not just the hash array. */
   glulx_free(functions);
   functions = NULL;
 }

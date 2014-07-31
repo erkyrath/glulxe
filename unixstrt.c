@@ -21,6 +21,7 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 
 #if VM_PROFILING
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
+  { "--profcalls", glkunix_arg_NoValue, "Include what-called-what details in profiling. (Slow!)" },
 #endif /* VM_PROFILING */
 
   { "", glkunix_arg_ValueFollows, "filename: The game file to load." },
@@ -54,6 +55,10 @@ int glkunix_startup_code(glkunix_startup_t *data)
         }
         setup_profile(profstr, NULL);
       }
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--profcalls")) {
+      profile_set_call_counts(TRUE);
       continue;
     }
 #endif /* VM_PROFILING */
