@@ -1025,7 +1025,7 @@ void execute_loop()
 #endif /* FLOAT_SUPPORT */
 
 #ifdef GLULX_EXTEND_OPCODES
-      GLULX_EXTEND_OPCODES(opcode)
+      GLULX_EXTEND_OPCODES
 #endif /* GLULX_EXTEND_OPCODES */
 
       default:

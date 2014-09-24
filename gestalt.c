@@ -71,7 +71,7 @@ glui32 do_gestalt(glui32 val, glui32 val2)
 #endif /* FLOAT_SUPPORT */
 
 #ifdef GLULX_EXTEND_GESTALT
-  GLULX_EXTEND_GESTALT(val, val2)
+  GLULX_EXTEND_GESTALT
 #endif /* GLULX_EXTEND_GESTALT */
 
   default:
