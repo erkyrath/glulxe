@@ -221,7 +221,7 @@ void iosglk_do_autosave(glui32 eventaddr)
 		return;
 	NSString *tmpgamepath = [dirname stringByAppendingPathComponent:@"autosave-tmp.glksave"];
 	
-	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Write rock:1 unicode:NO textmode:NO dirname:dirname pathname:tmpgamepath];
+	GlkStreamFile *savefile = [[[GlkStreamFile alloc] initWithMode:filemode_Write rock:1 unicode:NO textmode:NO dirname:dirname pathname:tmpgamepath] autorelease];
 	
 	/* Push all the necessary arguments for the @glk opcode. */
 	glui32 origstackptr = stackptr;
@@ -266,6 +266,7 @@ void iosglk_do_autosave(glui32 eventaddr)
 		fatal_error("Stack pointer mismatch in autosave");
 	
 	glk_stream_close(savefile, nil);
+	savefile = nil;
 	
 	if (res) {
 		NSLog(@"VM autosave failed!");
