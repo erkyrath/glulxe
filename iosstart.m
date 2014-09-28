@@ -104,6 +104,7 @@ static void iosglk_game_start()
 	NSString *pathname = glkviewc.terpDelegate.gamePath;
 	NSLog(@"iosglk_startup_code: game path is %@", pathname);
 	
+	/* Retain this, because we're assigning it to a global. (It will look like a leak to XCode's leak-profiler.) */
 	gamefile = [[GlkStreamFile alloc] initWithMode:filemode_Read rock:1 unicode:NO textmode:NO dirname:@"." pathname:pathname];
 	
 	/* Now we have to check to see if it's a Blorb file. */
@@ -166,9 +167,10 @@ static void iosglk_game_autorestore()
 	}
 	
 	int res;
-	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Read rock:1 unicode:NO textmode:NO dirname:dirname pathname:gamepath];
+	GlkStreamFile *savefile = [[[GlkStreamFile alloc] initWithMode:filemode_Read rock:1 unicode:NO textmode:NO dirname:dirname pathname:gamepath] autorelease];
 	res = perform_restore(savefile, TRUE);
 	glk_stream_close(savefile, nil);
+	savefile = nil;
 	
 	if (res) {
 		NSLog(@"VM autorestore failed!");
@@ -351,7 +353,7 @@ static void stash_library_state()
 		[id_map_list addObject:ent];
 	}
 	for (GlkFileRef *fref in library.filerefs) {
-		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Stream tag:fref.tag id:find_id_for_fileref(fref)] autorelease];
+		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Fileref tag:fref.tag id:find_id_for_fileref(fref)] autorelease];
 		[id_map_list addObject:ent];
 	}
 }
@@ -395,7 +397,7 @@ static void recover_library_state()
 					}
 					fref.disprock = glulxe_classtable_register_existing(fref, ent.objclass, ent.dispid);
 				}
-					break;
+				break;
 			}
 		}
 	}
