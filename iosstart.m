@@ -94,6 +94,9 @@ void iosglk_startup_code()
 	set_library_autorestore_hook(&iosglk_game_autorestore);
 	set_library_select_hook(&iosglk_game_select);
 	max_undo_level = 32; // allow 32 undo steps
+#ifdef IOSGLK_EXTEND_STARTUP_CODE
+	IOSGLK_EXTEND_STARTUP_CODE
+#endif // IOSGLK_EXTEND_STARTUP_CODE
 }
 
 /* This is the library_start_hook, which will be called every time glk_main() begins. (VM thread)
