@@ -60,10 +60,12 @@
 typedef enum grouptype_enum {
     grp_None = 0,
     grp_Constant = 1,
-    grp_Routine = 2,
-    grp_Global = 3,
-    grp_Object = 4,
-    grp_Array = 5,
+    grp_Attribute = 2,
+    grp_Property = 3,
+    grp_Routine = 4,
+    grp_Global = 5,
+    grp_Object = 6,
+    grp_Array = 7,
 } grouptype;
 
 /* Used for constants, globals, locals, objects -- the meaning of the value
@@ -136,6 +138,8 @@ typedef struct debuginfofile_struct {
 
     const xmlChar *storyfileprefix;
     xmlHashTablePtr constants;
+    xmlHashTablePtr attributes;
+    xmlHashTablePtr properties;
     xmlHashTablePtr globals;
     xmlHashTablePtr objects;
     int numobjects;
@@ -176,6 +180,8 @@ static debuginfofile *create_debuginfofile()
     context->templocalssize = 0;
     context->curgrouptype = grp_None;
     context->constants = xmlHashCreate(16);
+    context->attributes = xmlHashCreate(16);
+    context->properties = xmlHashCreate(16);
     context->globals = xmlHashCreate(16);
     context->objects = xmlHashCreate(16);
     context->numobjects = 0;
@@ -209,6 +215,16 @@ static void free_debuginfofile(debuginfofile *context)
     if (context->constants) {
         xmlHashFree(context->constants, NULL);
         context->constants = NULL;
+    }
+
+    if (context->attributes) {
+        xmlHashFree(context->attributes, NULL);
+        context->attributes = NULL;
+    }
+
+    if (context->properties) {
+        xmlHashFree(context->properties, NULL);
+        context->properties = NULL;
     }
 
     if (context->globals) {
@@ -578,6 +594,14 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 context->curgrouptype = grp_Constant;
                 context->tempconstant = create_infoconstant();
             }
+            else if (!xmlStrcmp(name, BAD_CAST "attribute")) {
+                context->curgrouptype = grp_Attribute;
+                context->tempconstant = create_infoconstant();
+            }
+            else if (!xmlStrcmp(name, BAD_CAST "property")) {
+                context->curgrouptype = grp_Property;
+                context->tempconstant = create_infoconstant();
+            }
             else if (!xmlStrcmp(name, BAD_CAST "routine")) {
                 context->curgrouptype = grp_Routine;
                 context->temproutine = create_inforoutine();
@@ -613,6 +637,20 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                     infoconstant *dat = context->tempconstant;
                     context->tempconstant = NULL;
                     xmlHashAddEntry(context->constants, dat->identifier, dat);
+                }
+                break;
+            case grp_Attribute:
+                if (context->tempconstant) {
+                    infoconstant *dat = context->tempconstant;
+                    context->tempconstant = NULL;
+                    xmlHashAddEntry(context->attributes, dat->identifier, dat);
+                }
+                break;
+            case grp_Property:
+                if (context->tempconstant) {
+                    infoconstant *dat = context->tempconstant;
+                    context->tempconstant = NULL;
+                    xmlHashAddEntry(context->properties, dat->identifier, dat);
                 }
                 break;
             case grp_Global:
@@ -678,13 +716,10 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
                     xmlChar *text = nod->children->content;
-                    if (context->curgrouptype == grp_Constant) {
-                        if (context->tempconstant) {
-                            if (depth == 2)
-                                context->tempconstant->identifier = xmlStrdup(text);
-                        }
-                    }
-                    else if (context->curgrouptype == grp_Global) {
+                    if (context->curgrouptype == grp_Constant
+                        || context->curgrouptype == grp_Attribute
+                        || context->curgrouptype == grp_Property
+                        || context->curgrouptype == grp_Global) {
                         if (context->tempconstant) {
                             if (depth == 2)
                                 context->tempconstant->identifier = xmlStrdup(text);
@@ -713,7 +748,9 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
             else if (!xmlStrcmp(name, BAD_CAST "value")) {
                 xmlNodePtr nod = xmlTextReaderExpand(reader);
                 if (nod && nod->children && nod->children->type == XML_TEXT_NODE) {
-                    if (context->curgrouptype == grp_Constant) {
+                    if (context->curgrouptype == grp_Constant
+                        || context->curgrouptype == grp_Attribute
+                        || context->curgrouptype == grp_Property) {
                         if (context->tempconstant) {
                             if (depth == 2)
                                 context->tempconstant->value = strtol((char *)nod->children->content, NULL, 10);
@@ -1431,6 +1468,26 @@ static void debugcmd_print(char *arg)
         infoconstant *cons = xmlHashLookup(debuginfo->constants, BAD_CAST arg);
         if (cons) {
             snprintf(linebuf, linebufsize, "%d ($%X): constant", cons->value, cons->value);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    /* Is it an attribute name? */
+    if (debuginfo) {
+        infoconstant *cons = xmlHashLookup(debuginfo->attributes, BAD_CAST arg);
+        if (cons) {
+            snprintf(linebuf, linebufsize, "%d ($%X): attribute", cons->value, cons->value);
+            gidebug_output(linebuf);
+            return;
+        }
+    }
+
+    /* Is it a property name? */
+    if (debuginfo) {
+        infoconstant *cons = xmlHashLookup(debuginfo->properties, BAD_CAST arg);
+        if (cons) {
+            snprintf(linebuf, linebufsize, "%d ($%X): property", cons->value, cons->value);
             gidebug_output(linebuf);
             return;
         }
