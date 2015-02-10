@@ -656,7 +656,12 @@ static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context)
                         }
                     }
                     context->tempnumlocals = 0;
-                    xmlHashAddEntry(context->routines, dat->identifier, dat);
+                    /* An address of 0 is impossible. Inform uses this to
+                       indicate a routine that was eliminated because it was
+                       never called. */
+                    if (dat->address != 0) {
+                        xmlHashAddEntry(context->routines, dat->identifier, dat);
+                    }
                 }
                 break;
             default:
