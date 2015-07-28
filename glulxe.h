@@ -251,6 +251,8 @@ extern glui32 perform_save(strid_t str);
 extern glui32 perform_restore(strid_t str, int fromshell);
 extern glui32 perform_saveundo(void);
 extern glui32 perform_restoreundo(void);
+extern glui32 has_undo(void);
+extern void discard_undo(void);
 extern glui32 perform_verify(void);
 
 /* search.c */

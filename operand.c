@@ -182,7 +182,10 @@ operandlist_t *lookup_operandlist(glui32 opcode)
     return &list_LS;
   case op_saveundo:
   case op_restoreundo:
+  case op_hasundo:
     return &list_S;
+  case op_discardundo:
+    return &list_none;
   case op_protect:
     return &list_LL;
 

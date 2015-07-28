@@ -705,6 +705,15 @@ void execute_loop()
         }
         break;
 
+      case op_hasundo:
+        value = has_undo();
+        pop_callstub(value);
+        break;
+
+      case op_discardundo:
+        discard_undo();
+        break;
+
       case op_quit:
         done_executing = TRUE;
         break;

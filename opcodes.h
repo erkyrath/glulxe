@@ -84,6 +84,8 @@
 #define op_saveundo     (0x125)
 #define op_restoreundo  (0x126)
 #define op_protect      (0x127)
+#define op_hasundo      (0x128)
+#define op_discardundo  (0x129)
 
 #define op_glk          (0x130)
 

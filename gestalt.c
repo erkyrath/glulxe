@@ -70,6 +70,9 @@ glui32 do_gestalt(glui32 val, glui32 val2)
     return 0; /* The floating-point opcodes are not compiled in. */
 #endif /* FLOAT_SUPPORT */
 
+  case gestulx_ExtUndo:
+    return 1; /* We can handle hasundo and discardundo. */
+
 #ifdef GLULX_EXTEND_GESTALT
   GLULX_EXTEND_GESTALT
 #endif /* GLULX_EXTEND_GESTALT */

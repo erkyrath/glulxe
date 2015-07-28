@@ -276,6 +276,33 @@ glui32 perform_restoreundo()
   return res;
 }
 
+/* has_undo():
+   Return 0 if an undo state is available, 1 if not.
+*/
+glui32 has_undo()
+{
+  if (undo_chain_size == 0 || undo_chain_num == 0)
+    return 1;
+  return 0;
+}
+
+/* discard_undo():
+   Drop the most recent undo state, if there are any.
+*/
+void discard_undo()
+{
+  if (undo_chain_size == 0 || undo_chain_num == 0)
+    return;
+
+  unsigned char *destptr = undo_chain[0];
+
+  if (undo_chain_size > 1)
+    memmove(undo_chain, undo_chain+1,
+      (undo_chain_size-1) * sizeof(unsigned char *));
+  undo_chain_num -= 1;
+  glulx_free(destptr);
+}
+
 /* perform_save():
    Write the state to the output stream. This returns 0 on success,
    1 on failure.
