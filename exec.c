@@ -707,7 +707,7 @@ void execute_loop()
 
       case op_hasundo:
         value = has_undo();
-        pop_callstub(value);
+        store_operand(inst[0].desttype, inst[0].value, value);
         break;
 
       case op_discardundo:
