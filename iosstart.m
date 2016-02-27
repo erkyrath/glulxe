@@ -523,3 +523,38 @@ void iosglk_shut_down_process()
 @end
 
 
+/* GlulxAccelEntry: A simple data class which stores an accelerated-function table entry. */
+
+@implementation GlulxAccelEntry
+
+- (id) initWithIndex:(glui32)indexval addr:(glui32)addrval
+{
+	self = [super init];
+	
+	if (self) {
+		index = indexval;
+		addr = addrval;
+	}
+	
+	return self;
+}
+
+- (id) initWithCoder:(NSCoder *)decoder
+{
+	index = [decoder decodeInt32ForKey:@"index"];
+	addr = [decoder decodeInt32ForKey:@"addr"];
+	return self;
+}
+
+- (void) encodeWithCoder:(NSCoder *)encoder
+{
+	[encoder encodeInt32:index forKey:@"index"];
+	[encoder encodeInt32:addr forKey:@"addr"];
+}
+
+- (glui32) index { return index; }
+- (glui32) addr { return addr; }
+
+@end
+
+
