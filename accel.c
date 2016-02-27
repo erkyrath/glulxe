@@ -101,6 +101,25 @@ acceleration_func accel_get_func(glui32 addr)
     return NULL;
 }
 
+/* Iterate the entire acceleration table, calling the callback for
+   each (non-NULL) entry. This is used only for autosave. */
+void accel_iterate_funcs(void (*func)(glui32 index, glui32 addr))
+{
+    int bucknum;
+    accelentry_t *ptr;
+
+    if (!accelentries)
+        return;
+
+    for (bucknum=0; bucknum<ACCEL_HASH_SIZE; bucknum++) {
+        for (ptr = accelentries[bucknum]; ptr; ptr = ptr->next) {
+            if (ptr->func) {
+                func(ptr->index, ptr->addr);
+            }
+        }
+    }
+}
+
 void accel_set_func(glui32 index, glui32 addr)
 {
     int bucknum;
@@ -124,6 +143,7 @@ void accel_set_func(glui32 index, glui32 addr)
     }
 
     new_func = accel_find_func(index);
+    /* Might be NULL, if the index is zero or not recognized. */
 
     bucknum = (addr % ACCEL_HASH_SIZE);
     for (ptr = accelentries[bucknum]; ptr; ptr = ptr->next) {

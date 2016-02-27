@@ -327,6 +327,17 @@ void iosglk_clear_autosave()
 	[library.filemanager removeItemAtPath:finalgamepath error:nil];
 }
 
+/* Utility function used by stash_library_state. Assumes that library_state.accel_funcs is a valid NSMutableArray. */
+static void stash_one_accel_func(glui32 index, glui32 addr)
+{
+	NSMutableArray *arr = (NSMutableArray *)library_state.accel_funcs;
+	
+	GlulxAccelEntry *ent = [[[GlulxAccelEntry alloc] initWithIndex:index addr:addr] autorelease];
+	[arr addObject:ent];
+}
+
+/* Copy extra chunks of the VM state into the (static) library_state object. This is information needed by autosave, but not included in the regular save process.
+ */
 static void stash_library_state()
 {
 	library_state.active = YES;
@@ -343,7 +354,11 @@ static void stash_library_state()
 		glui32 param = accel_get_param(ix);
 		[accel_params addObject:[NSNumber numberWithUnsignedInt:param]];
 	}
-	
+
+	NSMutableArray *accel_funcs = [NSMutableArray arrayWithCapacity:8];
+	library_state.accel_funcs = [accel_funcs retain];
+	accel_iterate_funcs(&stash_one_accel_func);
+
 	if (gamefile)
 		library_state.gamefiletag = gamefile.tag.intValue;
 	
@@ -365,6 +380,8 @@ static void stash_library_state()
 	}
 }
 
+/* Copy chunks of VM state out of the (static) library_state object.
+ */
 static void recover_library_state()
 {
 	if (library_state.active) {
@@ -378,6 +395,11 @@ static void recover_library_state()
 				NSNumber *num = [library_state.accel_params objectAtIndex:ix];
 				glui32 param = num.unsignedIntValue;
 				accel_set_param(ix, param);
+			}
+		}
+		if (library_state.accel_funcs) {
+			for (GlulxAccelEntry *entry in library_state.accel_funcs) {
+				accel_set_func(entry.index, entry.addr);
 			}
 		}
 	}
@@ -429,6 +451,10 @@ static void free_library_state()
 		[library_state.accel_params release]; // was retained in stash_library_state()
 		library_state.accel_params = nil;
 	}
+	if (library_state.accel_funcs) {
+		[library_state.accel_funcs release]; // was retained in stash_library_state()
+		library_state.accel_funcs = nil;
+	}
 	if (library_state.id_map_list) {
 		[library_state.id_map_list release]; // was retained in stash_library_state()
 		library_state.id_map_list = nil;
@@ -446,6 +472,8 @@ static void iosglk_library_archive(NSCoder *encoder)
 		[encoder encodeInt32:library_state.stringtable forKey:@"glulx_stringtable"];
 		if (library_state.accel_params)
 			[encoder encodeObject:library_state.accel_params forKey:@"glulx_accel_params"];
+		if (library_state.accel_funcs)
+			[encoder encodeObject:library_state.accel_funcs forKey:@"glulx_accel_funcs"];
 		[encoder encodeInt32:library_state.gamefiletag forKey:@"glulx_gamefiletag"];
 		if (library_state.id_map_list)
 			[encoder encodeObject:library_state.id_map_list forKey:@"glulx_id_map_list"];
@@ -465,6 +493,8 @@ static void iosglk_library_unarchive(NSCoder *decoder)
 		library_state.stringtable = [decoder decodeInt32ForKey:@"glulx_stringtable"];
 		arr = [decoder decodeObjectForKey:@"glulx_accel_params"];
 		library_state.accel_params = [arr retain];
+		arr = [decoder decodeObjectForKey:@"glulx_accel_funcs"];
+		library_state.accel_funcs = [arr retain];
 		library_state.gamefiletag = [decoder decodeInt32ForKey:@"glulx_gamefiletag"];
 		arr = [decoder decodeObjectForKey:@"glulx_id_map_list"];
 		library_state.id_map_list = [arr retain];
