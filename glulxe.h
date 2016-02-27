@@ -312,6 +312,8 @@ extern acceleration_func accel_find_func(glui32 index);
 extern acceleration_func accel_get_func(glui32 addr);
 extern void accel_set_func(glui32 index, glui32 addr);
 extern void accel_set_param(glui32 index, glui32 val);
+extern glui32 accel_get_param_count(void);
+extern glui32 accel_get_param(glui32 index);
 
 #ifdef FLOAT_SUPPORT
 

@@ -50,6 +50,7 @@ static glui32 cpv__start = 0;        /* array of common prop defaults */
 
 typedef struct accelentry_struct {
     glui32 addr;
+    glui32 index;
     acceleration_func func;
     struct accelentry_struct *next;
 } accelentry_t;
@@ -137,11 +138,13 @@ void accel_set_func(glui32 index, glui32 addr)
         if (!ptr)
             fatal_error("Cannot malloc acceleration entry.");
         ptr->addr = addr;
+        ptr->index = 0;
         ptr->func = NULL;
         ptr->next = accelentries[bucknum];
         accelentries[bucknum] = ptr;
     }
 
+    ptr->index = index;
     ptr->func = new_func;
 }
 
@@ -157,6 +160,29 @@ void accel_set_param(glui32 index, glui32 val)
         case 6: self = val; break;
         case 7: num_attr_bytes = val; break;
         case 8: cpv__start = val; break;
+    }
+}
+
+/* This is used only for autosave. */
+glui32 accel_get_param_count()
+{
+    return 9;
+}
+
+/* This is used only for autosave. */
+glui32 accel_get_param(glui32 index)
+{
+    switch (index) {
+        case 0: return classes_table;
+        case 1: return indiv_prop_start;
+        case 2: return class_metaclass;
+        case 3: return object_metaclass;
+        case 4: return routine_metaclass;
+        case 5: return string_metaclass;
+        case 6: return self;
+        case 7: return num_attr_bytes;
+        case 8: return cpv__start;
+        default: return 0;
     }
 }
 
