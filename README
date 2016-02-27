@@ -35,6 +35,9 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 * Version
 
 0.5.3 (###):
+    Tweaks to speed up launch, restart, restore, etc.
+    Fixed a bug where accelerated functions were not being autosaved. (Only
+    relevant for iOS, currently.)
     Added @hasundo and @discardundo opcodes. (Glulx spec 3.1.3.)
 
 0.5.2 (Mar 27, 2014):
