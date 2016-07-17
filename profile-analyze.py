@@ -170,8 +170,10 @@ the parsed debug information, which you can browse:
 
 import sys, os.path
 import optparse
+import io
 import xml.sax
 from struct import unpack
+from chunk import Chunk
 
 popt = optparse.OptionParser(usage='profile-analyze.py [options] profile-raw [ gameinfo.dbg | game.asm ]')
 
@@ -789,7 +791,7 @@ class DebugFile:
         
         func.linenum = self.read_linenum(fl)
         dat = fl.read(3)
-        addr = unpack('>I', '\0'+dat)[0]
+        addr = unpack('>I', b'\0'+dat)[0]
         func.addr = int(addr)
         func.name = self.read_string(fl)
         locals = []
@@ -823,7 +825,7 @@ class DebugFile:
 
         func.endlinenum = self.read_linenum(fl)
         dat = fl.read(3)
-        addr = unpack('>I', '\0'+dat)[0]
+        addr = unpack('>I', b'\0'+dat)[0]
         func.endaddr = int(addr)
 
     def read_header_rec(self, fl):
@@ -836,7 +838,7 @@ class DebugFile:
             if (not name):
                 break
             dat = fl.read(3)
-            addr = unpack('>I', '\0'+dat)[0]
+            addr = unpack('>I', b'\0'+dat)[0]
             addr = int(addr)
             self.map[name] = addr
     
@@ -846,11 +848,11 @@ class DebugFile:
         return (funcnum, linenum, charnum)
 
     def read_string(self, fl):
-        val = ''
+        val = b''
         while True:
             dat = fl.read(1)
-            if (dat == '\0'):
-                return val
+            if (dat == b'\0'):
+                return val.decode()
             val += dat
 
     def get_function(self, funcnum):
@@ -860,6 +862,103 @@ class DebugFile:
             self.functions[funcnum] = func
         return func
 
+# A simple I/O wrapper class: read a subrange of a (readable binary)
+# file. We use this to treat a Blorb chunk as a readable file.
+class BinaryRangeIO(io.RawIOBase):
+    def __init__(self, file, start, length):
+        self.file = file
+        self.start = start
+        self.length = length
+        self.offset = 0
+        self.file.seek(self.start)
+
+    def readable(self):
+        return True
+
+    def close(self):
+        self.file = None
+        io.RawIOBase.close(self)
+
+    def tell(self):
+        return self.offset
+
+    def readinto(self, dat):
+        count = len(dat)
+        if count > self.length - self.offset:
+            count = self.length - self.offset
+            newdat = self.file.read(count)
+            newlen = len(newdat)
+            dat[:newlen] = newdat
+        else:
+            newlen = self.file.readinto(dat)
+        self.offset += newlen
+        return newlen
+
+def typestring(dat):
+    return "'" + dat.decode() + "'"
+
+class BlorbChunk:
+    def __init__(self, formchunk, typ, start, len, formtype=None):
+        self.formchunk = formchunk
+        self.type = typ
+        self.start = start
+        self.len = len
+        self.formtype = formtype
+        
+    def __repr__(self):
+        return '<BlorbChunk %s at %d, len %d>' % (typestring(self.type), self.start, self.len)
+    
+    def data(self, max=None):
+        self.formchunk.seek(self.start)
+        toread = self.len
+        if (max is not None):
+            toread = min(self.len, max)
+        return self.formchunk.read(toread)
+
+    def describe(self):
+        if (not self.formtype):
+            return '%s (%d bytes, start %d)' % (typestring(self.type), self.len, self.start)
+        else:
+            return '%s/%s (%d+8 bytes, start %d)' % (typestring(self.type), typestring(self.formtype), self.len, self.start)
+
+def blorb_find_debug_chunk(filename):
+    file = open(filename, 'rb')
+    formchunk = Chunk(file)
+    formchunk = formchunk
+
+    if (formchunk.getname() != b'FORM'):
+        raise Exception('This does not appear to be a Blorb file.')
+    formtype = formchunk.read(4)
+    if (formtype != b'IFRS'):
+        raise Exception('This does not appear to be a Blorb file.')
+
+    chunks = []
+    debugchunk = None
+    
+    formlen = formchunk.getsize()
+    while formchunk.tell() < formlen:
+        chunk = Chunk(formchunk)
+        start = formchunk.tell()
+        size = chunk.getsize()
+        formtype = None
+        if chunk.getname() == b'FORM':
+            formtype = chunk.read(4)
+        subchunk = BlorbChunk(formchunk, chunk.getname(), start, size, formtype)
+        chunks.append(subchunk)
+        chunk.skip()
+        chunk.close()
+
+    for chunk in chunks:
+        if (chunk.type == b'Dbug'):
+            debugchunk = chunk
+
+    formchunk.close()
+    file.close()
+    file = None
+
+    return debugchunk
+
+    
 def list_by(key='self_time', limit=10):
     ls = functions.values()
     ls.sort(lambda x1, x2: cmp(getattr(x2, key), getattr(x1, key)))
@@ -886,6 +985,7 @@ if (game_file_data):
     if (not val):
         pass
     elif (val == b'\xde\xbf'):
+        # Old-style Inform debug info.
         need_function_address_offset = True
         fl = open(game_file_data, 'rb')
         debugfile = DebugFile(fl)
@@ -894,6 +994,7 @@ if (game_file_data):
         for func in debugfile.functions.values():
             sourcemap[func.addr] = ( func.linenum[1], func.name )
     elif (val == b'<?'):
+        # New-style Inform debug info.
         han = NewDebugHandler()
         xml.sax.parse(game_file_data, han)
         debugfile = han.debugfile()
@@ -903,7 +1004,41 @@ if (game_file_data):
             if func.sourceloc and isinstance(func.sourceloc, NewDebugSourceLoc):
                 linenum = func.sourceloc.line
             sourcemap[func.address] = ( linenum, func.id )
+    elif (val == b'\x46\x4F'):
+        # Looks like a Blorb file. Scan for a Dbug chunk.
+        debugchunk = blorb_find_debug_chunk(game_file_data)
+        if not debugchunk:
+            raise Exception('This Blorb file has no Dbug chunk.')
+        # Now we check the contents, which means repeating a
+        # bunch of the above code.
+        fl = open(game_file_data, 'rb')
+        fl.seek(debugchunk.start+8)
+        val = fl.read(2)
+        if (val == b'\xde\xbf'):
+            need_function_address_offset = True
+            subfl = BinaryRangeIO(fl, debugchunk.start+8, debugchunk.len)
+            debugfile = DebugFile(fl)
+            subfl.close()
+            sourcemap = {}
+            for func in debugfile.functions.values():
+                sourcemap[func.addr] = ( func.linenum[1], func.name )
+        elif (val == b'<?'):
+            subfl = BinaryRangeIO(fl, debugchunk.start+8, debugchunk.len)
+            han = NewDebugHandler()
+            xml.sax.parse(subfl, han)
+            subfl.close()
+            debugfile = han.debugfile()
+            sourcemap = {}
+            for func in debugfile.functions:
+                linenum = 0
+                if func.sourceloc and isinstance(func.sourceloc, NewDebugSourceLoc):
+                    linenum = func.sourceloc.line
+                sourcemap[func.address] = ( linenum, func.id )
+        else:
+            raise Exception('Blorb Dbug chunk was not recognized.')
+        fl.close()
     else:
+        # Assume it's an Inform assembly dump.
         need_function_address_offset = True
         fl = open(game_file_data, 'rU')
         parse_inform_assembly(fl)
