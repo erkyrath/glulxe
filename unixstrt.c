@@ -33,7 +33,6 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 #endif /* VM_PROFILING */
 #if VM_DEBUGGER
   { "--gameinfo", glkunix_arg_ValueFollows, "Read debug information from a file." },
-  { "--gameinfodata", glkunix_arg_NumberValue, "Read debug information from a DATA chunk." },
   { "--cpu", glkunix_arg_NoValue, "Display CPU usage of each command (debug)." },
   { "--starttrap", glkunix_arg_NoValue, "Enter debug mode at startup time (debug)." },
   { "--crashtrap", glkunix_arg_NoValue, "Enter debug mode on any fatal error (debug)." },
@@ -51,7 +50,6 @@ int glkunix_startup_code(glkunix_startup_t *data)
   int ix;
   char *filename = NULL;
   char *gameinfofilename = NULL;
-  int gameinfochunknum = -1;
   int gameinfoloaded = FALSE;
   unsigned char buf[12];
   int res;
@@ -87,12 +85,6 @@ int glkunix_startup_code(glkunix_startup_t *data)
       if (ix<data->argc) {
         gameinfofilename = data->argv[ix];
       }
-      continue;
-    }
-    if (!strcmp(data->argv[ix], "--gameinfodata")) {
-      ix++;
-      if (ix<data->argc)
-        gameinfochunknum = atoi(data->argv[ix]);
       continue;
     }
     if (!strcmp(data->argv[ix], "--cpu")) {
@@ -161,10 +153,6 @@ int glkunix_startup_code(glkunix_startup_t *data)
     /* Load game directly from file. */
     locate_gamefile(FALSE);
 
-#if VM_DEBUGGER
-    if (!gameinfoloaded && gameinfochunknum >= 0)
-      nonfatal_warning("Cannot load debug info chunk because there is no Blorb file.");
-#endif /* VM_DEBUGGER */
     return TRUE;
   }
   else if (buf[0] == 'F' && buf[1] == 'O' && buf[2] == 'R' && buf[3] == 'M'
@@ -173,17 +161,15 @@ int glkunix_startup_code(glkunix_startup_t *data)
     locate_gamefile(TRUE);
 
 #if VM_DEBUGGER
-    /* Load the debug info, if requested. */
-    if (!gameinfoloaded && gameinfochunknum >= 0) {
+    /* Load the debug info from the Blorb, if it wasn't loaded from a file. */
+    if (!gameinfoloaded) {
+      glui32 giblorb_ID_Dbug = 0x44627567;
       giblorb_err_t err;
       giblorb_result_t blorbres;
-      err = giblorb_load_resource(giblorb_get_resource_map(), 
+      err = giblorb_load_chunk_by_type(giblorb_get_resource_map(), 
         giblorb_method_FilePos, 
-        &blorbres, giblorb_ID_Data, gameinfochunknum);
-      if (err) {
-        nonfatal_warning("Unable to locate game info data chunk in Blorb.");
-      }
-      else {
+        &blorbres, giblorb_ID_Dbug, 0);
+      if (!err) {
         int bres = debugger_load_info_chunk(gamefile, blorbres.data.startpos, blorbres.length);
         if (!bres)
           nonfatal_warning("Unable to parse game info.");
