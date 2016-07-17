@@ -189,7 +189,11 @@ popt.add_option('-d', '--debug',
 popt.add_option('-c', '--count',
                 action='store', dest='listcount',
                 type=int, default=10,
-                help='list the LISTCOUNT slowest functions')
+                help='list the N slowest functions')
+popt.add_option('-s', '--sort',
+                action='store', dest='listsort',
+                type=str, default='self_time',
+                help='sort criterion for functions (self_time, self_ops, total_time, total_ops, call_count)')
 
 (opts, args) = popt.parse_args()
 
@@ -1122,6 +1126,19 @@ if (profile_raw):
     else:
         print('Functions that consumed the most time (excluding children):')
         ls = list(functions.values())
-        ls.sort(key=(lambda fn:-fn.self_time))
+        
+        sortfunc = lambda fn:-fn.self_time
+        if (opts.listsort in ('self_time', 'self-time', 'selftime')):
+            sortfunc = lambda fn:-fn.self_time
+        elif (opts.listsort in ('self_ops', 'self-ops', 'selfops')):
+            sortfunc = lambda fn:-fn.self_ops
+        elif (opts.listsort in ('total_time', 'total-time', 'totaltime')):
+            sortfunc = lambda fn:-fn.total_time
+        elif (opts.listsort in ('total_ops', 'total-ops', 'totalops')):
+            sortfunc = lambda fn:-fn.total_ops
+        elif (opts.listsort in ('call_count', 'call-count', 'callcount')):
+            sortfunc = lambda fn:-fn.call_count
+            
+        ls.sort(key=sortfunc)
         for func in ls[0 : opts.listcount]:
             func.dump()
