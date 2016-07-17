@@ -21,6 +21,7 @@
    --cpu: Display time and VM CPU cycles used for each input.
    --starttrap: Enter debug mode as soon as the game starts up. (Before
      any code has executed.)
+   --quittrap: Enter debug mode when the game quits.
    --crashtrap: Enter debug mode if any fatal error occurs (including
      Glk library fatal errors).
 
@@ -1030,6 +1031,7 @@ static void ensure_line_buf(int len)
 static int track_cpu = FALSE;
 static int start_trap = FALSE;
 static int crash_trap = FALSE;
+static int quit_trap = FALSE;
 static int debugger_invoked = FALSE; /* true if cycle handler called */
 unsigned long debugger_opcount = 0; /* incremented in exec.c */
 static struct timeval debugger_timer;
@@ -1047,6 +1049,13 @@ void debugger_track_cpu(int flag)
 void debugger_set_start_trap(int flag)
 {
     start_trap = flag;
+}
+
+/* Set the block-on-quit flag.
+*/
+void debugger_set_quit_trap(int flag)
+{
+    quit_trap = flag;
 }
 
 /* Set the block-on-crash flag.
@@ -1696,6 +1705,16 @@ void debugger_block_and_debug(char *msg)
 {
     gidebug_output(msg);
     gidebug_pause();
+}
+
+/* If the quit-trap preference is set, enter debug mode.
+*/
+void debugger_handle_quit()
+{
+    if (quit_trap) {
+        debugcmd_backtrace(0);
+        gidebug_pause();
+    }
 }
 
 /* Report a fatal error to the debug console, along with the current

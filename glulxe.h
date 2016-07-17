@@ -318,6 +318,7 @@ extern int debugger_load_info_stream(strid_t stream);
 extern int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len);
 extern void debugger_track_cpu(int flag);
 extern void debugger_set_start_trap(int flag);
+extern void debugger_set_quit_trap(int flag);
 extern void debugger_set_crash_trap(int flag);
 extern void debugger_check_story_file(void);
 extern void debugger_setup_start_state(void);
@@ -327,6 +328,7 @@ extern void debugger_cycle_handler(int cycle);
 extern void debugger_check_func_breakpoint(glui32 addr);
 extern void debugger_block_and_debug(char *msg);
 extern void debugger_handle_crash(char *msg);
+extern void debugger_handle_quit(void);
 #else /* VM_DEBUGGER */
 #define debugger_tick()              (0)
 #define debugger_check_story_file()  (0)
