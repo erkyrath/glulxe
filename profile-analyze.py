@@ -257,10 +257,7 @@ class Function:
 
     def dump(self):
         print('%s:' % (self.name,))
-        val = ''
-        if (self.accel_count):
-            val = ' (%d accelerated)' % (self.accel_count,)
-        print('  at $%06x (line %d); called %d times%s' % (self.addr, self.linenum,self.call_count,val))
+        print('  %s' % (self.get_summary(),))
         print('  %.6f sec (%d ops) spent executing' % (self.self_time, self.self_ops))
         print('  %.6f sec (%d ops) including child calls' % (self.total_time, self.total_ops))
 
@@ -275,14 +272,20 @@ class Function:
             percent2 = "%3d%%" % pc2
         print('%-36s %s %-10lu %s %-10lu %-10lu %-4d' % (self.name, percent1, self.self_ops, percent2, self.total_ops, self.call_count, self.max_depth))
 
+    def get_summary(self):
+        res = 'at $%06x' % (self.addr,)
+        if (self.linenum):
+            res += ' (line %d)' % (self.linenum,)
+        res += '; called %d times' % (self.call_count,)
+        if (self.accel_count):
+            res += ' (%d accelerated)' % (self.accel_count,)
+        return res
+        
     def show_calls(self):
         if not callcounts:
             raise Exception('Profile data did not include call counts!')
         print('%s:' % (self.name,))
-        val = ''
-        if (self.accel_count):
-            val = ' (%d accelerated)' % (self.accel_count,)
-        print('  at $%06x (line %d); called %d times%s:' % (self.addr, self.linenum, self.call_count, val))
+        print('  %s:' % (self.get_summary(),))
         ls = list(self.incalls.items())
         ls.sort()  # by addr
         for (addr, count) in ls:
