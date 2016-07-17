@@ -852,9 +852,10 @@ if (profile_raw):
     # Fills out the functions global
     xml.sax.parse(profile_raw, ProfileRawHandler())
 
+need_function_address_offset = False
+
 if (game_file_data):
     # Fill out the sourcemap global, by one of various methods
-    need_function_address_offset = False
     fl = open(game_file_data, 'rb')
     val = fl.read(2)
     fl.close()
