@@ -234,18 +234,21 @@ class Function:
             self.name = '<@' + val + '>'
             self.special = True
         self.linenum = 0
-        self.call_count =   int(attrs['call_count'])
+        self.call_count  =  int(attrs['call_count'])
         self.accel_count = 0
-        if (attrs.has_key('accel_count')):
-            self.accel_count = int(attrs['accel_count'])
+        val = attrs.get('accel_count')
+        if (val):
+            self.accel_count   = int(val)
         self.total_ops  =   int(attrs['total_ops'])
         self.total_time = float(attrs['total_time'])
         self.self_ops   =   int(attrs['self_ops'])
         self.self_time  = float(attrs['self_time'])
-        if (attrs.has_key('max_depth')):
-            self.max_depth     = int(attrs['max_depth'])
-        if (attrs.has_key('max_stack_use')):
-            self.max_stack_use = int(attrs['max_stack_use'])
+        val = attrs.get('max_depth')
+        if (val):
+            self.max_depth     = int(val)
+        val = attrs.get('max_stack_use')
+        if (val):
+            self.max_stack_use = int(val)
         self.incalls = {}
         self.outcalls = {}
         
@@ -960,7 +963,7 @@ if (profile_raw):
             func.dump_dumbfrotz_style()
     else:
         print('Functions that consumed the most time (excluding children):')
-        ls = functions.values()
-        ls.sort(lambda x1, x2: cmp(x2.self_time, x1.self_time))
+        ls = list(functions.values())
+        ls.sort(key=(lambda fn:-fn.self_time))
         for func in ls[:10]:
             func.dump()
