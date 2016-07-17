@@ -46,6 +46,19 @@ instead of the debug file:
 % glulxe --profile profile-raw game.ulx
 % python profile-analyze.py profile-raw game.asm --glk dispatch_dump.xml
 
+* The output:
+
+The output will be a list of ten functions, showing how much time and
+how many CPU cycles each one cost. Both the function's own cost and its
+cost including children (the functions it calls itself) are shown.
+
+(The top function is generally @glk_$c0 (or @glk_select). This just means
+that the game spent a lot of time waiting for user input.)
+
+You can change how many functions are listed with the --count option.
+You can change the sorting criterion with the --sort option: the options
+are self_time, self_ops, total_time, total_ops, and call_count.
+
 * The limitations:
 
 The profiling code is not smart about VM operations that rearrange the
