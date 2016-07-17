@@ -869,7 +869,7 @@ if (game_file_data):
     fl.close()
     if (not val):
         pass
-    elif (val == '\xde\xbf'):
+    elif (val == b'\xde\xbf'):
         need_function_address_offset = True
         fl = open(game_file_data, 'rb')
         debugfile = DebugFile(fl)
@@ -877,7 +877,7 @@ if (game_file_data):
         sourcemap = {}
         for func in debugfile.functions.values():
             sourcemap[func.addr] = ( func.linenum[1], func.name )
-    elif (val == '<?'):
+    elif (val == b'<?'):
         han = NewDebugHandler()
         xml.sax.parse(game_file_data, han)
         debugfile = han.debugfile()
