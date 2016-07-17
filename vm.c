@@ -154,6 +154,8 @@ void vm_restart()
 {
   glui32 lx;
   int res;
+  int bufpos;
+  char buf[0x100];
 
   /* Deactivate the heap (if it was active). */
   heap_clear();
@@ -163,13 +165,21 @@ void vm_restart()
   if (lx)
     fatal_error("Memory could not be reset to its original size.");
 
-  /* Load in all of main memory */
+  /* Load in all of main memory. We do this in 256-byte chunks, because
+     why rely on OS stream buffering? */
   glk_stream_set_position(gamefile, gamefile_start, seekmode_Start);
+  bufpos = 0x100;
+
   for (lx=0; lx<endgamefile; lx++) {
-    res = glk_get_char_stream(gamefile);
-    if (res == -1) {
-      fatal_error("The game file ended unexpectedly.");
+    if (bufpos >= 0x100) {
+      int count = glk_get_buffer_stream(gamefile, buf, 0x100);
+      if (count != 0x100) {
+        fatal_error("The game file ended unexpectedly.");
+      }
+      bufpos = 0;
     }
+
+    res = buf[bufpos++];
     if (lx >= protectstart && lx < protectend)
       continue;
     memmap[lx] = res;

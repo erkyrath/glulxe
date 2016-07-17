@@ -34,7 +34,10 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 * Version
 
-0.5.3###:
+0.5.3 (###):
+    Tweaks to speed up launch, restart, restore, etc.
+    Fixed a bug where accelerated functions were not being autosaved.
+    (Only relevant for iOS, currently.)
     Added an internal debugger. Compile with "#define VM_DEBUGGER" 
     (and a debug-supporting Glk library) to use it.
 

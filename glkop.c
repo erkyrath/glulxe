@@ -950,6 +950,8 @@ glui32 find_id_for_window(winid_t win)
     return 0;
 
   objrock = gidispatch_get_objrock(win, gidisp_Class_Window);
+  if (!objrock.ptr)
+    return 0;
   return ((classref_t *)objrock.ptr)->id;
 }
 
@@ -964,6 +966,8 @@ glui32 find_id_for_stream(strid_t str)
     return 0;
 
   objrock = gidispatch_get_objrock(str, gidisp_Class_Stream);
+  if (!objrock.ptr)
+    return 0;
   return ((classref_t *)objrock.ptr)->id;
 }
 
@@ -978,6 +982,8 @@ glui32 find_id_for_fileref(frefid_t fref)
     return 0;
 
   objrock = gidispatch_get_objrock(fref, gidisp_Class_Fileref);
+  if (!objrock.ptr)
+    return 0;
   return ((classref_t *)objrock.ptr)->id;
 }
 
@@ -992,6 +998,8 @@ glui32 find_id_for_schannel(schanid_t schan)
     return 0;
 
   objrock = gidispatch_get_objrock(schan, gidisp_Class_Schannel);
+  if (!objrock.ptr)
+    return 0;
   return ((classref_t *)objrock.ptr)->id;
 }
 

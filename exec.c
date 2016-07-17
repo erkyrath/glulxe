@@ -1034,6 +1034,10 @@ void execute_loop()
 
 #endif /* FLOAT_SUPPORT */
 
+#ifdef GLULX_EXTEND_OPCODES
+      GLULX_EXTEND_OPCODES
+#endif /* GLULX_EXTEND_OPCODES */
+
       default:
         fatal_error_i("Executed unknown opcode.", opcode);
       }
