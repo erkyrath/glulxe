@@ -186,6 +186,10 @@ popt.add_option('--dumbfrotz',
 popt.add_option('-d', '--debug',
                 action='store_true', dest='debugonly',
                 help='read only the debug data, no profile data')
+popt.add_option('-c', '--count',
+                action='store', dest='listcount',
+                type=int, default=10,
+                help='list the LISTCOUNT slowest functions')
 
 (opts, args) = popt.parse_args()
 
@@ -1119,5 +1123,5 @@ if (profile_raw):
         print('Functions that consumed the most time (excluding children):')
         ls = list(functions.values())
         ls.sort(key=(lambda fn:-fn.self_time))
-        for func in ls[:10]:
+        for func in ls[0 : opts.listcount]:
             func.dump()
