@@ -1712,6 +1712,7 @@ void debugger_block_and_debug(char *msg)
 void debugger_handle_quit()
 {
     if (quit_trap) {
+        gidebug_output("Quit trap, pausing...");
         debugcmd_backtrace(0);
         gidebug_pause();
     }
