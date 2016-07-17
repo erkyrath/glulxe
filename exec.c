@@ -1043,4 +1043,8 @@ void execute_loop()
       }
     }
   }
+  /* done executing */
+#if VM_DEBUGGER
+  debugger_handle_quit();
+#endif /* VM_DEBUGGER */
 }
