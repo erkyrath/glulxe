@@ -668,7 +668,6 @@ void execute_loop()
         break;
 
       case op_restore:
-        profile_fail("restore");
         value = perform_restore(find_stream_by_id(inst[0].value), FALSE);
         if (value == 0) {
           /* We've succeeded, and the stack now contains the callstub
@@ -690,7 +689,6 @@ void execute_loop()
         break;
 
       case op_restoreundo:
-        profile_fail("restoreundo");
         value = perform_restoreundo();
         if (value == 0) {
           /* We've succeeded, and the stack now contains the callstub

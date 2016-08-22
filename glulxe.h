@@ -291,6 +291,7 @@ extern void setup_profile(strid_t stream, char *filename);
 extern int init_profile(void);
 extern void profile_set_call_counts(int flag);
 #if VM_PROFILING
+extern int profiling_active;
 extern glui32 profile_opcount;
 #define profile_tick() (profile_opcount++)
 extern void profile_in(glui32 addr, glui32 stackuse, int accel);
