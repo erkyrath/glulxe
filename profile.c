@@ -9,7 +9,7 @@ information as the Glulx program executes.
 
 The profiling code is not smart about VM operations that rearrange the
 call stack. In fact, it's downright stupid. To prevent errors @restore
-and @restoreundo will fail, while @restart and @throw will kill the
+and @restoreundo will fail, while @restart and @throw will abort the
 interpreter.
 
 On a normal VM exit (end of top-level routine or @quit), the profiler
@@ -353,17 +353,6 @@ void profile_out(glui32 stackuse)
   fra->parent = NULL;
 
   glulx_free(fra);
-}
-
-/* ### throw/catch */
-/* ### restore/restore_undo/restart */
-
-void profile_fail(char *reason)
-{
-  if (!profiling_active)
-    return;
-
-  fatal_error_2("Profiler: unable to handle operation", reason);
 }
 
 void profile_quit()

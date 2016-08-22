@@ -296,7 +296,12 @@ extern glui32 profile_opcount;
 #define profile_tick() (profile_opcount++)
 extern void profile_in(glui32 addr, glui32 stackuse, int accel);
 extern void profile_out(glui32 stackuse);
-extern void profile_fail(char *reason);
+/* profile_fail() is now a macro to more easily exit the exec loop */
+#define profile_fail(reason) \
+  if (profiling_active) { \
+      nonfatal_warning_2("Aborting profile: unable to handle operation", reason); \
+      done_executing = TRUE; \
+      break; }
 extern void profile_quit(void);
 #else /* VM_PROFILING */
 #define profile_tick()         (0)
