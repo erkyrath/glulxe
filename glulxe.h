@@ -44,6 +44,11 @@ typedef int16_t glsi16;
    game files from crashing the interpreter. */
 #define VERIFY_MEMORY_ACCESS (1)
 
+/* Uncomment this definition to permit an exception for memory-address
+   checking for @glk opcodes that try to write to memory address 0.
+   This was a bug in old Superglus-built game files. */
+/* #define TOLERATE_SUPERGLUS_BUG (1) */
+
 /* Uncomment this definition to turn on Glulx VM profiling. In this
    mode, all function calls are timed, and the timing information is
    written to a data file called "profile-raw".
