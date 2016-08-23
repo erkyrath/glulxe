@@ -56,11 +56,11 @@ typedef int16_t glsi16;
    with no math library. */
 #define FLOAT_SUPPORT (1)
 
-/* Uncomment this definition to cache the original state of RAM in
-   (real) memory. This speeds up save/restore/undo operations, at the
-   expense of some memory usage. This should only be necessary on slow
-   (mobile) devices. */
-/* #define SERIALIZE_CACHE_RAM (1) */
+/* Comment this definition to not cache the original state of RAM in
+   (real) memory. This saves some memory, but slows down save/restore/undo
+   operations, which will have to read the original state off disk
+   every time. */
+#define SERIALIZE_CACHE_RAM (1)
 
 /* Some macros to read and write integers to memory, always in big-endian
    format. */
