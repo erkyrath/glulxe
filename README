@@ -35,9 +35,13 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 * Version
 
 0.5.3 (###):
-    Tweaks to speed up launch, restart, restore, etc.
+    Turn on SERIALIZE_CACHE_RAM in the default build. This speeds up
+    save and save-undo operations.
+    Other tweaks to speed up launch, restart, restore, etc.
     Fixed a bug where accelerated functions were not being autosaved.
     (Only relevant for iOS, currently.)
+    When profiling, restore/restore-undo operations will now fail
+    (and the game will continue) instead of causing a fatal error.
 
 0.5.2 (Mar 27, 2014):
     Added acceleration functions 8 through 13, which work correctly when
