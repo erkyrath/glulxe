@@ -1,6 +1,6 @@
 # Glulxe: the Glulx VM interpreter
 
-- Version 0.5.2
+- Version 0.5.3
 - Designed by Andrew Plotkin <erkyrath@eblong.com>
 - [Glulx home page][glulx]
 
@@ -35,7 +35,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 ## Version
 
-0.5.3 (###):
+0.5.3 (Oct 25, 2016):
 
 - Turn on SERIALIZE_CACHE_RAM in the default build. This speeds up
   save and save-undo operations.
