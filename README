@@ -43,7 +43,8 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
     When profiling, restore/restore-undo operations will now fail
     (and the game will continue) instead of causing a fatal error.
     Added a build option to tolerate the Superglus bug where (very old)
-    game files would try to write to memory address zero.
+    game files would try to write to memory address zero. (Not on by
+    default.)
 
 0.5.2 (Mar 27, 2014):
     Added acceleration functions 8 through 13, which work correctly when
