@@ -13,8 +13,8 @@ Since this is a Glk program, it must be built with a Glk library. See
 the [Glk home page][glk].
 
 The Unix Makefile that comes with this package is designed to link any
-of the Unix libraries (GlkTerm and CheapGlk.) You'll have to go into
-the Makefile and set three variables to find the library. There are
+of the Unix libraries (CheapGlk, GlkTerm, RemGlk, etc.) You'll have to go
+into the Makefile and set three variables to find the library. There are
 instructions at the top of the Makefile. Then just type
 
     make glulxe
@@ -25,8 +25,8 @@ That should suffice. When the program is built, type
 
 where "filename.ulx" is a Glulx game file to execute.
 
-To build this program with a Mac or Window interface, you'll need the
-appropriate Glk library.
+To build this program with a Mac or Windows interface, or any other 
+interface, you'll need the appropriate Glk library.
 
 This program supports floating-point operations, which are implemented
 using the standard C99 math functions. The Makefile uses "-lm" to link
