@@ -47,6 +47,7 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 - Added a build option to tolerate the Superglus bug where (very old)
   game files would try to write to memory address zero. (Not on by
   default.)
+- Switched from my old ad-hoc license to the MIT license.
 
 0.5.2 (Mar 27, 2014):
 
