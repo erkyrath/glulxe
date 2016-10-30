@@ -168,7 +168,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
 #if VM_DEBUGGER
     /* Load the debug info from the Blorb, if it wasn't loaded from a file. */
     if (!gameinfoloaded) {
-      glui32 giblorb_ID_Dbug = 0x44627567;
+      glui32 giblorb_ID_Dbug = giblorb_make_id('D', 'b', 'u', 'g');
       giblorb_err_t err;
       giblorb_result_t blorbres;
       err = giblorb_load_chunk_by_type(giblorb_get_resource_map(), 
