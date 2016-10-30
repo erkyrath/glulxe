@@ -35,6 +35,10 @@ comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
 ## Version
 
+###
+- Added an internal debugger. Compile with "#define VM_DEBUGGER" 
+  (and a debug-supporting Glk library) to use it.
+
 0.5.3 (Oct 25, 2016):
 
 - Turn on SERIALIZE_CACHE_RAM in the default build. This speeds up
