@@ -44,6 +44,11 @@ typedef int16_t glsi16;
    game files from crashing the interpreter. */
 #define VERIFY_MEMORY_ACCESS (1)
 
+/* Uncomment this definition to permit an exception for memory-address
+   checking for @glk opcodes that try to write to memory address 0.
+   This was a bug in old Superglus-built game files. */
+/* #define TOLERATE_SUPERGLUS_BUG (1) */
+
 /* Uncomment this definition to turn on Glulx VM profiling. In this
    mode, all function calls are timed, and the timing information is
    written to a data file called "profile-raw".
@@ -62,11 +67,11 @@ typedef int16_t glsi16;
    with no math library. */
 #define FLOAT_SUPPORT (1)
 
-/* Uncomment this definition to cache the original state of RAM in
-   (real) memory. This speeds up save/restore/undo operations, at the
-   expense of some memory usage. This should only be necessary on slow
-   (mobile) devices. */
-/* #define SERIALIZE_CACHE_RAM (1) */
+/* Comment this definition to not cache the original state of RAM in
+   (real) memory. This saves some memory, but slows down save/restore/undo
+   operations, which will have to read the original state off disk
+   every time. */
+#define SERIALIZE_CACHE_RAM (1)
 
 /* Some macros to read and write integers to memory, always in big-endian
    format. */
@@ -299,12 +304,14 @@ extern void profile_set_call_counts(int flag);
 #if VM_PROFILING
 extern glui32 profile_opcount;
 #define profile_tick() (profile_opcount++)
+extern int profile_profiling_active(void);
 extern void profile_in(glui32 addr, glui32 stackuse, int accel);
 extern void profile_out(glui32 stackuse);
 extern void profile_fail(char *reason);
 extern void profile_quit(void);
 #else /* VM_PROFILING */
 #define profile_tick()         (0)
+#define profile_profiling_active()         (0)
 #define profile_in(addr, stackuse, accel)  (0)
 #define profile_out(stackuse)  (0)
 #define profile_fail(reason)   (0)
