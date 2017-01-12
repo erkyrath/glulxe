@@ -360,6 +360,10 @@ void execute_loop()
 
       case op_copy:
         value = inst[0].value;
+#ifdef TOLERATE_SUPERGLUS_BUG
+        if (inst[1].desttype == 1 && inst[1].value == 0)
+            inst[1].desttype = 0;
+#endif /* TOLERATE_SUPERGLUS_BUG */
         store_operand(inst[1].desttype, inst[1].value, value);
         break;
       case op_copys:
