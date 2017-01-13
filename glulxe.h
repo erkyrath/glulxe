@@ -45,7 +45,7 @@ typedef int16_t glsi16;
 #define VERIFY_MEMORY_ACCESS (1)
 
 /* Uncomment this definition to permit an exception for memory-address
-   checking for @glk opcodes that try to write to memory address 0.
+   checking for @glk and @copy opcodes that try to write to memory address 0.
    This was a bug in old Superglus-built game files. */
 /* #define TOLERATE_SUPERGLUS_BUG (1) */
 
