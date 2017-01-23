@@ -1238,12 +1238,12 @@ static void debugcmd_backtrace(int wholestack)
         while (1) {
             inforoutine *routine = find_routine_for_address(curpc);
             if (!routine)
-                snprintf(linebuf, linebufsize, "%s()  (pc=$%.2X)", "???", curpc);
+                snprintf(linebuf, linebufsize, "- %s()  (pc=$%.2X)", "???", curpc);
             else
-                snprintf(linebuf, linebufsize, "%s()  (pc=$%.2X)", routine->identifier, curpc);
+                snprintf(linebuf, linebufsize, "- %s()  (pc=$%.2X)", routine->identifier, curpc);
             gidebug_output(linebuf);
 
-            strcpy(linebuf, "  ");
+            strcpy(linebuf, "   ");
             /* Again, this loop assumes that all locals are 4 bytes. */
             for (locptr = curlocalsbase, locnum = 0; locptr < curvalstackbase; locptr += 4, locnum++) {
                 int tmplen = strlen(linebuf);
