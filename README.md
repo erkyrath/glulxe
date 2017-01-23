@@ -1,6 +1,6 @@
 # Glulxe: the Glulx VM interpreter
 
-- Version 0.5.3
+- Version 0.5.4
 - Designed by Andrew Plotkin <erkyrath@eblong.com>
 - [Glulx home page][glulx]
 
@@ -39,7 +39,7 @@ XMLLIB definition in the Makefile.
 
 ## Version
 
-0.5.### (###):
+0.5.4 (Jan 23, 2017):
 
 - Added an internal debugger. Compile with "#define VM_DEBUGGER" 
   (and a debug-supporting Glk library) to use it.
