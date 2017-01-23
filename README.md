@@ -40,8 +40,11 @@ XMLLIB definition in the Makefile.
 ## Version
 
 0.5.### (###):
+
 - Added an internal debugger. Compile with "#define VM_DEBUGGER" 
   (and a debug-supporting Glk library) to use it.
+- Expanded the TOLERATE_SUPERGLUS_BUG behavior to tolerate more
+  Superglus game files.
 
 0.5.3 (Oct 25, 2016):
 
