@@ -168,7 +168,7 @@ static int xmlclosefunc(void *rock);
 static void xmlhandlenode(xmlTextReaderPtr reader, debuginfofile *context);
 static int finalize_debuginfo(debuginfofile *context);
 
-static debuginfofile *create_debuginfofile()
+static debuginfofile *create_debuginfofile(void)
 {
     debuginfofile *context = (debuginfofile *)malloc(sizeof(debuginfofile));
     context->str = NULL;
@@ -267,7 +267,7 @@ static void free_debuginfofile(debuginfofile *context)
     free(context);
 }
 
-static infoconstant *create_infoconstant()
+static infoconstant *create_infoconstant(void)
 {
     infoconstant *cons = (infoconstant *)malloc(sizeof(infoconstant));
     cons->identifier = NULL;
@@ -275,7 +275,7 @@ static infoconstant *create_infoconstant()
     return cons;
 }
 
-static infoobject *create_infoobject()
+static infoobject *create_infoobject(void)
 {
     infoobject *object = (infoobject *)malloc(sizeof(infoobject));
     object->identifier = NULL;
@@ -284,7 +284,7 @@ static infoobject *create_infoobject()
     return object;
 }
 
-static infoarray *create_infoarray()
+static infoarray *create_infoarray(void)
 {
     infoarray *arr = (infoarray *)malloc(sizeof(infoarray));
     arr->identifier = NULL;
@@ -297,7 +297,7 @@ static infoarray *create_infoarray()
     return arr;
 }
 
-static inforoutine *create_inforoutine()
+static inforoutine *create_inforoutine(void)
 {
     inforoutine *func = (inforoutine *)malloc(sizeof(inforoutine));
     func->identifier = NULL;
