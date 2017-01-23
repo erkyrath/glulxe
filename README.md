@@ -33,9 +33,13 @@ using the standard C99 math functions. The Makefile uses "-lm" to link
 these in. If your platform does not support these functions, you can
 comment out the "#define FLOAT_SUPPORT" line in glulxe.h.
 
+If you define the VM_DEBUGGER symbol (uncomment the "#define VM_DEBUGGER"
+line in glulxe.h), you must include the libxml2 library. See the
+XMLLIB definition in the Makefile.
+
 ## Version
 
-###
+0.5.### (###):
 - Added an internal debugger. Compile with "#define VM_DEBUGGER" 
   (and a debug-supporting Glk library) to use it.
 
