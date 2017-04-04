@@ -8,8 +8,9 @@ If compiled in, these functions maintain a collection of profiling
 information as the Glulx program executes.
 
 The profiling code is not smart about VM operations that rearrange the
-call stack. In fact, it's downright stupid. @restart, @restore,
-@restoreundo, or @throw will kill the interpreter.
+call stack. In fact, it's downright stupid. To prevent errors @restore
+and @restoreundo will fail, while @restart and @throw will abort the
+interpreter.
 
 On a normal VM exit (end of top-level routine or @quit), the profiler
 writes out a data file, using the filename you provided with the 
@@ -87,7 +88,7 @@ by the entire program; its max_depth is zero.
 #include <sys/time.h>
 
 /* Set if the --profile switch is used. */
-static int profiling_active = FALSE;
+int profiling_active = FALSE;
 static char *profiling_filename = NULL;
 static strid_t profiling_stream = NULL;
 static int profiling_call_counts = FALSE;
@@ -357,17 +358,6 @@ void profile_out(glui32 stackuse)
   fra->parent = NULL;
 
   glulx_free(fra);
-}
-
-/* ### throw/catch */
-/* ### restore/restore_undo/restart */
-
-void profile_fail(char *reason)
-{
-  if (!profiling_active)
-    return;
-
-  fatal_error_2("Profiler: unable to handle operation", reason);
 }
 
 void profile_quit()

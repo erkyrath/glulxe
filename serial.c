@@ -222,6 +222,13 @@ glui32 perform_restoreundo()
   glui32 res, val;
   glui32 heapsumlen = 0;
   glui32 *heapsumarr = NULL;
+  
+  /* If profiling is enabled and active then fail */
+  #if VM_PROFILING
+  if (profiling_active)
+    return 1;
+  #endif /* VM_PROFILING */
+
 
   /* If profiling is enabled and active then fail. */
   #if VM_PROFILING
@@ -434,6 +441,12 @@ glui32 perform_restore(strid_t str, int fromshell)
   glui32 filestart, filelen;
   glui32 heapsumlen = 0;
   glui32 *heapsumarr = NULL;
+  
+  /* If profiling is enabled and active then fail */
+  #if VM_PROFILING
+  if (profiling_active)
+    return 1;
+  #endif /* VM_PROFILING */
 
   /* If profiling is enabled and active then fail. */
   #if VM_PROFILING
