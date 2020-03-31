@@ -16,8 +16,9 @@
 #include "gi_debug.h" 
 #endif /* VM_DEBUGGER */
 
-/* The only command-line argument is the filename. And the profiling switch,
-   if that's compiled in. The only *two* command-line arguments are... 
+/* The only command-line arguments are the filename and the number of
+   undo states. And the profiling switch, if that's compiled in. The
+   only *three* command-line arguments are...
 
    You may wonder why there's no argument for a save file to autorestore
    at startup. That would be nice; unfortunately it can't work. A Glulx
@@ -26,6 +27,8 @@
    restored state without that environment in place.
 */
 glkunix_argumentlist_t glkunix_arguments[] = {
+
+  { "--undo", glkunix_arg_ValueFollows, "Number of undo states to store." },
 
 #if VM_PROFILING
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
@@ -59,6 +62,19 @@ int glkunix_startup_code(glkunix_startup_t *data)
      and the library-specific ones stripped out.
      As usual for Unix, the zeroth argument is the executable name. */
   for (ix=1; ix<data->argc; ix++) {
+
+    if (!strcmp(data->argv[ix], "--undo")) {
+      ix++;
+      if (ix<data->argc) {
+        int val = atoi(data->argv[ix]);
+        if (val <= 0) {
+          init_err = "--undo must be a number.";
+          return TRUE;
+        }
+        max_undo_level = val;
+      }
+      continue;
+    }
 
 #if VM_PROFILING
     if (!strcmp(data->argv[ix], "--profile")) {
