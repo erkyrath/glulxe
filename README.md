@@ -39,6 +39,9 @@ XMLLIB definition in the Makefile.
 
 ## Version
 
+0.5.### (###)
+- Added an --undo argument to set the number of undo states.
+
 0.5.4 (Jan 23, 2017):
 
 - Added an internal debugger. Compile with "#define VM_DEBUGGER" 
