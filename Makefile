@@ -1,31 +1,19 @@
 # Unix Makefile for Glulxe.
 
-# To use this, you must set three variables. GLKINCLUDEDIR must be the 
-# directory containing glk.h, glkstart.h, and the Make.library file.
-# GLKLIBDIR must be the directory containing the library.a file.
-# And GLKMAKEFILE must be the name of the Make.library file. Two
-# sets of values appear below; uncomment one of them and change the
-# directories appropriately.
+# To use this, you can set the variable GLK to the Glk library to use,
+# such as "cheapglk", "glkterm", "xglk", "remglk", or "gtkglk". The
+# variable is used to set GLKINCLUDEDIR (the directory containing glk.h,
+# glkstart.h, and the Make.library file), GLKLIBDIR (the directory
+# containing the library.a file), and GLKMAKEFILE (the name of the
+# Make.library file).
 
-GLKINCLUDEDIR = ../cheapglk
-GLKLIBDIR = ../cheapglk
-GLKMAKEFILE = Make.cheapglk
-
-#GLKINCLUDEDIR = ../glkterm
-#GLKLIBDIR = ../glkterm
-#GLKMAKEFILE = Make.glkterm
-
-#GLKINCLUDEDIR = ../xglk
-#GLKLIBDIR = ../xglk
-#GLKMAKEFILE = Make.xglk
-
-#GLKINCLUDEDIR = ../remglk
-#GLKLIBDIR = ../remglk
-#GLKMAKEFILE = Make.remglk
-
-#GLKINCLUDEDIR = ../gtkglk/src
-#GLKLIBDIR = ../gtkglk
-#GLKMAKEFILE = ../Make.gtkglk
+GLK = cheapglk
+GLKINCLUDEDIR = ../$(GLK)
+GLKLIBDIR = ../$(GLK)
+GLKMAKEFILE = Make.$(GLK)
+ifeq (gtkglk, $(GLK))
+GLKINCLUDEDIR = ../$(GLK)/src
+endif
 
 # Pick a C compiler.
 CC = cc
