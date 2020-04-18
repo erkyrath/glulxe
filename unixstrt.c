@@ -229,7 +229,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
  */
 static void glkunix_game_select(glui32 eventaddr)
 {
-  glui32 lasteventtype = -1; //### check glklib last-event-type
+  glui32 lasteventtype = glkunix_get_last_event_type();
   
 	/* Do not autosave if we've just started up, or if the last event was a rearrange event. (We get rearranges in clusters, and they don't change anything interesting anyhow.) */
 	if (lasteventtype == -1 || lasteventtype == evtype_Arrange)
