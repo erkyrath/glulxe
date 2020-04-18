@@ -4,8 +4,46 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "glulxe.h"
 #include "glkstart.h" /* This comes with the Glk library. */
+
+/* This structure contains VM state which is not stored in a normal save file, but which is needed for an autorestore.
+ 
+    (The reason it's not stored in a normal save file is that it's useless unless you serialize the entire Glk state along with the VM. Glulx normally doesn't do that, but for an autosave, we do.)
+ */
+
+typedef struct library_glk_obj_id_entry_struct {
+    glui32 objclass;
+    glui32 tag;
+    glui32 dispid;
+} library_glk_obj_id_entry_t;
+
+typedef struct library_glulx_accel_entry_struct {
+    glui32 index;
+    glui32 addr;
+} library_glulx_accel_entry_t;
+
+typedef struct library_glulx_accel_param_struct {
+    glui32 param;
+} library_glulx_accel_param_t;
+
+typedef struct library_state_data_struct {
+    glui32 active;
+    glui32 protectstart, protectend;
+    glui32 iosys_mode, iosys_rock;
+    glui32 stringtable;
+    glui32 accel_param_count;
+    library_glulx_accel_param_t *accel_params;
+    glui32 accel_func_count;
+    library_glulx_accel_entry_t *accel_funcs;
+    glui32 gamefiletag;
+    glui32 id_map_list_count;
+    library_glk_obj_id_entry_t *id_map_list;
+} library_state_data_t;
+
+static library_state_data_t *library_state_data_alloc(void);
+static void library_state_data_free(library_state_data_t *);
 
 /* Backtrack through the current opcode (at prevpc), and figure out whether its input arguments are on the stack or not. This will be important when setting up the saved VM state for restarting its opcode.
  
@@ -117,5 +155,50 @@ void glkunix_do_autosave(glui32 eventaddr)
     }
     printf("### perform_save succeeded\n");
 
+    library_state_data_t *library_state = library_state_data_alloc();
+    if (!library_state) {
+        return;
+    }
+
+
+    library_state_data_free(library_state);
+    library_state = NULL;
+}
+
+static library_state_data_t *library_state_data_alloc()
+{
+    library_state_data_t *state = glulx_malloc(sizeof(library_state_data_t));
+    if (!state)
+        return NULL;
+
+    memset(state, 0, sizeof(library_state_data_t));
+    state->active = FALSE;
+    state->accel_param_count = 0;
+    state->accel_params = NULL;
+    state->accel_func_count = 0;
+    state->accel_funcs = NULL;
+    state->id_map_list_count = 0;
+    state->id_map_list = NULL;
+
+    return state;
+}
+
+static void library_state_data_free(library_state_data_t *state)
+{
+    if (state->accel_params) {
+        glulx_free(state->accel_params);
+        state->accel_params = NULL;
+    }
+    if (state->accel_funcs) {
+        glulx_free(state->accel_funcs);
+        state->accel_funcs = NULL;
+    }
+    if (state->id_map_list) {
+        glulx_free(state->id_map_list);
+        state->id_map_list = NULL;
+    }
+    state->active = FALSE;
+
+    glulx_free(state);
 }
 
