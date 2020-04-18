@@ -32,6 +32,9 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 
   { "--undo", glkunix_arg_ValueFollows, "Number of undo states to store." },
 
+  //### ifdef autosave?
+  { "--autosave", glkunix_arg_NoValue, "Autorestore at launch; autosave every turn." },
+
 #if VM_PROFILING
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
   { "--profcalls", glkunix_arg_NoValue, "Include what-called-what details in profiling. (Slow!)" },
@@ -57,6 +60,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
   char *filename = NULL;
   char *gameinfofilename = NULL;
   int gameinfoloaded = FALSE;
+  int pref_autosave = FALSE;
   unsigned char buf[12];
   int res;
 
@@ -75,6 +79,12 @@ int glkunix_startup_code(glkunix_startup_t *data)
         }
         max_undo_level = val;
       }
+      continue;
+    }
+
+    //### ifdef autosave?
+    if (!strcmp(data->argv[ix], "--autosave")) {
+      pref_autosave = TRUE;
       continue;
     }
 
@@ -143,8 +153,10 @@ int glkunix_startup_code(glkunix_startup_t *data)
     return TRUE;
   }
 
-  //### set_library_autorestore_hook...
-  set_library_select_hook(glkunix_game_select);
+  if (pref_autosave) {
+    //### set_library_autorestore_hook...
+    set_library_select_hook(glkunix_game_select);
+  }
   
 #if VM_DEBUGGER
   if (gameinfofilename) {
