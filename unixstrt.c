@@ -16,6 +16,8 @@
 #include "gi_debug.h" 
 #endif /* VM_DEBUGGER */
 
+static void glkunix_game_select(glui32 eventaddr);
+
 /* The only command-line arguments are the filename and the number of
    undo states. And the profiling switch, if that's compiled in. The
    only *three* command-line arguments are...
@@ -141,6 +143,9 @@ int glkunix_startup_code(glkunix_startup_t *data)
     return TRUE;
   }
 
+  //### set_library_autorestore_hook...
+  set_library_select_hook(glkunix_game_select);
+  
 #if VM_DEBUGGER
   if (gameinfofilename) {
     strid_t debugstr = glkunix_stream_open_pathname_gen(gameinfofilename, FALSE, FALSE, 1);
@@ -206,5 +211,18 @@ int glkunix_startup_code(glkunix_startup_t *data)
       "which contains one.";
     return TRUE;
   }
+}
+
+/* This is the library_select_hook, which will be called every time glk_select() is invoked.
+ */
+static void glkunix_game_select(glui32 eventaddr)
+{
+  glui32 lasteventtype = -1; //### check glklib last-event-type
+  
+	/* Do not autosave if we've just started up, or if the last event was a rearrange event. (We get rearranges in clusters, and they don't change anything interesting anyhow.) */
+	if (lasteventtype == -1 || lasteventtype == evtype_Arrange)
+		return;
+
+  glkunix_do_autosave(eventaddr);
 }
 
