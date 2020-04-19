@@ -51,6 +51,10 @@ static void stash_library_state(library_state_data_t *state);
 
 static library_state_data_t *library_state_data_alloc(void);
 static void library_state_data_free(library_state_data_t *);
+static int library_state_serialize(glkunix_serialize_context_t, void*);
+static int library_state_serialize_accel_param(glkunix_serialize_context_t, void *);
+static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
+static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
 
 /* Backtrack through the current opcode (at prevpc), and figure out whether its input arguments are on the stack or not. This will be important when setting up the saved VM state for restarting its opcode.
  
@@ -173,7 +177,7 @@ void glkunix_do_autosave(glui32 eventaddr)
         return;
     }
     
-    glkunix_save_library_state(jsavefile);
+    glkunix_save_library_state(jsavefile, library_state_serialize, library_state);
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
@@ -313,6 +317,29 @@ static void library_state_data_free(library_state_data_t *state)
     state->active = FALSE;
 
     glulx_free(state);
+}
+
+static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
+{
+    library_state_data_t *state = rock;
+
+    if (state->active) {
+        glkunix_serialize_uint32(ctx, "glulx_protectstart", state->protectstart);
+        glkunix_serialize_uint32(ctx, "glulx_protectend", state->protectend);
+
+        if (state->accel_params) {
+            glkunix_serialize_object_array(ctx, "glulx_accel_params", library_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
+        }
+    }
+    
+    return TRUE;
+}
+
+static int library_state_serialize_accel_param(glkunix_serialize_context_t ctx, void *rock)
+{
+    library_glulx_accel_param_t *param = rock;
+    glkunix_serialize_uint32(ctx, "param", param->param);
+    return TRUE;
 }
 
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
