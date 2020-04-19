@@ -172,6 +172,8 @@ void glkunix_do_autosave(glui32 eventaddr)
 
     library_state_data_free(library_state);
     library_state = NULL;
+
+    //### swap files?
 }
 
 static glui32 tmp_accel_func_count;
