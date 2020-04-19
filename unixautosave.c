@@ -168,8 +168,16 @@ void glkunix_do_autosave(glui32 eventaddr)
     }
     stash_library_state(library_state);
 
-    //### archive Glk data plus library state...
+    strid_t jsavefile = glkunix_stream_open_pathname_gen("autosave.json", TRUE, FALSE, 1);
+    if (!jsavefile) {
+        return;
+    }
+    
+    glkunix_save_library_state(jsavefile);
 
+    glk_stream_close(jsavefile, NULL);
+    jsavefile = NULL;
+    
     library_state_data_free(library_state);
     library_state = NULL;
 
