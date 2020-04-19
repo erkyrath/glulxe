@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "glulxe.h"
+#include "gi_dispa.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
 /* This structure contains VM state which is not stored in a normal save file, but which is needed for an autorestore.
@@ -41,6 +42,8 @@ typedef struct library_state_data_struct {
     glui32 id_map_list_count;
     library_glk_obj_id_entry_t *id_map_list;
 } library_state_data_t;
+
+static void stash_library_state(library_state_data_t *state);
 
 static library_state_data_t *library_state_data_alloc(void);
 static void library_state_data_free(library_state_data_t *);
@@ -159,10 +162,104 @@ void glkunix_do_autosave(glui32 eventaddr)
     if (!library_state) {
         return;
     }
+    stash_library_state(library_state);
 
+    //### archive Glk data plus library state...
 
     library_state_data_free(library_state);
     library_state = NULL;
+}
+
+static glui32 tmp_accel_func_count;
+static glui32 tmp_accel_func_size;
+static library_glulx_accel_entry_t *tmp_accel_funcs;
+
+static void stash_one_accel_func(glui32 index, glui32 addr)
+{
+    if (tmp_accel_func_count >= tmp_accel_func_size) {
+        if (tmp_accel_funcs == NULL) {
+            tmp_accel_func_size = 4;
+            tmp_accel_funcs = glulx_malloc(tmp_accel_func_size * sizeof(library_glulx_accel_entry_t));
+        }
+        else {
+            tmp_accel_func_size = 2 * tmp_accel_func_count + 4;
+            tmp_accel_funcs = glulx_realloc(tmp_accel_funcs, tmp_accel_func_size * sizeof(library_glulx_accel_entry_t));
+        }
+    }
+
+    tmp_accel_funcs[tmp_accel_func_count].index = index;
+    tmp_accel_funcs[tmp_accel_func_count].addr = addr;
+    tmp_accel_func_count++;
+}
+
+/* Copy extra chunks of the VM state into the (static) library_state object. This is information needed by autosave, but not included in the regular save process.
+ */
+static void stash_library_state(library_state_data_t *state)
+{
+    glui32 count;
+    
+    state->active = TRUE;
+    
+    state->protectstart = protectstart;
+    state->protectend = protectend;
+    stream_get_iosys(&state->iosys_mode, &state->iosys_rock);
+    state->stringtable = stream_get_table();
+
+    count = accel_get_param_count();
+    state->accel_param_count = count;
+    state->accel_params = glulx_malloc(count * sizeof(library_glulx_accel_param_t));
+    for (int ix=0; ix<count; ix++) {
+        state->accel_params[ix].param = accel_get_param(ix);
+    }
+
+    tmp_accel_func_count = 0;
+    tmp_accel_func_size = 0;
+    tmp_accel_funcs = NULL;
+
+    accel_iterate_funcs(&stash_one_accel_func);
+    
+    state->accel_func_count = tmp_accel_func_count;
+    state->accel_funcs = tmp_accel_funcs;
+    tmp_accel_funcs = NULL;
+
+    if (gamefile) {
+        state->gamefiletag = glkunix_stream_get_updatetag(gamefile);
+    }
+
+    count = 0;
+    for (winid_t tmpwin = glk_window_iterate(NULL, NULL); tmpwin; tmpwin = glk_window_iterate(tmpwin, NULL))
+        count++;
+    for (strid_t tmpstr = glk_stream_iterate(NULL, NULL); tmpstr; tmpstr = glk_stream_iterate(tmpstr, NULL))
+        count++;
+    for (frefid_t tmpfref = glk_fileref_iterate(NULL, NULL); tmpfref; tmpfref = glk_fileref_iterate(tmpfref, NULL))
+        count++;
+
+    if (count) {
+        state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
+    }
+    
+    glui32 ix = 0;
+    for (winid_t tmpwin = glk_window_iterate(NULL, NULL); tmpwin; tmpwin = glk_window_iterate(tmpwin, NULL)) {
+        state->id_map_list[ix].objclass = gidisp_Class_Window;
+        state->id_map_list[ix].tag = glkunix_window_get_updatetag(tmpwin);
+        state->id_map_list[ix].dispid = find_id_for_window(tmpwin);
+        ix++;
+    }
+    for (strid_t tmpstr = glk_stream_iterate(NULL, NULL); tmpstr; tmpstr = glk_stream_iterate(tmpstr, NULL)) {
+        state->id_map_list[ix].objclass = gidisp_Class_Stream;
+        state->id_map_list[ix].tag = glkunix_stream_get_updatetag(tmpstr);
+        state->id_map_list[ix].dispid = find_id_for_stream(tmpstr);
+        ix++;
+    }
+    for (frefid_t tmpfref = glk_fileref_iterate(NULL, NULL); tmpfref; tmpfref = glk_fileref_iterate(tmpfref, NULL)) {
+        state->id_map_list[ix].objclass = gidisp_Class_Fileref;
+        state->id_map_list[ix].tag = glkunix_fileref_get_updatetag(tmpfref);
+        state->id_map_list[ix].dispid = find_id_for_fileref(tmpfref);
+        ix++;
+    }
+
+    if (ix != state->id_map_list_count)
+        fatal_error("stash_library_state: Glk object count mismatch");
 }
 
 static library_state_data_t *library_state_data_alloc()
