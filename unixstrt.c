@@ -32,8 +32,9 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 
   { "--undo", glkunix_arg_ValueFollows, "Number of undo states to store." },
 
-  //### ifdef autosave?
+#if GLKUNIX_AUTOSAVE_FEATURES
   { "--autosave", glkunix_arg_NoValue, "Autorestore at launch; autosave every turn." },
+#endif /* GLKUNIX_AUTOSAVE_FEATURES */
 
 #if VM_PROFILING
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
@@ -82,11 +83,12 @@ int glkunix_startup_code(glkunix_startup_t *data)
       continue;
     }
 
-    //### ifdef autosave?
+#if GLKUNIX_AUTOSAVE_FEATURES
     if (!strcmp(data->argv[ix], "--autosave")) {
       pref_autosave = TRUE;
       continue;
     }
+#endif /* GLKUNIX_AUTOSAVE_FEATURES */
 
 #if VM_PROFILING
     if (!strcmp(data->argv[ix], "--profile")) {
@@ -153,11 +155,13 @@ int glkunix_startup_code(glkunix_startup_t *data)
     return TRUE;
   }
 
+#if GLKUNIX_AUTOSAVE_FEATURES
   if (pref_autosave) {
     //### set_library_autorestore_hook...
     set_library_select_hook(glkunix_game_select);
   }
-  
+#endif /* GLKUNIX_AUTOSAVE_FEATURES */
+
 #if VM_DEBUGGER
   if (gameinfofilename) {
     strid_t debugstr = glkunix_stream_open_pathname_gen(gameinfofilename, FALSE, FALSE, 1);
@@ -225,6 +229,10 @@ int glkunix_startup_code(glkunix_startup_t *data)
   }
 }
 
+/* The following only make sense when compiled with a Glk library which offers autosave/autorestore hooks. */
+
+#ifdef GLKUNIX_AUTOSAVE_FEATURES
+
 /* This is the library_select_hook, which will be called every time glk_select() is invoked.
  */
 static void glkunix_game_select(glui32 eventaddr)
@@ -238,3 +246,4 @@ static void glkunix_game_select(glui32 eventaddr)
   glkunix_do_autosave(eventaddr);
 }
 
+#endif /* GLKUNIX_AUTOSAVE_FEATURES */

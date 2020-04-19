@@ -9,6 +9,10 @@
 #include "gi_dispa.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
+/* The following only make sense when compiled with a Glk library which offers autosave/autorestore hooks. */
+
+#ifdef GLKUNIX_AUTOSAVE_FEATURES
+
 /* This structure contains VM state which is not stored in a normal save file, but which is needed for an autorestore.
  
     (The reason it's not stored in a normal save file is that it's useless unless you serialize the entire Glk state along with the VM. Glulx normally doesn't do that, but for an autosave, we do.)
@@ -299,3 +303,4 @@ static void library_state_data_free(library_state_data_t *state)
     glulx_free(state);
 }
 
+#endif /* GLKUNIX_AUTOSAVE_FEATURES */
