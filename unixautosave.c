@@ -177,6 +177,7 @@ void glkunix_do_autosave(glui32 eventaddr)
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
+    printf("### perform_jsave succeeded\n");
     
     library_state_data_free(library_state);
     library_state = NULL;
@@ -248,6 +249,7 @@ static void stash_library_state(library_state_data_t *state)
     for (frefid_t tmpfref = glk_fileref_iterate(NULL, NULL); tmpfref; tmpfref = glk_fileref_iterate(tmpfref, NULL))
         count++;
 
+    state->id_map_list_count = count;
     if (count) {
         state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
     }
