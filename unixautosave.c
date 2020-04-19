@@ -324,12 +324,28 @@ static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
     library_state_data_t *state = rock;
 
     if (state->active) {
+        glkunix_serialize_uint32(ctx, "glulx_library_state", 1);
+
         glkunix_serialize_uint32(ctx, "glulx_protectstart", state->protectstart);
         glkunix_serialize_uint32(ctx, "glulx_protectend", state->protectend);
-
+        glkunix_serialize_uint32(ctx, "glulx_iosys_mode", state->iosys_mode);
+        glkunix_serialize_uint32(ctx, "glulx_iosys_rock", state->iosys_rock);
+        glkunix_serialize_uint32(ctx, "glulx_stringtable", state->stringtable);
+        
         if (state->accel_params) {
             glkunix_serialize_object_array(ctx, "glulx_accel_params", library_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
         }
+
+        if (state->accel_funcs) {
+            glkunix_serialize_object_array(ctx, "glulx_accel_funcs", library_state_serialize_accel_func, state->accel_func_count, sizeof(library_glulx_accel_entry_t), state->accel_funcs);
+        }
+
+        glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
+        
+        if (state->id_map_list) {
+            glkunix_serialize_object_array(ctx, "glulx_id_map_list", library_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
+        }
+
     }
     
     return TRUE;
@@ -339,6 +355,23 @@ static int library_state_serialize_accel_param(glkunix_serialize_context_t ctx, 
 {
     library_glulx_accel_param_t *param = rock;
     glkunix_serialize_uint32(ctx, "param", param->param);
+    return TRUE;
+}
+
+static int library_state_serialize_accel_func(glkunix_serialize_context_t ctx, void *rock)
+{
+    library_glulx_accel_entry_t *entry = rock;
+    glkunix_serialize_uint32(ctx, "index", entry->index);
+    glkunix_serialize_uint32(ctx, "addr", entry->addr);
+    return TRUE;
+}
+
+static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx, void *rock)
+{
+    library_glk_obj_id_entry_t *obj = rock;
+    glkunix_serialize_uint32(ctx, "objclass", obj->objclass);
+    glkunix_serialize_uint32(ctx, "tag", obj->tag);
+    glkunix_serialize_uint32(ctx, "dispid", obj->dispid);
     return TRUE;
 }
 
