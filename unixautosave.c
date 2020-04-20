@@ -56,6 +56,17 @@ static int library_state_serialize_accel_param(glkunix_serialize_context_t, void
 static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
 static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
 
+static char *game_signature = NULL;
+
+void glkunix_set_autosave_signature(unsigned char *buf, glui32 len)
+{
+    game_signature = glulx_malloc(2*len+1);
+    for (int ix=0; ix<len; ix++) {
+        sprintf(game_signature+2*ix, "%02x", (int)buf[ix]);
+    }
+    game_signature[2*len] = '\0';
+}
+
 /* Backtrack through the current opcode (at prevpc), and figure out whether its input arguments are on the stack or not. This will be important when setting up the saved VM state for restarting its opcode.
  
     The opmodes argument must be an array int[3]. Returns TRUE on success.

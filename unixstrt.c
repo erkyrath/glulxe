@@ -17,6 +17,7 @@
 #endif /* VM_DEBUGGER */
 
 static void glkunix_game_select(glui32 eventaddr);
+static void glkunix_game_start(void);
 
 /* The only command-line arguments are the filename and the number of
    undo states. And the profiling switch, if that's compiled in. The
@@ -157,6 +158,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
 
 #if GLKUNIX_AUTOSAVE_FEATURES
   if (pref_autosave) {
+    set_library_start_hook(glkunix_game_start);
     //### set_library_autorestore_hook...
     set_library_select_hook(glkunix_game_select);
   }
@@ -232,6 +234,19 @@ int glkunix_startup_code(glkunix_startup_t *data)
 /* The following only make sense when compiled with a Glk library which offers autosave/autorestore hooks. */
 
 #ifdef GLKUNIX_AUTOSAVE_FEATURES
+
+static void glkunix_game_start()
+{
+  unsigned char buf[64];
+  glk_stream_set_position(gamefile, gamefile_start, seekmode_Start);
+  glui32 res = glk_get_buffer_stream(gamefile, (char *)buf, 64);
+  if (res == 0) {
+    fatal_error("Unable to read game file.");
+    return;
+  }
+
+  glkunix_set_autosave_signature(buf, res);
+}
 
 /* This is the library_select_hook, which will be called every time glk_select() is invoked.
  */
