@@ -6,12 +6,16 @@
 #include <stdio.h>
 #include <string.h>
 #include "glulxe.h"
+#include "unixstrt.h"
 #include "gi_dispa.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
-/* The following only make sense when compiled with a Glk library which offers autosave/autorestore hooks. */
+/* The following code only makes sense when compiled with a Glk library which offers autosave/autorestore hooks. */
 
 #ifdef GLKUNIX_AUTOSAVE_FEATURES
+
+char *pref_autosavedir = ".";
+char *pref_autosavename = "autosave";
 
 /* This structure contains VM state which is not stored in a normal save file, but which is needed for an autorestore.
  
@@ -57,6 +61,7 @@ static int library_state_serialize_accel_func(glkunix_serialize_context_t, void 
 static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
 
 static char *game_signature = NULL;
+static char *autosave_basepath = NULL;
 
 /* Take a chunk of data (the first 64 bytes of the game file, which makes a good signature) and convert it to a hex string. This will be used as part of the filename for autosave.
  */
@@ -120,6 +125,34 @@ static int parse_partial_operand(int *opmodes)
 void glkunix_do_autosave(glui32 eventaddr)
 {
     printf("###auto glkunix_do_autosave(%d)\n", eventaddr);
+
+    if (autosave_basepath == NULL) {
+        /* First time through we figure out where to save. */
+        char *basename = pref_autosavename;
+        char *hashpos = strchr(pref_autosavename, '#');
+        if (hashpos && game_signature) {
+            /* Substitute the game signature for the hash. */
+            int len = strlen(pref_autosavename) - 1 + strlen(game_signature) + 1;
+            int pos = (hashpos - pref_autosavename);
+            basename = glulx_malloc(len);
+            strncpy(basename, pref_autosavename, pos);
+            strcpy(basename+pos, game_signature);
+            strcat(basename, pref_autosavename+pos+1);
+            if (strlen(basename) != len-1) {
+                /* shouldn't happen */
+                fatal_error("autosavename interpolation came out wrong");
+                return;
+            }
+        }
+        
+        int buflen = strlen(pref_autosavedir) + 1 + strlen(basename) + 1;
+        autosave_basepath = glulx_malloc(buflen);
+        sprintf(autosave_basepath, "%s/%s", pref_autosavedir, basename);
+        if (basename != pref_autosavename)
+            glulx_free(basename);
+
+        printf("### basepath: %s\n", autosave_basepath);
+    }
 
     /* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands -- these might or might not have come off the stack. */
     int res;

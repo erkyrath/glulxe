@@ -8,6 +8,7 @@
 #include "glk.h"
 #include "gi_blorb.h"
 #include "glulxe.h"
+#include "unixstrt.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
 #if VM_DEBUGGER
@@ -35,12 +36,15 @@ glkunix_argumentlist_t glkunix_arguments[] = {
 
 #if GLKUNIX_AUTOSAVE_FEATURES
   { "--autosave", glkunix_arg_NoValue, "Autorestore at launch; autosave every turn." },
+  { "--autosavedir", glkunix_arg_ValueFollows, "Directory for autosave files (default: .)." },
+  { "--autosavename", glkunix_arg_ValueFollows, "Base filename for autosave (default: autosave)." },
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
 
 #if VM_PROFILING
   { "--profile", glkunix_arg_ValueFollows, "Generate profiling information to a file." },
   { "--profcalls", glkunix_arg_NoValue, "Include what-called-what details in profiling. (Slow!)" },
 #endif /* VM_PROFILING */
+
 #if VM_DEBUGGER
   { "--gameinfo", glkunix_arg_ValueFollows, "Read debug information from a file." },
   { "--cpu", glkunix_arg_NoValue, "Display CPU usage of each command (debug)." },
@@ -87,6 +91,20 @@ int glkunix_startup_code(glkunix_startup_t *data)
 #if GLKUNIX_AUTOSAVE_FEATURES
     if (!strcmp(data->argv[ix], "--autosave")) {
       pref_autosave = TRUE;
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--autosavedir")) {
+      ix++;
+      if (ix<data->argc) {
+        pref_autosavedir = data->argv[ix];
+      }
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--autosavename")) {
+      ix++;
+      if (ix<data->argc) {
+        pref_autosavename = data->argv[ix];
+      }
       continue;
     }
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
