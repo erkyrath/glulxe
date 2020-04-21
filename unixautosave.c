@@ -58,11 +58,17 @@ static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, voi
 
 static char *game_signature = NULL;
 
+/* Take a chunk of data (the first 64 bytes of the game file, which makes a good signature) and convert it to a hex string. This will be used as part of the filename for autosave.
+ */
 void glkunix_set_autosave_signature(unsigned char *buf, glui32 len)
 {
+    static char *hexdigits = "0123456789abcdef";
+    
     game_signature = glulx_malloc(2*len+1);
     for (int ix=0; ix<len; ix++) {
-        sprintf(game_signature+2*ix, "%02x", (int)buf[ix]);
+        unsigned char ch = buf[ix];
+        game_signature[2*ix] = hexdigits[(ch >> 4) & 0x0F];
+        game_signature[2*ix+1] = hexdigits[(ch) & 0x0F];
     }
     game_signature[2*len] = '\0';
 }
