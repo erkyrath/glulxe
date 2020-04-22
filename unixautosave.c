@@ -154,17 +154,24 @@ void glkunix_do_autosave(glui32 eventaddr)
         printf("### basepath: %s\n", autosave_basepath);
     }
 
+    /* Space for the base plus a file suffix. */
+    char *pathname = glulx_malloc(strlen(autosave_basepath) + 16);
+    
     /* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands -- these might or might not have come off the stack. */
     int res;
     int opmodes[3];
     res = parse_partial_operand(opmodes);
-    if (!res)
+    if (!res) {
+        glulx_free(pathname);
         return;
+    }
 
-    //###auto: determine save.glksave and save.json paths
-    strid_t savefile = glkunix_stream_open_pathname_gen("autosave.glksave", TRUE, FALSE, 1);
-    if (!savefile)
+    sprintf(pathname, "%s.glksave", autosave_basepath);
+    strid_t savefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
+    if (!savefile) {
+        glulx_free(pathname);
         return;
+    }
         
     /* Push all the necessary arguments for the @glk opcode. */
     glui32 origstackptr = stackptr;
@@ -212,18 +219,22 @@ void glkunix_do_autosave(glui32 eventaddr)
     savefile = NULL;
 
     if (res) {
+        glulx_free(pathname);
         return;
     }
     printf("### perform_save succeeded\n");
 
     library_state_data_t *library_state = library_state_data_alloc();
     if (!library_state) {
+        glulx_free(pathname);
         return;
     }
     stash_library_state(library_state);
 
-    strid_t jsavefile = glkunix_stream_open_pathname_gen("autosave.json", TRUE, FALSE, 1);
+    sprintf(pathname, "%s.json", autosave_basepath);
+    strid_t jsavefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
     if (!jsavefile) {
+        glulx_free(pathname);
         return;
     }
     
@@ -236,7 +247,9 @@ void glkunix_do_autosave(glui32 eventaddr)
     library_state_data_free(library_state);
     library_state = NULL;
 
-    //### swap files?
+    /* We could write those files to temporary paths and then rename them into place. That would be safer. */
+
+    glulx_free(pathname);
 }
 
 static glui32 tmp_accel_func_count;
