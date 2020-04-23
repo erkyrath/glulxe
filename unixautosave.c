@@ -55,10 +55,11 @@ static void stash_library_state(library_state_data_t *state);
 
 static library_state_data_t *library_state_data_alloc(void);
 static void library_state_data_free(library_state_data_t *);
-static int library_state_serialize(glkunix_serialize_context_t, void*);
+static int library_state_serialize(glkunix_serialize_context_t, void *);
 static int library_state_serialize_accel_param(glkunix_serialize_context_t, void *);
 static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
 static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
+static int library_state_unserialize(glkunix_serialize_context_t, void *);
 
 static char *game_signature = NULL;
 static char *autosave_basepath = NULL;
@@ -248,6 +249,7 @@ void glkunix_do_autosave(glui32 eventaddr)
     sprintf(pathname, "%s.json", basepath);
     strid_t jsavefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
     if (!jsavefile) {
+        library_state_data_free(library_state);
         glulx_free(pathname);
         return;
     }
@@ -264,19 +266,55 @@ void glkunix_do_autosave(glui32 eventaddr)
     /* We could write those files to temporary paths and then rename them into place. That would be safer. */
 
     glulx_free(pathname);
+    pathname = NULL;
 }
 
-void glkunix_do_autorestore()
+int glkunix_do_autorestore()
 {
     char *basepath = get_autosave_basepath();
     if (!basepath)
-        return;
+        return FALSE;
     /* Space for the base plus a file suffix. */
     char *pathname = glulx_malloc(strlen(basepath) + 16);
     if (!pathname)
-        return;
+        return FALSE;
+
+    //### check existence of files
+    
+    library_state_data_t *library_state = library_state_data_alloc();
+    if (!library_state) {
+        glulx_free(pathname);
+        return FALSE;
+    }
+
+    sprintf(pathname, "%s.json", basepath);
+    strid_t jsavefile = glkunix_stream_open_pathname_gen(pathname, FALSE, FALSE, 1);
+    if (!jsavefile) {
+        library_state_data_free(library_state);
+        glulx_free(pathname);
+        return FALSE;
+    }
+    
+    int res = glkunix_load_library_state(jsavefile, library_state_unserialize, library_state);
+
+    glk_stream_close(jsavefile, NULL);
+    jsavefile = NULL;
+    
+    if (!res) {
+        library_state_data_free(library_state);
+        glulx_free(pathname);
+        return FALSE;
+    }
+    
+    printf("### perform_jload succeeded\n");
+
+    library_state_data_free(library_state);
+    library_state = NULL;
 
     glulx_free(pathname);
+    pathname = NULL;
+
+    return TRUE;
 }
 
 static glui32 tmp_accel_func_count;
