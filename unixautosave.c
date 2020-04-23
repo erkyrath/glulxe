@@ -78,6 +78,43 @@ void glkunix_set_autosave_signature(unsigned char *buf, glui32 len)
     game_signature[2*len] = '\0';
 }
 
+/* Construct the pathname for autosaving this game. Returns a statically allocated string; the caller should append a filename suffix to that.
+   This looks at the autosavedir and autosavename preferences. If autosavename contains a "#" character, the game signature is substituted.
+ */
+static char *get_autosave_basepath()
+{
+    if (autosave_basepath == NULL) {
+        /* First time through we figure out where to save. */
+        char *basename = pref_autosavename;
+        char *hashpos = strchr(pref_autosavename, '#');
+        if (hashpos && game_signature) {
+            /* Substitute the game signature for the hash. */
+            int len = strlen(pref_autosavename) - 1 + strlen(game_signature) + 1;
+            int pos = (hashpos - pref_autosavename);
+            basename = glulx_malloc(len);
+            strncpy(basename, pref_autosavename, pos);
+            strcpy(basename+pos, game_signature);
+            strcat(basename, pref_autosavename+pos+1);
+            if (strlen(basename) != len-1) {
+                /* shouldn't happen */
+                fatal_error("autosavename interpolation came out wrong");
+                return NULL;
+            }
+        }
+        
+        int buflen = strlen(pref_autosavedir) + 1 + strlen(basename) + 1;
+        autosave_basepath = glulx_malloc(buflen);
+        sprintf(autosave_basepath, "%s/%s", pref_autosavedir, basename);
+        
+        if (basename != pref_autosavename)
+            glulx_free(basename);
+
+        printf("### basepath: %s\n", autosave_basepath);
+    }
+
+    return autosave_basepath;
+}
+
 /* Backtrack through the current opcode (at prevpc), and figure out whether its input arguments are on the stack or not. This will be important when setting up the saved VM state for restarting its opcode.
  
     The opmodes argument must be an array int[3]. Returns TRUE on success.
@@ -126,36 +163,12 @@ void glkunix_do_autosave(glui32 eventaddr)
 {
     printf("###auto glkunix_do_autosave(%d)\n", eventaddr);
 
-    if (autosave_basepath == NULL) {
-        /* First time through we figure out where to save. */
-        char *basename = pref_autosavename;
-        char *hashpos = strchr(pref_autosavename, '#');
-        if (hashpos && game_signature) {
-            /* Substitute the game signature for the hash. */
-            int len = strlen(pref_autosavename) - 1 + strlen(game_signature) + 1;
-            int pos = (hashpos - pref_autosavename);
-            basename = glulx_malloc(len);
-            strncpy(basename, pref_autosavename, pos);
-            strcpy(basename+pos, game_signature);
-            strcat(basename, pref_autosavename+pos+1);
-            if (strlen(basename) != len-1) {
-                /* shouldn't happen */
-                fatal_error("autosavename interpolation came out wrong");
-                return;
-            }
-        }
-        
-        int buflen = strlen(pref_autosavedir) + 1 + strlen(basename) + 1;
-        autosave_basepath = glulx_malloc(buflen);
-        sprintf(autosave_basepath, "%s/%s", pref_autosavedir, basename);
-        if (basename != pref_autosavename)
-            glulx_free(basename);
-
-        printf("### basepath: %s\n", autosave_basepath);
-    }
-
+    char *basepath = get_autosave_basepath();
     /* Space for the base plus a file suffix. */
-    char *pathname = glulx_malloc(strlen(autosave_basepath) + 16);
+    char *pathname = glulx_malloc(strlen(basepath) + 16);
+    if (!pathname) {
+        return;
+    }
     
     /* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands -- these might or might not have come off the stack. */
     int res;
@@ -166,7 +179,7 @@ void glkunix_do_autosave(glui32 eventaddr)
         return;
     }
 
-    sprintf(pathname, "%s.glksave", autosave_basepath);
+    sprintf(pathname, "%s.glksave", basepath);
     strid_t savefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
     if (!savefile) {
         glulx_free(pathname);
@@ -231,7 +244,7 @@ void glkunix_do_autosave(glui32 eventaddr)
     }
     stash_library_state(library_state);
 
-    sprintf(pathname, "%s.json", autosave_basepath);
+    sprintf(pathname, "%s.json", basepath);
     strid_t jsavefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
     if (!jsavefile) {
         glulx_free(pathname);
