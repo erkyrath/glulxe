@@ -164,11 +164,12 @@ void glkunix_do_autosave(glui32 eventaddr)
     printf("###auto glkunix_do_autosave(%d)\n", eventaddr);
 
     char *basepath = get_autosave_basepath();
+    if (!basepath)
+        return;
     /* Space for the base plus a file suffix. */
     char *pathname = glulx_malloc(strlen(basepath) + 16);
-    if (!pathname) {
+    if (!pathname)
         return;
-    }
     
     /* When the save file is autorestored, the VM will restart the @glk opcode. That means that the Glk argument (the event structure address) must be waiting on the stack. Possibly also the @glk opcode's operands -- these might or might not have come off the stack. */
     int res;
@@ -261,6 +262,19 @@ void glkunix_do_autosave(glui32 eventaddr)
     library_state = NULL;
 
     /* We could write those files to temporary paths and then rename them into place. That would be safer. */
+
+    glulx_free(pathname);
+}
+
+void glkunix_do_autorestore()
+{
+    char *basepath = get_autosave_basepath();
+    if (!basepath)
+        return;
+    /* Space for the base plus a file suffix. */
+    char *pathname = glulx_malloc(strlen(basepath) + 16);
+    if (!pathname)
+        return;
 
     glulx_free(pathname);
 }

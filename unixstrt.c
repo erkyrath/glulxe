@@ -19,6 +19,7 @@
 
 static void glkunix_game_select(glui32 eventaddr);
 static void glkunix_game_start(void);
+static void glkunix_game_autorestore(void);
 
 /* The only command-line arguments are the filename and the number of
    undo states. And the profiling switch, if that's compiled in. The
@@ -177,7 +178,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
 #if GLKUNIX_AUTOSAVE_FEATURES
   if (pref_autosave) {
     set_library_start_hook(glkunix_game_start);
-    //### set_library_autorestore_hook...
+    set_library_autorestore_hook(glkunix_game_autorestore);
     set_library_select_hook(glkunix_game_select);
   }
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
@@ -277,6 +278,11 @@ static void glkunix_game_select(glui32 eventaddr)
 		return;
 
   glkunix_do_autosave(eventaddr);
+}
+
+static void glkunix_game_autorestore()
+{
+  glkunix_do_autorestore();
 }
 
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
