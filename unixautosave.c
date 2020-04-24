@@ -503,4 +503,10 @@ static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx,
     return TRUE;
 }
 
+static int library_state_unserialize(glkunix_serialize_context_t ctx, void *rock)
+{
+    //###
+    return FALSE;
+}
+
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
