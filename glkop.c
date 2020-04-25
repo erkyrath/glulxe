@@ -210,7 +210,7 @@ int init_dispatch()
     &glulxe_retained_unregister);
   
   /* If the library supports autorestore callbacks, set those up too.
-     (These are only used in iosglk, currently.) */
+     (These are only used in iosglk and remglk, currently.) */
 #ifdef GIDISPATCH_AUTORESTORE_REGISTRY
   gidispatch_set_autorestore_registry(&glulxe_array_locate,
     &glulxe_array_restore);
