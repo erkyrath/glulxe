@@ -40,6 +40,9 @@ XMLLIB definition in the Makefile.
 ## Version
 
 0.5.### (###)
+- Added autosave support to the Unix startup code. (Previously the
+  autosave support only existed in the iOS startup code, which was
+  ObjC.) Autosave now works with the RemGlk library.
 - Added an --undo argument to set the number of undo states.
 
 0.5.4 (Jan 23, 2017):
