@@ -47,6 +47,7 @@ typedef struct library_state_data_struct {
     glui32 accel_func_count;
     library_glulx_accel_entry_t *accel_funcs;
     glui32 gamefiletag;
+    glui32 autosavefiletag;
     glui32 id_map_list_count;
     library_glk_obj_id_entry_t *id_map_list;
 } library_state_data_t;
@@ -253,7 +254,8 @@ void glkunix_do_autosave(glui32 eventaddr)
         glulx_free(pathname);
         return;
     }
-    
+
+    library_state->autosavefiletag = glkunix_stream_get_updatetag(jsavefile);
     glkunix_save_library_state(jsavefile, library_state_serialize, library_state);
 
     glk_stream_close(jsavefile, NULL);
@@ -372,6 +374,7 @@ static void stash_library_state(library_state_data_t *state)
     if (gamefile) {
         state->gamefiletag = glkunix_stream_get_updatetag(gamefile);
     }
+    state->autosavefiletag = 0; /* will be filled in later */
 
     count = 0;
     for (winid_t tmpwin = glk_window_iterate(NULL, NULL); tmpwin; tmpwin = glk_window_iterate(tmpwin, NULL))
@@ -469,6 +472,7 @@ static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
         }
 
         glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
+        glkunix_serialize_uint32(ctx, "glulx_autosavefiletag", state->autosavefiletag);
         
         if (state->id_map_list) {
             glkunix_serialize_object_array(ctx, "glulx_id_map_list", library_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
