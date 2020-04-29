@@ -36,9 +36,10 @@ glkunix_argumentlist_t glkunix_arguments[] = {
   { "--undo", glkunix_arg_ValueFollows, "Number of undo states to store." },
 
 #if GLKUNIX_AUTOSAVE_FEATURES
-  { "--autosave", glkunix_arg_NoValue, "Autorestore at launch; autosave every turn." },
-  { "--autosavedir", glkunix_arg_ValueFollows, "Directory for autosave files (default: .)." },
-  { "--autosavename", glkunix_arg_ValueFollows, "Base filename for autosave (default: autosave)." },
+  { "--autosave", glkunix_arg_NoValue, "Autosave every turn." },
+  { "--autorestore", glkunix_arg_NoValue, "Autorestore at launch." },
+  { "--autodir", glkunix_arg_ValueFollows, "Directory for autosave/restore files (default: .)." },
+  { "--autoname", glkunix_arg_ValueFollows, "Base filename for autosave/restore (default: autosave)." },
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
 
 #if VM_PROFILING
@@ -68,6 +69,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
   char *gameinfofilename = NULL;
   int gameinfoloaded = FALSE;
   int pref_autosave = FALSE;
+  int pref_autorestore = FALSE;
   unsigned char buf[12];
   int res;
 
@@ -94,14 +96,18 @@ int glkunix_startup_code(glkunix_startup_t *data)
       pref_autosave = TRUE;
       continue;
     }
-    if (!strcmp(data->argv[ix], "--autosavedir")) {
+    if (!strcmp(data->argv[ix], "--autorestore")) {
+      pref_autorestore = TRUE;
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--autodir")) {
       ix++;
       if (ix<data->argc) {
         pref_autosavedir = data->argv[ix];
       }
       continue;
     }
-    if (!strcmp(data->argv[ix], "--autosavename")) {
+    if (!strcmp(data->argv[ix], "--autoname")) {
       ix++;
       if (ix<data->argc) {
         pref_autosavename = data->argv[ix];
@@ -176,10 +182,12 @@ int glkunix_startup_code(glkunix_startup_t *data)
   }
 
 #if GLKUNIX_AUTOSAVE_FEATURES
-  if (pref_autosave) {
+  if (pref_autosave || pref_autorestore) {
     set_library_start_hook(glkunix_game_start);
-    set_library_autorestore_hook(glkunix_game_autorestore);
-    set_library_select_hook(glkunix_game_select);
+    if (pref_autorestore)
+      set_library_autorestore_hook(glkunix_game_autorestore);
+    if (pref_autosave)
+      set_library_select_hook(glkunix_game_select);
   }
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
 
@@ -278,6 +286,8 @@ static void glkunix_game_select(glui32 eventaddr)
 		return;
 
   glkunix_do_autosave(eventaddr);
+
+  //### exit after autosave?
 }
 
 static void glkunix_game_autorestore()
