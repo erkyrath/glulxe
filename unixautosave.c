@@ -60,7 +60,7 @@ static int library_state_serialize(glkunix_serialize_context_t, void *);
 static int library_state_serialize_accel_param(glkunix_serialize_context_t, void *);
 static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
 static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
-static int library_state_unserialize(glkunix_serialize_context_t, void *);
+static int library_state_unserialize(glkunix_unserialize_context_t, void *);
 
 static char *game_signature = NULL;
 static char *autosave_basepath = NULL;
@@ -507,10 +507,18 @@ static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx,
     return TRUE;
 }
 
-static int library_state_unserialize(glkunix_serialize_context_t ctx, void *rock)
+static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *rock)
 {
-    //###
-    return FALSE;
+    library_state_data_t *library_state = (library_state_data_t *)rock;
+    
+    glui32 val;
+    
+    if (!glkunix_unserialize_uint32(ctx, "glulx_library_state", &val))
+        return FALSE;
+
+    //### rest of library_state
+    
+    return TRUE;
 }
 
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
