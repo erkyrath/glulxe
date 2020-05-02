@@ -37,7 +37,7 @@ typedef struct library_glulx_accel_param_struct {
     glui32 param;
 } library_glulx_accel_param_t;
 
-typedef struct library_state_data_struct {
+typedef struct extra_state_data_struct {
     glui32 active;
     glui32 protectstart, protectend;
     glui32 iosys_mode, iosys_rock;
@@ -50,20 +50,20 @@ typedef struct library_state_data_struct {
     glui32 autosavefiletag;
     glui32 id_map_list_count;
     library_glk_obj_id_entry_t *id_map_list;
-} library_state_data_t;
+} extra_state_data_t;
 
-static void stash_library_state(library_state_data_t *state);
+static void stash_extra_state(extra_state_data_t *state);
 
-static library_state_data_t *library_state_data_alloc(void);
-static void library_state_data_free(library_state_data_t *);
-static int library_state_serialize(glkunix_serialize_context_t, void *);
-static int library_state_serialize_accel_param(glkunix_serialize_context_t, void *);
-static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
-static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
-static int library_state_unserialize(glkunix_unserialize_context_t, void *);
-static int library_state_unserialize_accel_param(glkunix_unserialize_context_t, void *);
-static int library_state_unserialize_accel_func(glkunix_unserialize_context_t, void *);
-static int library_state_unserialize_obj_id_entry(glkunix_unserialize_context_t, void *);
+static extra_state_data_t *extra_state_data_alloc(void);
+static void extra_state_data_free(extra_state_data_t *);
+static int extra_state_serialize(glkunix_serialize_context_t, void *);
+static int extra_state_serialize_accel_param(glkunix_serialize_context_t, void *);
+static int extra_state_serialize_accel_func(glkunix_serialize_context_t, void *);
+static int extra_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
+static int extra_state_unserialize(glkunix_unserialize_context_t, void *);
+static int extra_state_unserialize_accel_param(glkunix_unserialize_context_t, void *);
+static int extra_state_unserialize_accel_func(glkunix_unserialize_context_t, void *);
+static int extra_state_unserialize_obj_id_entry(glkunix_unserialize_context_t, void *);
 
 static char *game_signature = NULL;
 static char *autosave_basepath = NULL;
@@ -243,30 +243,30 @@ void glkunix_do_autosave(glui32 eventaddr)
     }
     printf("### perform_save succeeded\n");
 
-    library_state_data_t *library_state = library_state_data_alloc();
-    if (!library_state) {
+    extra_state_data_t *extra_state = extra_state_data_alloc();
+    if (!extra_state) {
         glulx_free(pathname);
         return;
     }
-    stash_library_state(library_state);
+    stash_extra_state(extra_state);
 
     sprintf(pathname, "%s.json", basepath);
     strid_t jsavefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
     if (!jsavefile) {
-        library_state_data_free(library_state);
+        extra_state_data_free(extra_state);
         glulx_free(pathname);
         return;
     }
 
-    library_state->autosavefiletag = glkunix_stream_get_updatetag(jsavefile);
-    glkunix_save_library_state(jsavefile, library_state_serialize, library_state);
+    extra_state->autosavefiletag = glkunix_stream_get_updatetag(jsavefile);
+    glkunix_save_library_state(jsavefile, extra_state_serialize, extra_state);
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
     printf("### perform_jsave succeeded\n");
     
-    library_state_data_free(library_state);
-    library_state = NULL;
+    extra_state_data_free(extra_state);
+    extra_state = NULL;
 
     /* We could write those files to temporary paths and then rename them into place. That would be safer. */
 
@@ -286,8 +286,8 @@ int glkunix_do_autorestore()
 
     //### check existence of files
     
-    library_state_data_t *library_state = library_state_data_alloc();
-    if (!library_state) {
+    extra_state_data_t *extra_state = extra_state_data_alloc();
+    if (!extra_state) {
         glulx_free(pathname);
         return FALSE;
     }
@@ -295,18 +295,18 @@ int glkunix_do_autorestore()
     sprintf(pathname, "%s.json", basepath);
     strid_t jsavefile = glkunix_stream_open_pathname_gen(pathname, FALSE, FALSE, 1);
     if (!jsavefile) {
-        library_state_data_free(library_state);
+        extra_state_data_free(extra_state);
         glulx_free(pathname);
         return FALSE;
     }
     
-    int res = glkunix_load_library_state(jsavefile, library_state_unserialize, library_state);
+    int res = glkunix_load_library_state(jsavefile, extra_state_unserialize, extra_state);
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
     
     if (!res) {
-        library_state_data_free(library_state);
+        extra_state_data_free(extra_state);
         glulx_free(pathname);
         return FALSE;
     }
@@ -315,12 +315,12 @@ int glkunix_do_autorestore()
 
     //### perform_restore()
     
-    //### recover_library_state()
+    //### recover_extra_state()
 
     //### pop_callstub(0)
 
-    library_state_data_free(library_state);
-    library_state = NULL;
+    extra_state_data_free(extra_state);
+    extra_state = NULL;
 
     glulx_free(pathname);
     pathname = NULL;
@@ -350,9 +350,9 @@ static void stash_one_accel_func(glui32 index, glui32 addr)
     tmp_accel_func_count++;
 }
 
-/* Copy extra chunks of the VM state into the (static) library_state object. This is information needed by autosave, but not included in the regular save process.
+/* Copy extra chunks of the VM state into the (static) extra_state object. This is information needed by autosave, but not included in the regular save process.
  */
-static void stash_library_state(library_state_data_t *state)
+static void stash_extra_state(extra_state_data_t *state)
 {
     glui32 count;
     
@@ -419,17 +419,17 @@ static void stash_library_state(library_state_data_t *state)
     }
 
     if (ix != state->id_map_list_count)
-        fatal_error("stash_library_state: Glk object count mismatch");
+        fatal_error("stash_extra_state: Glk object count mismatch");
 }
 
-static library_state_data_t *library_state_data_alloc()
+static extra_state_data_t *extra_state_data_alloc()
 {
-    library_state_data_t *state = glulx_malloc(sizeof(library_state_data_t));
+    extra_state_data_t *state = glulx_malloc(sizeof(extra_state_data_t));
     if (!state)
         return NULL;
 
     /* Everything gets initialized to zero/null */
-    memset(state, 0, sizeof(library_state_data_t));
+    memset(state, 0, sizeof(extra_state_data_t));
     state->active = FALSE;
     state->accel_param_count = 0;
     state->accel_params = NULL;
@@ -441,7 +441,7 @@ static library_state_data_t *library_state_data_alloc()
     return state;
 }
 
-static void library_state_data_free(library_state_data_t *state)
+static void extra_state_data_free(extra_state_data_t *state)
 {
     if (state->accel_params) {
         glulx_free(state->accel_params);
@@ -460,12 +460,12 @@ static void library_state_data_free(library_state_data_t *state)
     glulx_free(state);
 }
 
-static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
+static int extra_state_serialize(glkunix_serialize_context_t ctx, void *rock)
 {
-    library_state_data_t *state = rock;
+    extra_state_data_t *state = rock;
 
     if (state->active) {
-        glkunix_serialize_uint32(ctx, "glulx_library_state", 1);
+        glkunix_serialize_uint32(ctx, "glulx_extra_state", 1);
 
         glkunix_serialize_uint32(ctx, "glulx_protectstart", state->protectstart);
         glkunix_serialize_uint32(ctx, "glulx_protectend", state->protectend);
@@ -474,18 +474,18 @@ static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
         glkunix_serialize_uint32(ctx, "glulx_stringtable", state->stringtable);
         
         if (state->accel_params) {
-            glkunix_serialize_object_list(ctx, "glulx_accel_params", library_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
+            glkunix_serialize_object_list(ctx, "glulx_accel_params", extra_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
         }
 
         if (state->accel_funcs) {
-            glkunix_serialize_object_list(ctx, "glulx_accel_funcs", library_state_serialize_accel_func, state->accel_func_count, sizeof(library_glulx_accel_entry_t), state->accel_funcs);
+            glkunix_serialize_object_list(ctx, "glulx_accel_funcs", extra_state_serialize_accel_func, state->accel_func_count, sizeof(library_glulx_accel_entry_t), state->accel_funcs);
         }
 
         glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
         glkunix_serialize_uint32(ctx, "glulx_autosavefiletag", state->autosavefiletag);
         
         if (state->id_map_list) {
-            glkunix_serialize_object_list(ctx, "glulx_id_map_list", library_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
+            glkunix_serialize_object_list(ctx, "glulx_id_map_list", extra_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
         }
 
     }
@@ -493,14 +493,14 @@ static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
     return TRUE;
 }
 
-static int library_state_serialize_accel_param(glkunix_serialize_context_t ctx, void *rock)
+static int extra_state_serialize_accel_param(glkunix_serialize_context_t ctx, void *rock)
 {
     library_glulx_accel_param_t *param = rock;
     glkunix_serialize_uint32(ctx, "param", param->param);
     return TRUE;
 }
 
-static int library_state_serialize_accel_func(glkunix_serialize_context_t ctx, void *rock)
+static int extra_state_serialize_accel_func(glkunix_serialize_context_t ctx, void *rock)
 {
     library_glulx_accel_entry_t *entry = rock;
     glkunix_serialize_uint32(ctx, "index", entry->index);
@@ -508,7 +508,7 @@ static int library_state_serialize_accel_func(glkunix_serialize_context_t ctx, v
     return TRUE;
 }
 
-static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx, void *rock)
+static int extra_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx, void *rock)
 {
     library_glk_obj_id_entry_t *obj = rock;
     glkunix_serialize_uint32(ctx, "objclass", obj->objclass);
@@ -517,13 +517,13 @@ static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx,
     return TRUE;
 }
 
-static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *rock)
+static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock)
 {
-    library_state_data_t *state = (library_state_data_t *)rock;
+    extra_state_data_t *state = (extra_state_data_t *)rock;
     
     glui32 val;
     
-    if (!glkunix_unserialize_uint32(ctx, "glulx_library_state", &val))
+    if (!glkunix_unserialize_uint32(ctx, "glulx_extra_state", &val))
         return FALSE;
 
     glkunix_unserialize_uint32(ctx, "glulx_protectstart", &state->protectstart);
@@ -540,7 +540,7 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
             state->accel_param_count = count;
             state->accel_params = glulx_malloc(count * sizeof(library_glulx_accel_param_t));
             memset(state->accel_params, 0, count * sizeof(library_glulx_accel_param_t));
-            if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_accel_param, count, sizeof(library_glulx_accel_param_t), state->accel_params))
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_accel_param, count, sizeof(library_glulx_accel_param_t), state->accel_params))
                 return FALSE;
         }
     }
@@ -550,7 +550,7 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
             state->accel_func_count = count;
             state->accel_funcs = glulx_malloc(count * sizeof(library_glulx_accel_entry_t));
             memset(state->accel_funcs, 0, count * sizeof(library_glulx_accel_entry_t));
-            if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_accel_func, count, sizeof(library_glulx_accel_entry_t), state->accel_funcs))
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_accel_func, count, sizeof(library_glulx_accel_entry_t), state->accel_funcs))
                 return FALSE;
         }
     }
@@ -563,7 +563,7 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
             state->id_map_list_count = count;
             state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
             memset(state->id_map_list, 0, count * sizeof(library_glk_obj_id_entry_t));
-            if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_obj_id_entry, count, sizeof(library_glk_obj_id_entry_t), state->id_map_list))
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_obj_id_entry, count, sizeof(library_glk_obj_id_entry_t), state->id_map_list))
                 return FALSE;
         }
     }
@@ -571,14 +571,14 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
     return TRUE;
 }
 
-static int library_state_unserialize_accel_param(glkunix_unserialize_context_t ctx, void *rock)
+static int extra_state_unserialize_accel_param(glkunix_unserialize_context_t ctx, void *rock)
 {
     library_glulx_accel_param_t *param = rock;
     glkunix_unserialize_uint32(ctx, "param", &param->param);
     return TRUE;
 }
 
-static int library_state_unserialize_accel_func(glkunix_unserialize_context_t ctx, void *rock)
+static int extra_state_unserialize_accel_func(glkunix_unserialize_context_t ctx, void *rock)
 {
     library_glulx_accel_entry_t *entry = rock;
     glkunix_unserialize_uint32(ctx, "index", &entry->index);
@@ -586,7 +586,7 @@ static int library_state_unserialize_accel_func(glkunix_unserialize_context_t ct
     return TRUE;
 }
 
-static int library_state_unserialize_obj_id_entry(glkunix_unserialize_context_t ctx, void *rock)
+static int extra_state_unserialize_obj_id_entry(glkunix_unserialize_context_t ctx, void *rock)
 {
     library_glk_obj_id_entry_t *obj = rock;
     glkunix_unserialize_uint32(ctx, "objclass", &obj->objclass);
