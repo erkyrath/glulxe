@@ -61,6 +61,7 @@ static int library_state_serialize_accel_param(glkunix_serialize_context_t, void
 static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
 static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
 static int library_state_unserialize(glkunix_unserialize_context_t, void *);
+static int library_state_unserialize_obj_id_entry(glkunix_unserialize_context_t, void *);
 
 static char *game_signature = NULL;
 static char *autosave_basepath = NULL;
@@ -465,18 +466,18 @@ static int library_state_serialize(glkunix_serialize_context_t ctx, void *rock)
         glkunix_serialize_uint32(ctx, "glulx_stringtable", state->stringtable);
         
         if (state->accel_params) {
-            glkunix_serialize_object_array(ctx, "glulx_accel_params", library_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
+            glkunix_serialize_object_list(ctx, "glulx_accel_params", library_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
         }
 
         if (state->accel_funcs) {
-            glkunix_serialize_object_array(ctx, "glulx_accel_funcs", library_state_serialize_accel_func, state->accel_func_count, sizeof(library_glulx_accel_entry_t), state->accel_funcs);
+            glkunix_serialize_object_list(ctx, "glulx_accel_funcs", library_state_serialize_accel_func, state->accel_func_count, sizeof(library_glulx_accel_entry_t), state->accel_funcs);
         }
 
         glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
         glkunix_serialize_uint32(ctx, "glulx_autosavefiletag", state->autosavefiletag);
         
         if (state->id_map_list) {
-            glkunix_serialize_object_array(ctx, "glulx_id_map_list", library_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
+            glkunix_serialize_object_list(ctx, "glulx_id_map_list", library_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
         }
 
     }
@@ -523,13 +524,32 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
     glkunix_unserialize_uint32(ctx, "glulx_iosys_rock", &state->iosys_rock);
     glkunix_unserialize_uint32(ctx, "glulx_stringtable", &state->stringtable);
 
+    glkunix_unserialize_context_t array;
+    int count;
+    
     //### arrays
 
     glkunix_unserialize_uint32(ctx, "glulx_gamefiletag", &state->gamefiletag);
     glkunix_unserialize_uint32(ctx, "glulx_autosavefiletag", &state->autosavefiletag);
 
-    //### arrays
+    if (glkunix_unserialize_list(ctx, "glulx_id_map_list", &array, &count)) {
+        if (count) {
+            state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
+            memset(state->id_map_list, 0, count * sizeof(library_glk_obj_id_entry_t));
+            if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_obj_id_entry, count, sizeof(library_glk_obj_id_entry_t), state->id_map_list))
+                return FALSE;
+        }
+    }
     
+    return TRUE;
+}
+
+static int library_state_unserialize_obj_id_entry(glkunix_unserialize_context_t ctx, void *rock)
+{
+    library_glk_obj_id_entry_t *obj = rock;
+    glkunix_unserialize_uint32(ctx, "objclass", &obj->objclass);
+    glkunix_unserialize_uint32(ctx, "tag", &obj->tag);
+    glkunix_unserialize_uint32(ctx, "dispid", &obj->dispid);
     return TRUE;
 }
 
