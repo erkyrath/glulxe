@@ -534,6 +534,7 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
 
     if (glkunix_unserialize_list(ctx, "glulx_id_map_list", &array, &count)) {
         if (count) {
+            state->id_map_list_count = count;
             state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
             memset(state->id_map_list, 0, count * sizeof(library_glk_obj_id_entry_t));
             if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_obj_id_entry, count, sizeof(library_glk_obj_id_entry_t), state->id_map_list))
