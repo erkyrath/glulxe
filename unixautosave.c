@@ -419,6 +419,7 @@ static library_state_data_t *library_state_data_alloc()
     if (!state)
         return NULL;
 
+    /* Everything gets initialized to zero/null */
     memset(state, 0, sizeof(library_state_data_t));
     state->active = FALSE;
     state->accel_param_count = 0;
@@ -509,14 +510,25 @@ static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx,
 
 static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *rock)
 {
-    library_state_data_t *library_state = (library_state_data_t *)rock;
+    library_state_data_t *state = (library_state_data_t *)rock;
     
     glui32 val;
     
     if (!glkunix_unserialize_uint32(ctx, "glulx_library_state", &val))
         return FALSE;
 
-    //### rest of library_state
+    glkunix_unserialize_uint32(ctx, "glulx_protectstart", &state->protectstart);
+    glkunix_unserialize_uint32(ctx, "glulx_protectend", &state->protectend);
+    glkunix_unserialize_uint32(ctx, "glulx_iosys_mode", &state->iosys_mode);
+    glkunix_unserialize_uint32(ctx, "glulx_iosys_rock", &state->iosys_rock);
+    glkunix_unserialize_uint32(ctx, "glulx_stringtable", &state->stringtable);
+
+    //### arrays
+
+    glkunix_unserialize_uint32(ctx, "glulx_gamefiletag", &state->gamefiletag);
+    glkunix_unserialize_uint32(ctx, "glulx_autosavefiletag", &state->autosavefiletag);
+
+    //### arrays
     
     return TRUE;
 }
