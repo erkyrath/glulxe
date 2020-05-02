@@ -61,6 +61,8 @@ static int library_state_serialize_accel_param(glkunix_serialize_context_t, void
 static int library_state_serialize_accel_func(glkunix_serialize_context_t, void *);
 static int library_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
 static int library_state_unserialize(glkunix_unserialize_context_t, void *);
+static int library_state_unserialize_accel_param(glkunix_unserialize_context_t, void *);
+static int library_state_unserialize_accel_func(glkunix_unserialize_context_t, void *);
 static int library_state_unserialize_obj_id_entry(glkunix_unserialize_context_t, void *);
 
 static char *game_signature = NULL;
@@ -527,8 +529,26 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
     glkunix_unserialize_context_t array;
     int count;
     
-    //### arrays
-
+    if (glkunix_unserialize_list(ctx, "glulx_accel_params", &array, &count)) {
+        if (count) {
+            state->accel_param_count = count;
+            state->accel_params = glulx_malloc(count * sizeof(library_glulx_accel_param_t));
+            memset(state->accel_params, 0, count * sizeof(library_glulx_accel_param_t));
+            if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_accel_param, count, sizeof(library_glulx_accel_param_t), state->accel_params))
+                return FALSE;
+        }
+    }
+    
+    if (glkunix_unserialize_list(ctx, "glulx_accel_funcs", &array, &count)) {
+        if (count) {
+            state->accel_func_count = count;
+            state->accel_funcs = glulx_malloc(count * sizeof(library_glulx_accel_entry_t));
+            memset(state->accel_funcs, 0, count * sizeof(library_glulx_accel_entry_t));
+            if (!glkunix_unserialize_object_list_entries(array, library_state_unserialize_accel_func, count, sizeof(library_glulx_accel_entry_t), state->accel_funcs))
+                return FALSE;
+        }
+    }
+    
     glkunix_unserialize_uint32(ctx, "glulx_gamefiletag", &state->gamefiletag);
     glkunix_unserialize_uint32(ctx, "glulx_autosavefiletag", &state->autosavefiletag);
 
@@ -542,6 +562,21 @@ static int library_state_unserialize(glkunix_unserialize_context_t ctx, void *ro
         }
     }
     
+    return TRUE;
+}
+
+static int library_state_unserialize_accel_param(glkunix_unserialize_context_t ctx, void *rock)
+{
+    library_glulx_accel_param_t *param = rock;
+    glkunix_unserialize_uint32(ctx, "param", &param->param);
+    return TRUE;
+}
+
+static int library_state_unserialize_accel_func(glkunix_unserialize_context_t ctx, void *rock)
+{
+    library_glulx_accel_entry_t *entry = rock;
+    glkunix_unserialize_uint32(ctx, "index", &entry->index);
+    glkunix_unserialize_uint32(ctx, "addr", &entry->addr);
     return TRUE;
 }
 
