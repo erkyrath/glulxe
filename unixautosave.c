@@ -300,12 +300,12 @@ int glkunix_do_autorestore()
         return FALSE;
     }
     
-    int res = glkunix_load_library_state(jsavefile, extra_state_unserialize, extra_state);
+    glkunix_library_state_t library_state = glkunix_load_library_state(jsavefile, extra_state_unserialize, extra_state);
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
     
-    if (!res) {
+    if (!library_state) {
         extra_state_data_free(extra_state);
         glulx_free(pathname);
         return FALSE;
@@ -321,6 +321,9 @@ int glkunix_do_autorestore()
 
     extra_state_data_free(extra_state);
     extra_state = NULL;
+
+    glkunix_library_state_free(library_state);
+    library_state = NULL;
 
     glulx_free(pathname);
     pathname = NULL;
