@@ -313,6 +313,12 @@ int glkunix_do_autorestore()
     
     printf("### perform_jload succeeded\n");
 
+    //### perform_restore()
+    
+    //### recover_library_state()
+
+    //### pop_callstub(0)
+
     library_state_data_free(library_state);
     library_state = NULL;
 
