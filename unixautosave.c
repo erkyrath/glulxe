@@ -529,6 +529,8 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
     
     if (!glkunix_unserialize_uint32(ctx, "glulx_extra_state", &val))
         return FALSE;
+    if (!val)
+        return FALSE;
 
     glkunix_unserialize_uint32(ctx, "glulx_protectstart", &state->protectstart);
     glkunix_unserialize_uint32(ctx, "glulx_protectend", &state->protectend);
