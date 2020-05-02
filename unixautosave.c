@@ -22,20 +22,20 @@ char *pref_autosavename = "autosave";
     (The reason it's not stored in a normal save file is that it's useless unless you serialize the entire Glk state along with the VM. Glulx normally doesn't do that, but for an autosave, we do.)
  */
 
-typedef struct library_glk_obj_id_entry_struct {
+typedef struct extra_glk_obj_id_entry_struct {
     glui32 objclass;
     glui32 tag;
     glui32 dispid;
-} library_glk_obj_id_entry_t;
+} extra_glk_obj_id_entry_t;
 
-typedef struct library_glulx_accel_entry_struct {
+typedef struct extra_glulx_accel_entry_struct {
     glui32 index;
     glui32 addr;
-} library_glulx_accel_entry_t;
+} extra_glulx_accel_entry_t;
 
-typedef struct library_glulx_accel_param_struct {
+typedef struct extra_glulx_accel_param_struct {
     glui32 param;
-} library_glulx_accel_param_t;
+} extra_glulx_accel_param_t;
 
 typedef struct extra_state_data_struct {
     glui32 active;
@@ -43,13 +43,13 @@ typedef struct extra_state_data_struct {
     glui32 iosys_mode, iosys_rock;
     glui32 stringtable;
     glui32 accel_param_count;
-    library_glulx_accel_param_t *accel_params;
+    extra_glulx_accel_param_t *accel_params;
     glui32 accel_func_count;
-    library_glulx_accel_entry_t *accel_funcs;
+    extra_glulx_accel_entry_t *accel_funcs;
     glui32 gamefiletag;
     glui32 autosavefiletag;
     glui32 id_map_list_count;
-    library_glk_obj_id_entry_t *id_map_list;
+    extra_glk_obj_id_entry_t *id_map_list;
 } extra_state_data_t;
 
 static void stash_extra_state(extra_state_data_t *state);
@@ -330,18 +330,18 @@ int glkunix_do_autorestore()
 
 static glui32 tmp_accel_func_count;
 static glui32 tmp_accel_func_size;
-static library_glulx_accel_entry_t *tmp_accel_funcs;
+static extra_glulx_accel_entry_t *tmp_accel_funcs;
 
 static void stash_one_accel_func(glui32 index, glui32 addr)
 {
     if (tmp_accel_func_count >= tmp_accel_func_size) {
         if (tmp_accel_funcs == NULL) {
             tmp_accel_func_size = 4;
-            tmp_accel_funcs = glulx_malloc(tmp_accel_func_size * sizeof(library_glulx_accel_entry_t));
+            tmp_accel_funcs = glulx_malloc(tmp_accel_func_size * sizeof(extra_glulx_accel_entry_t));
         }
         else {
             tmp_accel_func_size = 2 * tmp_accel_func_count + 4;
-            tmp_accel_funcs = glulx_realloc(tmp_accel_funcs, tmp_accel_func_size * sizeof(library_glulx_accel_entry_t));
+            tmp_accel_funcs = glulx_realloc(tmp_accel_funcs, tmp_accel_func_size * sizeof(extra_glulx_accel_entry_t));
         }
     }
 
@@ -365,7 +365,7 @@ static void stash_extra_state(extra_state_data_t *state)
 
     count = accel_get_param_count();
     state->accel_param_count = count;
-    state->accel_params = glulx_malloc(count * sizeof(library_glulx_accel_param_t));
+    state->accel_params = glulx_malloc(count * sizeof(extra_glulx_accel_param_t));
     for (int ix=0; ix<count; ix++) {
         state->accel_params[ix].param = accel_get_param(ix);
     }
@@ -395,7 +395,7 @@ static void stash_extra_state(extra_state_data_t *state)
 
     state->id_map_list_count = count;
     if (count) {
-        state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
+        state->id_map_list = glulx_malloc(count * sizeof(extra_glk_obj_id_entry_t));
     }
     
     glui32 ix = 0;
@@ -474,18 +474,18 @@ static int extra_state_serialize(glkunix_serialize_context_t ctx, void *rock)
         glkunix_serialize_uint32(ctx, "glulx_stringtable", state->stringtable);
         
         if (state->accel_params) {
-            glkunix_serialize_object_list(ctx, "glulx_accel_params", extra_state_serialize_accel_param, state->accel_param_count, sizeof(library_glulx_accel_param_t), state->accel_params);
+            glkunix_serialize_object_list(ctx, "glulx_accel_params", extra_state_serialize_accel_param, state->accel_param_count, sizeof(extra_glulx_accel_param_t), state->accel_params);
         }
 
         if (state->accel_funcs) {
-            glkunix_serialize_object_list(ctx, "glulx_accel_funcs", extra_state_serialize_accel_func, state->accel_func_count, sizeof(library_glulx_accel_entry_t), state->accel_funcs);
+            glkunix_serialize_object_list(ctx, "glulx_accel_funcs", extra_state_serialize_accel_func, state->accel_func_count, sizeof(extra_glulx_accel_entry_t), state->accel_funcs);
         }
 
         glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
         glkunix_serialize_uint32(ctx, "glulx_autosavefiletag", state->autosavefiletag);
         
         if (state->id_map_list) {
-            glkunix_serialize_object_list(ctx, "glulx_id_map_list", extra_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(library_glk_obj_id_entry_t), state->id_map_list);
+            glkunix_serialize_object_list(ctx, "glulx_id_map_list", extra_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(extra_glk_obj_id_entry_t), state->id_map_list);
         }
 
     }
@@ -495,14 +495,14 @@ static int extra_state_serialize(glkunix_serialize_context_t ctx, void *rock)
 
 static int extra_state_serialize_accel_param(glkunix_serialize_context_t ctx, void *rock)
 {
-    library_glulx_accel_param_t *param = rock;
+    extra_glulx_accel_param_t *param = rock;
     glkunix_serialize_uint32(ctx, "param", param->param);
     return TRUE;
 }
 
 static int extra_state_serialize_accel_func(glkunix_serialize_context_t ctx, void *rock)
 {
-    library_glulx_accel_entry_t *entry = rock;
+    extra_glulx_accel_entry_t *entry = rock;
     glkunix_serialize_uint32(ctx, "index", entry->index);
     glkunix_serialize_uint32(ctx, "addr", entry->addr);
     return TRUE;
@@ -510,7 +510,7 @@ static int extra_state_serialize_accel_func(glkunix_serialize_context_t ctx, voi
 
 static int extra_state_serialize_obj_id_entry(glkunix_serialize_context_t ctx, void *rock)
 {
-    library_glk_obj_id_entry_t *obj = rock;
+    extra_glk_obj_id_entry_t *obj = rock;
     glkunix_serialize_uint32(ctx, "objclass", obj->objclass);
     glkunix_serialize_uint32(ctx, "tag", obj->tag);
     glkunix_serialize_uint32(ctx, "dispid", obj->dispid);
@@ -538,9 +538,9 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
     if (glkunix_unserialize_list(ctx, "glulx_accel_params", &array, &count)) {
         if (count) {
             state->accel_param_count = count;
-            state->accel_params = glulx_malloc(count * sizeof(library_glulx_accel_param_t));
-            memset(state->accel_params, 0, count * sizeof(library_glulx_accel_param_t));
-            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_accel_param, count, sizeof(library_glulx_accel_param_t), state->accel_params))
+            state->accel_params = glulx_malloc(count * sizeof(extra_glulx_accel_param_t));
+            memset(state->accel_params, 0, count * sizeof(extra_glulx_accel_param_t));
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_accel_param, count, sizeof(extra_glulx_accel_param_t), state->accel_params))
                 return FALSE;
         }
     }
@@ -548,9 +548,9 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
     if (glkunix_unserialize_list(ctx, "glulx_accel_funcs", &array, &count)) {
         if (count) {
             state->accel_func_count = count;
-            state->accel_funcs = glulx_malloc(count * sizeof(library_glulx_accel_entry_t));
-            memset(state->accel_funcs, 0, count * sizeof(library_glulx_accel_entry_t));
-            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_accel_func, count, sizeof(library_glulx_accel_entry_t), state->accel_funcs))
+            state->accel_funcs = glulx_malloc(count * sizeof(extra_glulx_accel_entry_t));
+            memset(state->accel_funcs, 0, count * sizeof(extra_glulx_accel_entry_t));
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_accel_func, count, sizeof(extra_glulx_accel_entry_t), state->accel_funcs))
                 return FALSE;
         }
     }
@@ -561,9 +561,9 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
     if (glkunix_unserialize_list(ctx, "glulx_id_map_list", &array, &count)) {
         if (count) {
             state->id_map_list_count = count;
-            state->id_map_list = glulx_malloc(count * sizeof(library_glk_obj_id_entry_t));
-            memset(state->id_map_list, 0, count * sizeof(library_glk_obj_id_entry_t));
-            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_obj_id_entry, count, sizeof(library_glk_obj_id_entry_t), state->id_map_list))
+            state->id_map_list = glulx_malloc(count * sizeof(extra_glk_obj_id_entry_t));
+            memset(state->id_map_list, 0, count * sizeof(extra_glk_obj_id_entry_t));
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_obj_id_entry, count, sizeof(extra_glk_obj_id_entry_t), state->id_map_list))
                 return FALSE;
         }
     }
@@ -573,14 +573,14 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
 
 static int extra_state_unserialize_accel_param(glkunix_unserialize_context_t ctx, void *rock)
 {
-    library_glulx_accel_param_t *param = rock;
+    extra_glulx_accel_param_t *param = rock;
     glkunix_unserialize_uint32(ctx, "param", &param->param);
     return TRUE;
 }
 
 static int extra_state_unserialize_accel_func(glkunix_unserialize_context_t ctx, void *rock)
 {
-    library_glulx_accel_entry_t *entry = rock;
+    extra_glulx_accel_entry_t *entry = rock;
     glkunix_unserialize_uint32(ctx, "index", &entry->index);
     glkunix_unserialize_uint32(ctx, "addr", &entry->addr);
     return TRUE;
@@ -588,7 +588,7 @@ static int extra_state_unserialize_accel_func(glkunix_unserialize_context_t ctx,
 
 static int extra_state_unserialize_obj_id_entry(glkunix_unserialize_context_t ctx, void *rock)
 {
-    library_glk_obj_id_entry_t *obj = rock;
+    extra_glk_obj_id_entry_t *obj = rock;
     glkunix_unserialize_uint32(ctx, "objclass", &obj->objclass);
     glkunix_unserialize_uint32(ctx, "tag", &obj->tag);
     glkunix_unserialize_uint32(ctx, "dispid", &obj->dispid);
