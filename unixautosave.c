@@ -514,6 +514,12 @@ static void recover_extra_state(extra_state_data_t *state)
             }
         }
     }
+
+    if (state->gamefiletag) {
+        gamefile = glkunix_stream_find_by_updatetag(state->gamefiletag);
+    }
+
+    //### autosavefiletag?
 }
 
 static extra_state_data_t *extra_state_data_alloc()
