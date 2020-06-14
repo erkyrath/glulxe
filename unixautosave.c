@@ -17,6 +17,9 @@
 char *pref_autosavedir = ".";
 char *pref_autosavename = "autosave";
 
+/* This is only needed for autorestore. (Defined in glkop.c.) */
+extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj, glui32 objclass, glui32 dispid);
+
 /* This structure contains VM state which is not stored in a normal save file, but which is needed for an autorestore.
  
     (The reason it's not stored in a normal save file is that it's useless unless you serialize the entire Glk state along with the VM. Glulx normally doesn't do that, but for an autosave, we do.)
@@ -469,6 +472,46 @@ static void recover_extra_state(extra_state_data_t *state)
     if (state->accel_funcs) {
         for (int ix=0; ix<state->accel_func_count; ix++) {
             accel_set_func(state->accel_funcs[ix].index, state->accel_funcs[ix].addr);
+        }
+    }
+
+    if (state->id_map_list) {
+        for (int ix=0; ix<state->id_map_list_count; ix++) {
+            extra_glk_obj_id_entry_t *entry = &state->id_map_list[ix];
+            
+            switch (entry->objclass) {
+                
+            case gidisp_Class_Window: {
+                    winid_t win = glkunix_window_find_by_updatetag(entry->tag);
+                    if (!win) {
+                        nonfatal_warning_i("Could not find window for tag", entry->tag);
+                        break;
+                    }
+                    glkunix_window_set_dispatch_rock(win, glulxe_classtable_register_existing(win, entry->objclass, entry->dispid));
+                }
+                break;
+                
+            case gidisp_Class_Stream: {
+                    strid_t str = glkunix_stream_find_by_updatetag(entry->tag);
+                    if (!str) {
+                        nonfatal_warning_i("Could not find stream for tag", entry->tag);
+                        break;
+                    }
+                    glkunix_stream_set_dispatch_rock(str, glulxe_classtable_register_existing(str, entry->objclass, entry->dispid));
+                }
+                break;
+                
+            case gidisp_Class_Fileref: {
+                    frefid_t fref = glkunix_fileref_find_by_updatetag(entry->tag);
+                    if (!fref) {
+                        nonfatal_warning_i("Could not find fileref for tag", entry->tag);
+                        break;
+                    }
+                    glkunix_fileref_set_dispatch_rock(fref, glulxe_classtable_register_existing(fref, entry->objclass, entry->dispid));
+                }
+                break;
+                
+            }
         }
     }
 }
