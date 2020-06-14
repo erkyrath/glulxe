@@ -53,6 +53,7 @@ typedef struct extra_state_data_struct {
 } extra_state_data_t;
 
 static void stash_extra_state(extra_state_data_t *state);
+static void recover_extra_state(extra_state_data_t *state);
 
 static extra_state_data_t *extra_state_data_alloc(void);
 static void extra_state_data_free(extra_state_data_t *);
@@ -332,11 +333,13 @@ int glkunix_do_autorestore()
         glulx_free(pathname);
         return FALSE;
     }
+    printf("### perform_restore succeeded\n");
 
     pop_callstub(0);
 
     //### updateFromLibrary(library_state)
-    //### recover_extra_state(extra_state)
+    
+    recover_extra_state(extra_state);
 
     extra_state_data_free(extra_state);
     extra_state = NULL;
@@ -442,6 +445,32 @@ static void stash_extra_state(extra_state_data_t *state)
 
     if (ix != state->id_map_list_count)
         fatal_error("stash_extra_state: Glk object count mismatch");
+}
+
+/* Copy chunks of VM state out of the extra_state object.
+ */
+static void recover_extra_state(extra_state_data_t *state)
+{
+    if (!state->active) {
+        return;
+    }
+
+    protectstart = state->protectstart;
+    protectend = state->protectend;
+    stream_set_iosys(state->iosys_mode, state->iosys_rock);
+    stream_set_table(state->stringtable);
+
+    if (state->accel_params) {
+        for (int ix=0; ix<state->accel_param_count; ix++) {
+            accel_set_param(ix, state->accel_params[ix].param);
+        }
+    }
+
+    if (state->accel_funcs) {
+        for (int ix=0; ix<state->accel_func_count; ix++) {
+            accel_set_func(state->accel_funcs[ix].index, state->accel_funcs[ix].addr);
+        }
+    }
 }
 
 static extra_state_data_t *extra_state_data_alloc()
