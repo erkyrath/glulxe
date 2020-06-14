@@ -7,6 +7,7 @@
 #include <string.h>
 #include "glk.h"
 #include "gi_blorb.h"
+#include "gi_dispa.h"
 #include "glulxe.h"
 #include "unixstrt.h"
 #include "glkstart.h" /* This comes with the Glk library. */
