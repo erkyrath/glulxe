@@ -340,7 +340,13 @@ int glkunix_do_autorestore()
 
     pop_callstub(0);
 
-    //### updateFromLibrary(library_state)
+    res = glkunix_update_from_library_state(library_state);
+    if (!res) {
+        glkunix_library_state_free(library_state);
+        extra_state_data_free(extra_state);
+        glulx_free(pathname);
+        return FALSE;
+    }
     
     recover_extra_state(extra_state);
 
