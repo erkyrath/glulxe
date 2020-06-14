@@ -313,9 +313,27 @@ int glkunix_do_autorestore()
     
     printf("### perform_jload succeeded\n");
 
-    //### perform_restore()
+    sprintf(pathname, "%s.glksave", basepath);
+    strid_t savefile = glkunix_stream_open_pathname_gen(pathname, FALSE, FALSE, 1);
+    if (!savefile) {
+        glkunix_library_state_free(library_state);
+        extra_state_data_free(extra_state);
+        glulx_free(pathname);
+        return FALSE;
+    }
+        
+    glui32 res = perform_restore(savefile, TRUE);
+    glk_stream_close(savefile, NULL);
+    savefile = NULL;
 
-    //### pop_callstub(0)
+    if (res) {
+        glkunix_library_state_free(library_state);
+        extra_state_data_free(extra_state);
+        glulx_free(pathname);
+        return FALSE;
+    }
+
+    pop_callstub(0);
 
     //### updateFromLibrary(library_state)
     //### recover_extra_state(extra_state)
