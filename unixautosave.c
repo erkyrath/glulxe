@@ -340,6 +340,8 @@ int glkunix_do_autorestore()
 
     pop_callstub(0);
 
+    /* Annoyingly, the update_from_library_state we're about to do will close the currently-open gamefile. We'll recover it immediately, in recover_extra_state(). */
+
     res = glkunix_update_from_library_state(library_state);
     if (!res) {
         glkunix_library_state_free(library_state);
@@ -347,14 +349,18 @@ int glkunix_do_autorestore()
         glulx_free(pathname);
         return FALSE;
     }
+
+    printf("### update_from_library_state succeeded\n");
     
     recover_extra_state(extra_state);
 
-    extra_state_data_free(extra_state);
-    extra_state = NULL;
-
+    /* Clean up. */
+    
     glkunix_library_state_free(library_state);
     library_state = NULL;
+
+    extra_state_data_free(extra_state);
+    extra_state = NULL;
 
     glulx_free(pathname);
     pathname = NULL;
