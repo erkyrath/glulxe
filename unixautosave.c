@@ -50,7 +50,6 @@ typedef struct extra_state_data_struct {
     glui32 accel_func_count;
     extra_glulx_accel_entry_t *accel_funcs;
     glui32 gamefiletag;
-    glui32 autosavefiletag;
     glui32 id_map_list_count;
     extra_glk_obj_id_entry_t *id_map_list;
 } extra_state_data_t;
@@ -262,8 +261,7 @@ void glkunix_do_autosave(glui32 eventaddr)
         return;
     }
 
-    extra_state->autosavefiletag = glkunix_stream_get_updatetag(jsavefile);
-    glkunix_save_library_state(jsavefile, extra_state_serialize, extra_state);
+    glkunix_save_library_state(jsavefile, jsavefile, extra_state_serialize, extra_state);
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
@@ -280,6 +278,8 @@ void glkunix_do_autosave(glui32 eventaddr)
 
 int glkunix_do_autorestore()
 {
+    printf("###auto glkunix_do_autorestore()\n");
+
     char *basepath = get_autosave_basepath();
     if (!basepath)
         return FALSE;
@@ -423,7 +423,6 @@ static void stash_extra_state(extra_state_data_t *state)
     if (gamefile) {
         state->gamefiletag = glkunix_stream_get_updatetag(gamefile);
     }
-    state->autosavefiletag = 0; /* will be filled in later */
 
     count = 0;
     for (winid_t tmpwin = glk_window_iterate(NULL, NULL); tmpwin; tmpwin = glk_window_iterate(tmpwin, NULL))
@@ -530,8 +529,6 @@ static void recover_extra_state(extra_state_data_t *state)
     if (state->gamefiletag) {
         gamefile = glkunix_stream_find_by_updatetag(state->gamefiletag);
     }
-
-    //### autosavefiletag?
 }
 
 static extra_state_data_t *extra_state_data_alloc()
@@ -594,7 +591,6 @@ static int extra_state_serialize(glkunix_serialize_context_t ctx, void *rock)
         }
 
         glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
-        glkunix_serialize_uint32(ctx, "glulx_autosavefiletag", state->autosavefiletag);
         
         if (state->id_map_list) {
             glkunix_serialize_object_list(ctx, "glulx_id_map_list", extra_state_serialize_obj_id_entry, state->id_map_list_count, sizeof(extra_glk_obj_id_entry_t), state->id_map_list);
@@ -670,7 +666,6 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
     }
     
     glkunix_unserialize_uint32(ctx, "glulx_gamefiletag", &state->gamefiletag);
-    glkunix_unserialize_uint32(ctx, "glulx_autosavefiletag", &state->autosavefiletag);
 
     if (glkunix_unserialize_list(ctx, "glulx_id_map_list", &array, &count)) {
         if (count) {
