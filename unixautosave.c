@@ -339,6 +339,7 @@ int glkunix_do_autorestore()
     printf("### perform_restore succeeded\n");
 
     pop_callstub(0);
+    /* This should leave the PC on the @glk opcode that executed glk_select. */
 
     /* Annoyingly, the update_from_library_state we're about to do will close the currently-open gamefile. We'll recover it immediately, in recover_extra_state(). */
 
