@@ -282,8 +282,10 @@ static void glkunix_game_select(glui32 eventaddr)
 {
   glui32 lasteventtype = glkunix_get_last_event_type();
   
-  /* Do not autosave if we've just started up, or if the last event was a rearrange event. (We get rearranges in clusters, and they don't change anything interesting anyhow.) */
-  if (lasteventtype == -1 || lasteventtype == evtype_Arrange)
+  /* Do not autosave if we've just started up or autorestored, or if the last event was a rearrange event. (We get rearranges in clusters, and they don't change anything interesting anyhow.) */
+  if (lasteventtype == 0xFFFFFFFF
+    || lasteventtype == 0xFFFFFFFE
+    || lasteventtype == evtype_Arrange)
     return;
 
   glkunix_do_autosave(eventaddr);
