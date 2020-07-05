@@ -677,6 +677,8 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
                 return FALSE;
         }
     }
+
+    state->active = TRUE;
     
     return TRUE;
 }
