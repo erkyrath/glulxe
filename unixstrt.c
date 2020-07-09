@@ -289,13 +289,13 @@ static void glkunix_game_select(glui32 eventaddr)
     return;
 
   glkunix_do_autosave(eventaddr);
-
-  //### exit after autosave?
 }
 
 static void glkunix_game_autorestore()
 {
-  glkunix_do_autorestore();
+  int res = glkunix_do_autorestore();
+  if (!res)
+    fatal_error("Autorestore failed.");
 }
 
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
