@@ -41,6 +41,7 @@ glkunix_argumentlist_t glkunix_arguments[] = {
   { "--autorestore", glkunix_arg_NoValue, "Autorestore at launch." },
   { "--autodir", glkunix_arg_ValueFollows, "Directory for autosave/restore files (default: .)." },
   { "--autoname", glkunix_arg_ValueFollows, "Base filename for autosave/restore (default: autosave)." },
+  { "--autoskiparrange", glkunix_arg_NoValue, "Don't autosave on arrange events." },
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
 
 #if VM_PROFILING
@@ -113,6 +114,10 @@ int glkunix_startup_code(glkunix_startup_t *data)
       if (ix<data->argc) {
         pref_autosavename = data->argv[ix];
       }
+      continue;
+    }
+    if (!strcmp(data->argv[ix], "--autoskiparrange")) {
+      pref_autosave_skiparrange = TRUE;
       continue;
     }
 #endif /* GLKUNIX_AUTOSAVE_FEATURES */
@@ -287,10 +292,8 @@ static void glkunix_game_select(glui32 eventaddr)
     || lasteventtype == 0xFFFFFFFE)
     return;
 
-  /*###
-  if (lasteventtype == evtype_Arrange && !pref_singleinput)
+  if (pref_autosave_skiparrange && lasteventtype == evtype_Arrange)
     return;
-    ###*/
   
   glkunix_do_autosave(eventaddr);
 }

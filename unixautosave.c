@@ -16,6 +16,7 @@
 
 char *pref_autosavedir = ".";
 char *pref_autosavename = "autosave";
+int pref_autosave_skiparrange = FALSE;
 
 /* This is only needed for autorestore. (Defined in glkop.c.) */
 extern gidispatch_rock_t glulxe_classtable_register_existing(void *obj, glui32 objclass, glui32 dispid);
