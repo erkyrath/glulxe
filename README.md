@@ -37,6 +37,58 @@ If you define the VM_DEBUGGER symbol (uncomment the "#define VM_DEBUGGER"
 line in glulxe.h), you must include the libxml2 library. See the
 XMLLIB definition in the Makefile.
 
+## Autosave
+
+This interpreter supports autosave if the Glk library does. Currently
+only two do: RemGlk and IosGlk. (The latter is no longer supported on
+modern iOS, so RemGlk is your only real option.)
+
+Autosave covers two slightly different scenarios:
+
+### Hedging against the possibility of process termination
+
+This was how the iOS interpreters work (worked). The app would start
+and run normally, but it *could* be killed at any time (when in the
+background). Therefore, we autosave every turn. At startup time, if
+autosave files exist, we restore them and continue play.
+
+To operate in this mode in a Unix environment:
+
+    ./glulxe --autosave --autoskiparrange filename.ulx
+
+The --autosave argument causes an autosave every turn. The
+--autoskiparrange argument skips this on Arrange (window resize)
+events. (We may get several Arrange events in a row, and they don't
+represent progress that a player would care about losing.)
+
+When relaunching, if autosave files exist, do:
+
+    ./glulxe --autosave --autoskiparrange --autorestore -autometrics filename.ulx
+
+The --autorestore arguments loads the autosave. The -autometrics
+argument (a RemGlk argument, hence the single dash) tells RemGlk to
+skip the step of waiting for an Init event with metrics. (This is not
+needed because the game will already be in progress. But you can send
+a normal Arrange event if you think your window size might be
+different from the autosave state.)
+
+### Single-turn operation
+
+This mode allows you to play a game without keeping a long-term process
+active. On every player input, the interpreter will launch, autorestore,
+process the input, autosave, and exit.
+
+To operate in this mode in a Unix environment:
+
+    ./glulxe --autosave -singleturn filename.ulx
+
+The -singleturn argument (a RemGlk argument) tells the interpreter to
+exit as soon as an output stanza is generated.
+
+When relaunching, if autosave files exist, do:
+
+    ./glulxe --autosave --autorestore -singleturn -autometrics filename.ulx
+
 ## Version
 
 0.5.### (###)
