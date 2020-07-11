@@ -117,8 +117,6 @@ static char *get_autosave_basepath()
         
         if (basename != pref_autosavename)
             glulx_free(basename);
-
-        printf("### basepath: %s\n", autosave_basepath);
     }
 
     return autosave_basepath;
@@ -170,7 +168,7 @@ static int parse_partial_operand(int *opmodes)
 
 void glkunix_do_autosave(glui32 eventaddr)
 {
-    printf("###auto glkunix_do_autosave(%d)\n", eventaddr);
+    fprintf(stderr, "###auto glkunix_do_autosave(%d)\n", eventaddr);
 
     char *basepath = get_autosave_basepath();
     if (!basepath)
@@ -245,7 +243,6 @@ void glkunix_do_autosave(glui32 eventaddr)
         glulx_free(pathname);
         return;
     }
-    printf("### perform_save succeeded\n");
 
     extra_state_data_t *extra_state = extra_state_data_alloc();
     if (!extra_state) {
@@ -266,7 +263,6 @@ void glkunix_do_autosave(glui32 eventaddr)
 
     glk_stream_close(jsavefile, NULL);
     jsavefile = NULL;
-    printf("### perform_jsave succeeded\n");
     
     extra_state_data_free(extra_state);
     extra_state = NULL;
@@ -279,7 +275,7 @@ void glkunix_do_autosave(glui32 eventaddr)
 
 int glkunix_do_autorestore()
 {
-    printf("###auto glkunix_do_autorestore()\n");
+    fprintf(stderr, "###auto glkunix_do_autorestore()\n");
 
     char *basepath = get_autosave_basepath();
     if (!basepath)
@@ -316,8 +312,6 @@ int glkunix_do_autorestore()
         return FALSE;
     }
     
-    printf("### perform_jload succeeded\n");
-
     sprintf(pathname, "%s.glksave", basepath);
     strid_t savefile = glkunix_stream_open_pathname_gen(pathname, FALSE, FALSE, 1);
     if (!savefile) {
@@ -337,7 +331,6 @@ int glkunix_do_autorestore()
         glulx_free(pathname);
         return FALSE;
     }
-    printf("### perform_restore succeeded\n");
 
     pop_callstub(0);
     /* This should leave the PC on the @glk opcode that executed glk_select. */
@@ -352,8 +345,6 @@ int glkunix_do_autorestore()
         return FALSE;
     }
 
-    printf("### update_from_library_state succeeded\n");
-    
     recover_extra_state(extra_state);
 
     /* Clean up. */
