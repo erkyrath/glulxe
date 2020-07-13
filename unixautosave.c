@@ -286,8 +286,6 @@ int glkunix_do_autorestore()
     if (!pathname)
         return FALSE;
 
-    //### check existence of files
-    
     extra_state_data_t *extra_state = extra_state_data_alloc();
     if (!extra_state) {
         glulx_free(pathname);
