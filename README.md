@@ -43,6 +43,26 @@ This interpreter supports autosave if the Glk library does. Currently
 only two do: RemGlk and IosGlk. (The latter is no longer supported on
 modern iOS, so RemGlk is your only real option.)
 
+The --autosave option tells the interpreter to write out autosave
+files at the end of each turn. The --autorestore tells it to load
+those files at startup time, thus starting the game where it was last
+autosaved. Note that --autosave will overwrite the autosave files if
+present, but you should not use --autorestore unless the files exist.
+
+There are two autosave files, by default kept in the current directory
+and named "autosave.json" and "autosave.glksave". You can change the
+directory with --autodir and the base filename with --autoname.
+
+In some contexts it is useful for every game to have a unique autosave
+location. You can do this by giving an --autoname value with a hash
+mark, e.g.:
+
+    ./glulxe --autosave --autoname auto-# filename.ulx
+
+The # character will be replaced with a (long) hex string that
+uniquely identifies the game file. (Pretty uniquely, at least. It's
+not a cryptographically strong hash.)
+
 Autosave covers two slightly different scenarios:
 
 ### Hedging against the possibility of process termination
