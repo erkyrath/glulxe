@@ -8,6 +8,7 @@
 #include "glulxe.h"
 #include "unixstrt.h"
 #include "gi_dispa.h"
+#include "gi_blorb.h"
 #include "glkstart.h" /* This comes with the Glk library. */
 
 /* The following code only makes sense when compiled with a Glk library which offers autosave/autorestore hooks. */
@@ -521,6 +522,17 @@ static void recover_extra_state(extra_state_data_t *state)
 
     if (state->gamefiletag) {
         gamefile = glkunix_stream_find_by_updatetag(state->gamefiletag);
+
+        if (giblorb_get_resource_map()) {
+            /* It's inefficient to throw away the blorb chunk map, which we just loaded, and then recreate it. Oh well. */
+            giblorb_err_t err;
+            err = giblorb_unset_resource_map();
+            if (err)
+                fatal_error("Unable to clear blorb map");
+            err = giblorb_set_resource_map(gamefile);
+            if (err)
+                fatal_error("Unable to reset blorb map");
+        }
     }
 }
 
