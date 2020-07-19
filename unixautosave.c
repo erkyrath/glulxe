@@ -169,8 +169,6 @@ static int parse_partial_operand(int *opmodes)
 
 void glkunix_do_autosave(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2)
 {
-    fprintf(stderr, "###auto glkunix_do_autosave(%d, %d, %d, %d)\n", selector, arg0, arg1, arg2);
-
     char *basepath = get_autosave_basepath();
     if (!basepath)
         return;
@@ -301,8 +299,6 @@ void glkunix_do_autosave(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2)
 
 int glkunix_do_autorestore()
 {
-    fprintf(stderr, "###auto glkunix_do_autorestore()\n");
-
     char *basepath = get_autosave_basepath();
     if (!basepath)
         return FALSE;
