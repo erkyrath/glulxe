@@ -103,11 +103,17 @@ To operate in this mode in a Unix environment:
     ./glulxe --autosave -singleturn filename.ulx
 
 The -singleturn argument (a RemGlk argument) tells the interpreter to
-exit as soon as an output stanza is generated.
+exit as soon as an output stanza is generated. When you pass in the
+initial Init event, the interpreter will process the start-of-game
+activity, display the initial window state, and exit.
 
 When relaunching, if autosave files exist, do:
 
     ./glulxe --autosave --autorestore -singleturn -autometrics filename.ulx
+
+You should only do this when the UI has a player input ready to process.
+Launch the game and pass in the input. The interpreter will process it,
+display the update, and then (without delay) exit.
 
 ## Version
 
