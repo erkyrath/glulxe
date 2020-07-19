@@ -18,7 +18,7 @@
 #include "gi_debug.h" 
 #endif /* VM_DEBUGGER */
 
-static void glkunix_game_select(glui32 selector, glui32 eventaddr);
+static void glkunix_game_select(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2);
 static void glkunix_game_start(void);
 static void glkunix_game_autorestore(void);
 
@@ -283,7 +283,7 @@ static void glkunix_game_start()
 
 /* This is the library_select_hook, which will be called every time glk_select() is invoked.
  */
-static void glkunix_game_select(glui32 selector, glui32 eventaddr)
+static void glkunix_game_select(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2)
 {
   glui32 lasteventtype = glkunix_get_last_event_type();
   
@@ -295,7 +295,7 @@ static void glkunix_game_select(glui32 selector, glui32 eventaddr)
   if (pref_autosave_skiparrange && lasteventtype == evtype_Arrange)
     return;
   
-  glkunix_do_autosave(eventaddr);
+  glkunix_do_autosave(selector, arg0, arg1, arg2);
 }
 
 static void glkunix_game_autorestore()

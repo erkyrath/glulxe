@@ -288,7 +288,7 @@ extern void glulx_sort(void *addr, int count, int size,
 extern glui32 do_gestalt(glui32 val, glui32 val2);
 
 /* glkop.c */
-extern void set_library_select_hook(void (*func)(glui32, glui32));
+extern void set_library_select_hook(void (*func)(glui32, glui32, glui32, glui32));
 extern int init_dispatch(void);
 extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
 extern strid_t find_stream_by_id(glui32 objid);

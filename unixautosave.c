@@ -167,9 +167,9 @@ static int parse_partial_operand(int *opmodes)
     return TRUE;
 }
 
-void glkunix_do_autosave(glui32 eventaddr)
+void glkunix_do_autosave(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2)
 {
-    fprintf(stderr, "###auto glkunix_do_autosave(%d)\n", eventaddr);
+    fprintf(stderr, "###auto glkunix_do_autosave(%d, %d, %d, %d)\n", selector, arg0, arg1, arg2);
 
     char *basepath = get_autosave_basepath();
     if (!basepath)
@@ -198,12 +198,37 @@ void glkunix_do_autosave(glui32 eventaddr)
     /* Push all the necessary arguments for the @glk opcode. */
     glui32 origstackptr = stackptr;
     int stackvals = 0;
-    /* The event structure address: */
-    stackvals++;
-    if (stackptr+4 > stacksize)
-        fatal_error("Stack overflow in autosave callstub.");
-    StkW4(stackptr, eventaddr);
-    stackptr += 4;
+
+    if (selector == 0x00C0) {
+        /* The event structure address: */
+        stackvals++;
+        if (stackptr+4 > stacksize)
+            fatal_error("Stack overflow in autosave callstub.");
+        StkW4(stackptr, arg0); /* eventaddr */
+        stackptr += 4;
+    }
+    else if (selector == 0x0062) {
+        /* The three arguments: */
+        stackvals++;
+        if (stackptr+4 > stacksize)
+            fatal_error("Stack overflow in autosave callstub.");
+        StkW4(stackptr, arg2); /* rock */
+        stackptr += 4;
+        stackvals++;
+        if (stackptr+4 > stacksize)
+            fatal_error("Stack overflow in autosave callstub.");
+        StkW4(stackptr, arg1); /* fmode */
+        stackptr += 4;
+        stackvals++;
+        if (stackptr+4 > stacksize)
+            fatal_error("Stack overflow in autosave callstub.");
+        StkW4(stackptr, arg0); /* usage */
+        stackptr += 4;
+    }
+    else {
+        fatal_error("Autosave with unrecognized glk selector.");
+    }
+    
     if (opmodes[1] == 8) {
         /* The number of Glk arguments (1): */
         stackvals++;
@@ -213,11 +238,11 @@ void glkunix_do_autosave(glui32 eventaddr)
         stackptr += 4;
     }
     if (opmodes[0] == 8) {
-        /* The Glk call selector (0x00C0): */
+        /* The Glk call selector (0x00C0 or 0x0062): */
         stackvals++;
         if (stackptr+4 > stacksize)
             fatal_error("Stack overflow in autosave callstub.");
-        StkW4(stackptr, 0x00C0); /* glk_select */
+        StkW4(stackptr, selector);
         stackptr += 4;
     }
     
@@ -332,7 +357,7 @@ int glkunix_do_autorestore()
     }
 
     pop_callstub(0);
-    /* This should leave the PC on the @glk opcode that executed glk_select. */
+    /* This should leave the PC on the @glk opcode that executed glk_select or glk_fileref_create_by_prompt. */
 
     /* Annoyingly, the update_from_library_state we're about to do will close the currently-open gamefile. We'll recover it immediately, in recover_extra_state(). */
 
