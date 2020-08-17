@@ -91,7 +91,7 @@ void glkunix_set_autosave_signature(unsigned char *buf, glui32 len)
 /* Construct the pathname for autosaving this game. Returns a statically allocated string; the caller should append a filename suffix to that.
    This looks at the autosavedir and autosavename preferences. If autosavename contains a "#" character, the game signature is substituted.
  */
-static char *get_autosave_basepath()
+static char *get_autosave_basepath(void)
 {
     if (autosave_basepath == NULL) {
         /* First time through we figure out where to save. */
