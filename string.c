@@ -716,7 +716,7 @@ static void buildcache(cacheblock_t *cablist, glui32 nodeaddr, int depth,
 {
   int ix, type;
 
-  /* This gets up to 24 in large games, so I think 48 is generous
+  /* This gets up to 24 in large games, so I think 48 is a generous
      maximum. If it's not, we might need a command-line parameter. */
   if (recdepth >= 48)
     fatal_error("Apparent infinite recursion in buildcache");
