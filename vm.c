@@ -266,6 +266,10 @@ glui32 *pop_arguments(glui32 count, glui32 addr)
   glui32 argptr;
   glui32 *array;
 
+  /* This shouldn't happen. */
+  if (count & 0x80000000)
+    fatal_error("Argument count is negative");
+
   #define MAXARGS (32)
   static glui32 statarray[MAXARGS];
   static glui32 *dynarray = NULL;
