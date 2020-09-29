@@ -354,6 +354,32 @@ void verify_address_write(glui32 addr, glui32 count)
   }
 }
 
+/* verify_address_stack():
+   Make sure that count bytes beginning with stackpos all fall
+   within the stack. This is called at every stack access if
+   VERIFY_MEMORY_ACCESS is defined in the header file.
+*/
+void verify_address_stack(glui32 stackpos, glui32 count)
+{
+  if (stackpos >= stacksize || stackpos+count > stacksize)
+    fatal_error_i("Stack access out of range", stackpos);
+    
+  switch (count) {
+  case 1:
+    break;
+  case 2:
+    if (stackpos & 1)
+      fatal_error_i("Unaligned stack access (2)", stackpos);
+    break;
+  case 4:
+    if (stackpos & 3)
+      fatal_error_i("Unaligned stack access (4)", stackpos);
+    break;
+  default:
+    fatal_error_i("Invalid stack access size", count);
+  }
+}
+
 /* verify_array_addresses():
    Make sure that an array of count elements (size bytes each),
    starting at addr, does not fall outside the memory map. This goes
