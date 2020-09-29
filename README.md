@@ -122,6 +122,9 @@ display the update, and then (without delay) exit.
   autosave support only existed in the iOS startup code, which was
   ObjC.) Autosave now works with the RemGlk library.
 - Added an --undo argument to set the number of undo states.
+- Added array bounds checking on stack access.
+- Added a guard against too-deep recursion when creating the string
+  cache.
 
 0.5.4 (Jan 23, 2017):
 
