@@ -44,6 +44,11 @@ typedef int16_t glsi16;
    game files from crashing the interpreter. */
 #define VERIFY_MEMORY_ACCESS (1)
 
+/* Uncomment this definition to permit an exception for memory-address
+   checking for @glk and @copy opcodes that try to write to memory address 0.
+   This was a bug in old Superglus-built game files. */
+/* #define TOLERATE_SUPERGLUS_BUG (1) */
+
 /* Uncomment this definition to turn on Glulx VM profiling. In this
    mode, all function calls are timed, and the timing information is
    written to a data file called "profile-raw".
@@ -51,16 +56,22 @@ typedef int16_t glsi16;
    _BSD_SOURCE or _DEFAULT_SOURCE or both for the timeradd() macro.) */
 /* #define VM_PROFILING (1) */
 
+/* Uncomment this definition to turn on the Glulx debugger. You should
+   only do this when debugging facilities are desired; it slows down
+   the interpreter. If you do, you will need to build with libxml2;
+   see the Makefile. */
+/* #define VM_DEBUGGER (1) */
+
 /* Comment this definition to turn off floating-point support. You
    might need to do this if you are building on a very limited platform
    with no math library. */
 #define FLOAT_SUPPORT (1)
 
-/* Uncomment this definition to cache the original state of RAM in
-   (real) memory. This speeds up save/restore/undo operations, at the
-   expense of some memory usage. This should only be necessary on slow
-   (mobile) devices. */
-/* #define SERIALIZE_CACHE_RAM (1) */
+/* Comment this definition to not cache the original state of RAM in
+   (real) memory. This saves some memory, but slows down save/restore/undo
+   operations, which will have to read the original state off disk
+   every time. */
+#define SERIALIZE_CACHE_RAM (1)
 
 /* Some macros to read and write integers to memory, always in big-endian
    format. */
@@ -89,9 +100,11 @@ typedef int16_t glsi16;
 #if VERIFY_MEMORY_ACCESS
 #define Verify(adr, ln) verify_address(adr, ln)
 #define VerifyW(adr, ln) verify_address_write(adr, ln)
+#define VerifyStk(adr, ln) verify_address_stack(adr, ln)
 #else
 #define Verify(adr, ln) (0)
 #define VerifyW(adr, ln) (0)
+#define VerifyStk(adr, ln) (0)
 #endif /* VERIFY_MEMORY_ACCESS */
 
 #define Mem1(adr)  (Verify(adr, 1), Read1(memmap+(adr)))
@@ -108,18 +121,18 @@ typedef int16_t glsi16;
    degradation or even crashes, depending on the machine CPU. */
 
 #define Stk1(adr)   \
-  (*((unsigned char *)(stack+(adr))))
+  (VerifyStk(adr, 1), *((unsigned char *)(stack+(adr))))
 #define Stk2(adr)   \
-  (*((glui16 *)(stack+(adr))))
+  (VerifyStk(adr, 2), *((glui16 *)(stack+(adr))))
 #define Stk4(adr)   \
-  (*((glui32 *)(stack+(adr))))
+  (VerifyStk(adr, 4), *((glui32 *)(stack+(adr))))
 
 #define StkW1(adr, vl)   \
-  (*((unsigned char *)(stack+(adr))) = (unsigned char)(vl))
+  (VerifyStk(adr, 1), *((unsigned char *)(stack+(adr))) = (unsigned char)(vl))
 #define StkW2(adr, vl)   \
-  (*((glui16 *)(stack+(adr))) = (glui16)(vl))
+  (VerifyStk(adr, 2), *((glui16 *)(stack+(adr))) = (glui16)(vl))
 #define StkW4(adr, vl)   \
-  (*((glui32 *)(stack+(adr))) = (glui32)(vl))
+  (VerifyStk(adr, 4), *((glui32 *)(stack+(adr))) = (glui32)(vl))
 
 /* Some useful structures. */
 
@@ -200,6 +213,7 @@ extern glui32 change_memsize(glui32 newlen, int internal);
 extern glui32 *pop_arguments(glui32 count, glui32 addr);
 extern void verify_address(glui32 addr, glui32 count);
 extern void verify_address_write(glui32 addr, glui32 count);
+extern void verify_address_stack(glui32 stackpos, glui32 count);
 extern void verify_array_addresses(glui32 addr, glui32 count, glui32 size);
 
 /* exec.c */
@@ -279,7 +293,7 @@ extern void glulx_sort(void *addr, int count, int size,
 extern glui32 do_gestalt(glui32 val, glui32 val2);
 
 /* glkop.c */
-extern void set_library_select_hook(void (*func)(glui32));
+extern void set_library_select_hook(void (*func)(glui32, glui32, glui32, glui32));
 extern int init_dispatch(void);
 extern glui32 perform_glk(glui32 funcnum, glui32 numargs, glui32 *arglist);
 extern strid_t find_stream_by_id(glui32 objid);
@@ -295,17 +309,45 @@ extern void profile_set_call_counts(int flag);
 #if VM_PROFILING
 extern glui32 profile_opcount;
 #define profile_tick() (profile_opcount++)
+extern int profile_profiling_active(void);
 extern void profile_in(glui32 addr, glui32 stackuse, int accel);
 extern void profile_out(glui32 stackuse);
 extern void profile_fail(char *reason);
 extern void profile_quit(void);
 #else /* VM_PROFILING */
 #define profile_tick()         (0)
+#define profile_profiling_active()         (0)
 #define profile_in(addr, stackuse, accel)  (0)
 #define profile_out(stackuse)  (0)
 #define profile_fail(reason)   (0)
 #define profile_quit()         (0)
 #endif /* VM_PROFILING */
+
+#if VM_DEBUGGER
+extern unsigned long debugger_opcount;
+#define debugger_tick() (debugger_opcount++)
+extern int debugger_load_info_stream(strid_t stream);
+extern int debugger_load_info_chunk(strid_t stream, glui32 pos, glui32 len);
+extern void debugger_track_cpu(int flag);
+extern void debugger_set_start_trap(int flag);
+extern void debugger_set_quit_trap(int flag);
+extern void debugger_set_crash_trap(int flag);
+extern void debugger_check_story_file(void);
+extern void debugger_setup_start_state(void);
+extern int debugger_ever_invoked(void);
+extern int debugger_cmd_handler(char *cmd);
+extern void debugger_cycle_handler(int cycle);
+extern void debugger_check_func_breakpoint(glui32 addr);
+extern void debugger_block_and_debug(char *msg);
+extern void debugger_handle_crash(char *msg);
+extern void debugger_handle_quit(void);
+#else /* VM_DEBUGGER */
+#define debugger_tick()              (0)
+#define debugger_check_story_file()  (0)
+#define debugger_setup_start_state() (0)
+#define debugger_check_func_breakpoint(addr)  (0)
+#define debugger_handle_crash(msg)   (0)
+#endif /* VM_DEBUGGER */
 
 /* accel.c */
 typedef glui32 (*acceleration_func)(glui32 argc, glui32 *argv);

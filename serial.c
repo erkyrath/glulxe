@@ -223,6 +223,12 @@ glui32 perform_restoreundo()
   glui32 heapsumlen = 0;
   glui32 *heapsumarr = NULL;
 
+  /* If profiling is enabled and active then fail. */
+  #if VM_PROFILING
+  if (profile_profiling_active())
+    return 1;
+  #endif /* VM_PROFILING */
+
   if (undo_chain_size == 0 || undo_chain_num == 0)
     return 1;
 
@@ -445,7 +451,7 @@ glui32 perform_save(strid_t str)
  
    If fromshell is true, the restore is being invoked by the library
    shell (an autorestore of some kind). This currently happens only in
-   iosglk.
+   iosglk and remglk.
 */
 glui32 perform_restore(strid_t str, int fromshell)
 {
@@ -455,6 +461,12 @@ glui32 perform_restore(strid_t str, int fromshell)
   glui32 filestart, filelen;
   glui32 heapsumlen = 0;
   glui32 *heapsumarr = NULL;
+
+  /* If profiling is enabled and active then fail. */
+  #if VM_PROFILING
+  if (profile_profiling_active())
+    return 1;
+  #endif /* VM_PROFILING */
 
   stream_get_iosys(&val, &lx);
   if (val != 2 && !fromshell) {

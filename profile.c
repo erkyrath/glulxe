@@ -194,6 +194,11 @@ void profile_set_call_counts(int flag)
   profiling_call_counts = flag;
 }
 
+int profile_profiling_active()
+{
+    return profiling_active;
+}
+
 static function_t *get_function(glui32 addr)
 {
   int bucknum = (addr % FUNC_HASH_SIZE);
