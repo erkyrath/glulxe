@@ -185,6 +185,7 @@ int glkunix_startup_code(glkunix_startup_t *data)
     init_err2 = filename;
     return TRUE;
   }
+  glkunix_set_base_file(filename);
 
 #if GLKUNIX_AUTOSAVE_FEATURES
   if (pref_autosave || pref_autorestore) {
