@@ -1185,7 +1185,7 @@ static glui32 read_stackstate(dest_t *dest, glui32 chunklen, int portable)
 
 glui32 perform_verify()
 {
-  glui32 len, checksum, newlen;
+  glui32 len, checksum=0, newlen;
   unsigned char buf[4];
   glui32 val, newsum, ix;
 
