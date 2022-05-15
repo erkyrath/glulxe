@@ -70,7 +70,13 @@ glui32 do_gestalt(glui32 val, glui32 val2)
     return 0; /* The floating-point opcodes are not compiled in. */
 #endif /* FLOAT_SUPPORT */
 
-  //### case gestulx_Double:
+  case gestulx_Double:
+#ifdef DOUBLE_SUPPORT
+    return 1; /* We can do double-precision operations. */
+#else /* DOUBLE_SUPPORT */
+    return 0; /* The double-precision opcodes are not compiled in. */
+#endif /* DOUBLE_SUPPORT */
+
 
 #ifdef GLULX_EXTEND_GESTALT
   GLULX_EXTEND_GESTALT
