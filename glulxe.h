@@ -62,10 +62,11 @@ typedef int16_t glsi16;
    see the Makefile. */
 /* #define VM_DEBUGGER (1) */
 
-/* Comment this definition to turn off floating-point support. You
+/* Comment these definitions to turn off floating-point support. You
    might need to do this if you are building on a very limited platform
    with no math library. */
 #define FLOAT_SUPPORT (1)
+#define DOUBLE_SUPPORT (1)
 
 /* Comment this definition to not cache the original state of RAM in
    (real) memory. This saves some memory, but slows down save/restore/undo
@@ -384,5 +385,12 @@ extern gfloat32 decode_float(glui32 val);
 extern gfloat32 glulx_powf(gfloat32 val1, gfloat32 val2);
 
 #endif /* FLOAT_SUPPORT */
+
+#ifdef DOUBLE_SUPPORT
+
+//###
+
+#endif /* DOUBLE_SUPPORT */
+
 
 #endif /* _GLULXE_H */
