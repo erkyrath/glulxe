@@ -15,7 +15,7 @@
    It stores the operandlists for the first 128 opcodes, which are
    the ones used most frequently.
 */
-operandlist_t *fast_operandlist[0x80];
+const operandlist_t *fast_operandlist[0x80];
 
 /* The actual immutable structures which lookup_operandlist()
    returns. */
@@ -80,7 +80,7 @@ void init_operands()
    Return the operandlist for a given opcode. For opcodes in the range
    00..7F, it's faster to use the array fast_operandlist[]. 
 */
-operandlist_t *lookup_operandlist(glui32 opcode)
+const operandlist_t *lookup_operandlist(glui32 opcode)
 {
   switch (opcode) {
   case op_nop: 
@@ -345,7 +345,7 @@ operandlist_t *lookup_operandlist(glui32 opcode)
    This also assumes that args points at an allocated array of 
    MAX_OPERANDS oparg_t structures.
 */
-void parse_operands(oparg_t *args, operandlist_t *oplist)
+void parse_operands(oparg_t *args, const operandlist_t *oplist)
 {
   int ix;
   oparg_t *curarg;

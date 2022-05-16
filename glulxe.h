@@ -221,10 +221,10 @@ extern void verify_array_addresses(glui32 addr, glui32 count, glui32 size);
 extern void execute_loop(void);
 
 /* operand.c */
-extern operandlist_t *fast_operandlist[0x80];
+extern const operandlist_t *fast_operandlist[0x80];
 extern void init_operands(void);
-extern operandlist_t *lookup_operandlist(glui32 opcode);
-extern void parse_operands(oparg_t *opargs, operandlist_t *oplist);
+extern const operandlist_t *lookup_operandlist(glui32 opcode);
+extern void parse_operands(oparg_t *opargs, const operandlist_t *oplist);
 extern void store_operand(glui32 desttype, glui32 destaddr, glui32 storeval);
 extern void store_operand_s(glui32 desttype, glui32 destaddr, glui32 storeval);
 extern void store_operand_b(glui32 desttype, glui32 destaddr, glui32 storeval);

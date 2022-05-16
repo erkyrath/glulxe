@@ -19,7 +19,7 @@ void execute_loop()
   int done_executing = FALSE;
   int ix;
   glui32 opcode;
-  operandlist_t *oplist;
+  const operandlist_t *oplist;
   oparg_t inst[MAX_OPERANDS];
   glui32 value, addr, val0, val1;
   glsi32 vals0, vals1;
