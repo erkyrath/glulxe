@@ -64,7 +64,11 @@ typedef int16_t glsi16;
 
 /* Comment these definitions to turn off floating-point support. You
    might need to do this if you are building on a very limited platform
-   with no math library. */
+   with no math library.
+   You can compile this interpreter with FLOAT_SUPPORT and omit
+   DOUBLE_SUPPORT, but not the other way around. DOUBLE_SUPPORT requires
+   FLOAT_SUPPORT.
+ */
 #define FLOAT_SUPPORT (1)
 #define DOUBLE_SUPPORT (1)
 
@@ -384,13 +388,18 @@ extern gfloat32 decode_float(glui32 val);
 
 extern gfloat32 glulx_powf(gfloat32 val1, gfloat32 val2);
 
-#endif /* FLOAT_SUPPORT */
-
 #ifdef DOUBLE_SUPPORT
 
-//###
+/* You may have to edit the definition of gfloat64 to make sure it's really
+   a 64-bit floating-point type. */
+typedef double gfloat64;
+
+extern void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo);
+extern gfloat64 decode_double(glui32 valhi, glui32 vallo);
 
 #endif /* DOUBLE_SUPPORT */
+
+#endif /* FLOAT_SUPPORT */
 
 
 #endif /* _GLULXE_H */
