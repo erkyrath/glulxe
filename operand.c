@@ -286,9 +286,11 @@ const operandlist_t *lookup_operandlist(glui32 opcode)
 #ifdef DOUBLE_SUPPORT
 
   case op_numtod:
+  case op_ftod:
     return &list_LSS;
   case op_dtonumz:
   case op_dtonumn:
+  case op_dtof:
     return &list_LLS;
   case op_dceil:
   case op_dfloor:

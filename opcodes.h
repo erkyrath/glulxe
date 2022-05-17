@@ -141,6 +141,8 @@
 #define op_numtod       (0x200)
 #define op_dtonumz      (0x201)
 #define op_dtonumn      (0x202)
+#define op_ftod         (0x203)
+#define op_dtof         (0x204)
 #define op_dceil        (0x208)
 #define op_dfloor       (0x209)
 #define op_dadd         (0x210)
