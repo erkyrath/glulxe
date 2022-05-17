@@ -192,7 +192,7 @@ void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo)
         goto NotANumber;
     }
 
-    mant = frexpf(absval, &expo);
+    mant = frexp(absval, &expo);
 
     /* Normalize mantissa to be in the range [1.0, 2.0) */
     if (0.5 <= mant && mant < 1.0) {
