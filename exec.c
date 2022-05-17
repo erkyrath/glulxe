@@ -1051,6 +1051,17 @@ void execute_loop()
         store_operand(inst[1].desttype, inst[1].value, val0hi);
         store_operand(inst[2].desttype, inst[2].value, val0lo);
         break;
+      case op_ftod:
+        valf = decode_float(inst[0].value);
+        encode_double((gfloat64)valf, &val0hi, &val0lo);
+        store_operand(inst[1].desttype, inst[1].value, val0hi);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        break;
+      case op_dtof:
+        vald = decode_double(inst[0].value, inst[1].value);
+        value = encode_float((gfloat32)vald);
+        store_operand(inst[2].desttype, inst[2].value, value);
+        break;
         
 #endif /* DOUBLE_SUPPORT */
         
