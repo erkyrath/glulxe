@@ -163,8 +163,9 @@ gfloat32 decode_float(glui32 val)
 
 #endif /* FLOAT_NOT_NATIVE */
 
-/* This is within FLOAT_SUPPORT. You can't support doubles without floats. */
-#ifdef DOUBLE_SUPPORT
+#ifdef DOUBLE_SUPPORT   /* Inside FLOAT_SUPPORT! */
+
+//### reinterpret-cast version?
 
 void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo)
 {

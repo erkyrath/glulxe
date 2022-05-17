@@ -25,8 +25,13 @@ void execute_loop()
   glsi32 vals0, vals1;
   glui32 *arglist;
   glui32 arglistfix[3];
+  
 #ifdef FLOAT_SUPPORT
   gfloat32 valf, valf1, valf2;
+#ifdef DOUBLE_SUPPORT   /* Inside FLOAT_SUPPORT! */
+  glui32 val0hi, val0lo, val1hi, val1lo;
+  gfloat64 vald, vald1, vald2;
+#endif /* DOUBLE_SUPPORT */
 #endif /* FLOAT_SUPPORT */
 
   while (!done_executing) {
@@ -1038,6 +1043,17 @@ void execute_loop()
         }
         break;
 
+#ifdef DOUBLE_SUPPORT   /* Inside FLOAT_SUPPORT! */
+        
+      case op_numtod:
+        vals0 = inst[0].value;
+        encode_double((gfloat64)vals0, &val0hi, &val0lo);
+        store_operand(inst[1].desttype, inst[1].value, val0hi);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        break;
+        
+#endif /* DOUBLE_SUPPORT */
+        
 #endif /* FLOAT_SUPPORT */
 
 #ifdef GLULX_EXTEND_OPCODES
