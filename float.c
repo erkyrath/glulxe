@@ -254,6 +254,43 @@ void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo)
     return;
 }
 
+gfloat64 decode_double(glui32 valhi, glui32 vallo)
+{
+    int sign;
+    int expo;
+    glui32 manthi, mantlo;
+    gfloat64 res;
+
+    /* First byte */
+    sign = ((valhi & 0x80000000) != 0);
+    expo = (valhi >> 20) & 0x7FF;
+    manthi = valhi & 0xFFFFF;
+    mantlo = vallo;
+
+    if (expo == 2047) {
+        if (manthi == 0 && mantlo == 0) {
+            /* Infinity */
+            return (sign ? (-INFINITY) : (INFINITY));
+        }
+        else {
+            /* Not a number */
+            return (sign ? (-NAN) : (NAN));
+        }
+    }
+
+    res = (gfloat64)mantlo / 4503599627370496.0 + (gfloat64)manthi / 1048576.0;
+
+    if (expo == 0) {
+        expo = -1022;
+    }
+    else {
+        res += 1.0;
+        expo -= 1023;
+    }
+    res = ldexp(res, expo);
+
+    return (sign ? (-res) : (res));
+}
 
 #endif /* DOUBLE_SUPPORT */
 
