@@ -1144,6 +1144,32 @@ void execute_loop()
         store_operand(inst[3].desttype, inst[3].value, val0hi);
         break;
         
+      case op_dsqrt:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(sqrt(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dlog:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(log(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dexp:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(exp(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dpow:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        encode_double(pow(vald1, vald2), &val0hi, &val0lo);
+        store_operand(inst[4].desttype, inst[4].value, val0lo);
+        store_operand(inst[5].desttype, inst[5].value, val0hi);
+        break;
+        
 #endif /* DOUBLE_SUPPORT */
         
 #endif /* FLOAT_SUPPORT */
