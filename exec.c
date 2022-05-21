@@ -1070,6 +1070,28 @@ void execute_loop()
         store_operand(inst[4].desttype, inst[4].value, val0lo);
         store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
+      case op_dsub:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        encode_double(vald1 - vald2, &val0hi, &val0lo);
+        store_operand(inst[4].desttype, inst[4].value, val0lo);
+        store_operand(inst[5].desttype, inst[5].value, val0hi);
+        break;
+      case op_dmul:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        encode_double(vald1 * vald2, &val0hi, &val0lo);
+        store_operand(inst[4].desttype, inst[4].value, val0lo);
+        store_operand(inst[5].desttype, inst[5].value, val0hi);
+        break;
+      case op_ddiv:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        encode_double(vald1 / vald2, &val0hi, &val0lo);
+        store_operand(inst[4].desttype, inst[4].value, val0lo);
+        store_operand(inst[5].desttype, inst[5].value, val0hi);
+        break;
+        
         
 #endif /* DOUBLE_SUPPORT */
         
