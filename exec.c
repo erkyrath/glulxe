@@ -1051,6 +1051,38 @@ void execute_loop()
         store_operand(inst[1].desttype, inst[1].value, val0lo);
         store_operand(inst[2].desttype, inst[2].value, val0hi);
         break;
+      case op_dtonumz:
+        vald = decode_double(inst[0].value, inst[1].value);
+        if (!signbit(vald)) {
+          if (isnan(vald) || isinf(vald) || (vald > 2147483647.0))
+            vals0 = 0x7FFFFFFF;
+          else
+            vals0 = (glsi32)(trunc(vald));
+        }
+        else {
+          if (isnan(vald) || isinf(vald) || (vald < -2147483647.0))
+            vals0 = 0x80000000;
+          else
+            vals0 = (glsi32)(trunc(vald));
+        }
+        store_operand(inst[2].desttype, inst[2].value, vals0);
+        break;
+      case op_dtonumn:
+        vald = decode_double(inst[0].value, inst[1].value);
+        if (!signbit(vald)) {
+          if (isnan(vald) || isinf(vald) || (vald > 2147483647.0))
+            vals0 = 0x7FFFFFFF;
+          else
+            vals0 = (glsi32)(round(vald));
+        }
+        else {
+          if (isnan(vald) || isinf(vald) || (vald < -2147483647.0))
+            vals0 = 0x80000000;
+          else
+            vals0 = (glsi32)(round(vald));
+        }
+        store_operand(inst[2].desttype, inst[2].value, vals0);
+        break;
       case op_ftod:
         valf = decode_float(inst[0].value);
         encode_double((gfloat64)valf, &val0hi, &val0lo);
