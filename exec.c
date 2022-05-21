@@ -1124,13 +1124,24 @@ void execute_loop()
         store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
         
-      case op_dmodq:
-        //###
-        break;
       case op_dmodr:
-        //###
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        vald = fmod(vald1, vald2);
+        encode_double(vald, &val0hi, &val0lo);
+        store_operand(inst[4].desttype, inst[4].value, val0lo);
+        store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
-
+      case op_dmodq:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        vald = fmod(vald1, vald2);
+        vald = (vald1-vald) / vald2;
+        encode_double(vald, &val0hi, &val0lo);
+        store_operand(inst[4].desttype, inst[4].value, val0lo);
+        store_operand(inst[5].desttype, inst[5].value, val0hi);
+        break;
+        
       case op_dfloor:
         vald = decode_double(inst[0].value, inst[1].value);
         encode_double(floor(vald), &val0hi, &val0lo);
