@@ -1180,6 +1180,43 @@ void execute_loop()
         store_operand(inst[4].desttype, inst[4].value, val0lo);
         store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
+
+      case op_dsin:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(sin(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dcos:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(cos(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dtan:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(tan(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dasin:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(asin(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dacos:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(acos(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_datan:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(atan(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
         
 #endif /* DOUBLE_SUPPORT */
         
