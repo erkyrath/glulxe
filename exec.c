@@ -1124,6 +1124,25 @@ void execute_loop()
         store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
         
+      case op_dmodq:
+        //###
+        break;
+      case op_dmodr:
+        //###
+        break;
+
+      case op_dfloor:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(floor(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
+      case op_dceil:
+        vald = decode_double(inst[0].value, inst[1].value);
+        encode_double(ceil(vald), &val0hi, &val0lo);
+        store_operand(inst[2].desttype, inst[2].value, val0lo);
+        store_operand(inst[3].desttype, inst[3].value, val0hi);
+        break;
         
 #endif /* DOUBLE_SUPPORT */
         
