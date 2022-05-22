@@ -9,6 +9,11 @@
 
 #ifdef FLOAT_SUPPORT
 #include <math.h>
+
+/* A couple of macros which test a pair of glui32 words as a double */
+#define DOUBLE_PAIR_ISINF(vhi, vlo) (((vhi) == 0x7FF00000 || (vhi) == 0xFFF00000) && (vlo) == 0)
+#define DOUBLE_PAIR_ISNAN(vhi, vlo) (((vhi) & 0x7FF00000) == 0x7FF00000 && (((vhi) & 0xFFFFF) != 0 || (vlo) != 0))
+
 #endif /* FLOAT_SUPPORT */
 
 /* execute_loop():
@@ -980,7 +985,7 @@ void execute_loop()
         }
         else {
           valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
-          valf2 = fabs(decode_float(inst[2].value));
+          valf2 = fabsf(decode_float(inst[2].value));
           val0 = (valf1 <= valf2 && valf1 >= -valf2);
         }
         if (val0) {
@@ -1001,7 +1006,7 @@ void execute_loop()
         }
         else {
           valf1 = decode_float(inst[1].value) - decode_float(inst[0].value);
-          valf2 = fabs(decode_float(inst[2].value));
+          valf2 = fabsf(decode_float(inst[2].value));
           val0 = (valf1 <= valf2 && valf1 >= -valf2);
         }
         if (!val0) {
@@ -1231,8 +1236,7 @@ void execute_loop()
            float. */
         val0 = inst[0].value;
         val1 = inst[1].value;
-        if ((val0 == 0x7FF00000 || val0 == 0xFFF00000)
-            && val1 == 0) {
+        if (DOUBLE_PAIR_ISINF(val0, val1)) {
           value = inst[2].value;
           goto PerformJump;
         }
@@ -1242,9 +1246,55 @@ void execute_loop()
            float. */
         val0 = inst[0].value;
         val1 = inst[1].value;
-        if ((val0 & 0x7FF00000) == 0x7FF00000
-            && ((val0 & 0xFFFFF) != 0 || val1 != 0)) {
+        if (DOUBLE_PAIR_ISNAN(val0, val1)) {
           value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
+
+      case op_jdeq:
+        if (DOUBLE_PAIR_ISNAN(inst[4].value, inst[5].value)) {
+          /* The delta is NaN, which can never match. */
+          val0 = 0;
+        }
+        else if (DOUBLE_PAIR_ISINF(inst[0].value, inst[1].value)
+          && DOUBLE_PAIR_ISINF(inst[2].value, inst[3].value)) {
+          /* Both are infinite. Opposite infinities are never equal,
+             even if the difference is infinite, so this is easy.
+             (We only need to compare the high words, because the low
+             word of both INF and -INF is zero.) */
+          val0 = (inst[0].value == inst[2].value);
+        }
+        else {
+          vald1 = decode_double(inst[2].value, inst[3].value) - decode_double(inst[0].value, inst[1].value);
+          vald2 = fabs(decode_double(inst[4].value, inst[5].value));
+          val0 = (vald1 <= vald2 && vald1 >= -vald2);
+        }
+        if (val0) {
+          value = inst[6].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jdne:
+        if (DOUBLE_PAIR_ISNAN(inst[4].value, inst[5].value)) {
+          /* The delta is NaN, which can never match. */
+          val0 = 0;
+        }
+        else if (DOUBLE_PAIR_ISINF(inst[0].value, inst[1].value)
+          && DOUBLE_PAIR_ISINF(inst[2].value, inst[3].value)) {
+          /* Both are infinite. Opposite infinities are never equal,
+             even if the difference is infinite, so this is easy.
+             (We only need to compare the high words, because the low
+             word of both INF and -INF is zero.) */
+          val0 = (inst[0].value == inst[2].value);
+        }
+        else {
+          vald1 = decode_double(inst[2].value, inst[3].value) - decode_double(inst[0].value, inst[1].value);
+          vald2 = fabs(decode_double(inst[4].value, inst[5].value));
+          val0 = (vald1 <= vald2 && vald1 >= -vald2);
+        }
+        if (!val0) {
+          value = inst[6].value;
           goto PerformJump;
         }
         break;
