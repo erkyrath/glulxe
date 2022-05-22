@@ -1226,6 +1226,29 @@ void execute_loop()
         store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
         
+      case op_jdisinf:
+        /* Infinity is well-defined, so we don't bother to convert to
+           float. */
+        val0 = inst[0].value;
+        val1 = inst[1].value;
+        if ((val0 == 0x7FF00000 || val0 == 0xFFF00000)
+            && val1 == 0) {
+          value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jdisnan:
+        /* NaN is well-defined, so we don't bother to convert to
+           float. */
+        val0 = inst[0].value;
+        val1 = inst[1].value;
+        if ((val0 & 0x7FF00000) == 0x7FF00000
+            && ((val0 & 0xFFFFF) != 0 || val1 != 0)) {
+          value = inst[2].value;
+          goto PerformJump;
+        }
+        break;
+
 #endif /* DOUBLE_SUPPORT */
         
 #endif /* FLOAT_SUPPORT */
