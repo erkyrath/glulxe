@@ -1300,6 +1300,39 @@ void execute_loop()
           goto PerformJump;
         }
         break;
+        
+      case op_jdlt:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        if (vald1 < vald2) {
+          value = inst[4].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jdgt:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        if (vald1 > vald2) {
+          value = inst[4].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jdle:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        if (vald1 <= vald2) {
+          value = inst[4].value;
+          goto PerformJump;
+        }
+        break;
+      case op_jdge:
+        vald1 = decode_double(inst[0].value, inst[1].value);
+        vald2 = decode_double(inst[2].value, inst[3].value);
+        if (vald1 >= vald2) {
+          value = inst[4].value;
+          goto PerformJump;
+        }
+        break;
 
 #endif /* DOUBLE_SUPPORT */
         
