@@ -10,9 +10,11 @@
 #ifdef FLOAT_SUPPORT
 #include <math.h>
 
+#ifdef DOUBLE_SUPPORT   /* Inside FLOAT_SUPPORT! */
 /* A couple of macros which test a pair of glui32 words as a double */
 #define DOUBLE_PAIR_ISINF(vhi, vlo) (((vhi) == 0x7FF00000 || (vhi) == 0xFFF00000) && (vlo) == 0)
 #define DOUBLE_PAIR_ISNAN(vhi, vlo) (((vhi) & 0x7FF00000) == 0x7FF00000 && (((vhi) & 0xFFFFF) != 0 || (vlo) != 0))
+#endif /* DOUBLE_SUPPORT */
 
 #endif /* FLOAT_SUPPORT */
 
