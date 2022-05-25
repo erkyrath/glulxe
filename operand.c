@@ -301,7 +301,7 @@ void parse_operands(oparg_t *args, operandlist_t *oplist)
   int numops = oplist->num_ops;
   int argsize = oplist->arg_size;
   glui32 modeaddr = pc;
-  int modeval;
+  int modeval = 0;
 
   pc += (numops+1) / 2;
 

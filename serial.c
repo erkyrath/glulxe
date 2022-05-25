@@ -117,7 +117,7 @@ glui32 perform_saveundo()
 {
   dest_t dest;
   glui32 res;
-  glui32 memstart, memlen, heapstart, heaplen, stackstart, stacklen;
+  glui32 memstart=0, memlen=0, heapstart=0, heaplen=0, stackstart=0, stacklen=0;
 
   /* The format for undo-saves is simpler than for saves on disk. We
      just have a memory chunk, a heap chunk, and a stack chunk, in
@@ -238,6 +238,7 @@ glui32 perform_restoreundo()
   dest.ptr = undo_chain[0];
   dest.str = NULL;
 
+  val = 0;
   res = 0;
   if (res == 0) {
     res = read_long(&dest, &val);
@@ -318,8 +319,8 @@ glui32 perform_save(strid_t str)
   dest_t dest;
   int ix;
   glui32 res, lx, val;
-  glui32 memstart, memlen, stackstart, stacklen, heapstart, heaplen;
-  glui32 filestart=0, filelen;
+  glui32 memstart=0, memlen=0, stackstart=0, stacklen=0, heapstart=0, heaplen=0;
+  glui32 filestart = 0, filelen = 0;
 
   stream_get_iosys(&val, &lx);
   if (val != 2) {
@@ -458,7 +459,7 @@ glui32 perform_restore(strid_t str, int fromshell)
   dest_t dest;
   int ix;
   glui32 lx, res, val;
-  glui32 filestart, filelen;
+  glui32 filestart = 0, filelen = 0;
   glui32 heapsumlen = 0;
   glui32 *heapsumarr = NULL;
 
@@ -1217,6 +1218,7 @@ glui32 perform_verify()
   glui32 val, newsum, ix;
 
   len = gamefile_len;
+  checksum = 0;
 
   if (len < 256 || (len & 0xFF) != 0)
     return 1;
