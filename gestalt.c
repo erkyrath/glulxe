@@ -12,7 +12,7 @@ glui32 do_gestalt(glui32 val, glui32 val2)
   switch (val) {
 
   case gestulx_GlulxVersion:
-    return 0x00030102; /* Glulx spec version 3.1.2 */
+    return 0x00030103; /* Glulx spec version 3.1.3 */
 
   case gestulx_TerpVersion:
     return 0x00000504; /* Glulxe version 0.5.4 */
@@ -70,6 +70,9 @@ glui32 do_gestalt(glui32 val, glui32 val2)
     return 0; /* The floating-point opcodes are not compiled in. */
 #endif /* FLOAT_SUPPORT */
 
+  case gestulx_ExtUndo:
+    return 1; /* We can handle hasundo and discardundo. */
+
   case gestulx_Double:
 #ifdef FLOAT_SUPPORT
 #ifdef DOUBLE_SUPPORT   /* Inside FLOAT_SUPPORT! */
@@ -80,7 +83,6 @@ glui32 do_gestalt(glui32 val, glui32 val2)
 #else /* FLOAT_SUPPORT */
     return 0; /* Neither float nor double opcodes are compiled in. */
 #endif /* FLOAT_SUPPORT */
-
 
 #ifdef GLULX_EXTEND_GESTALT
   GLULX_EXTEND_GESTALT
