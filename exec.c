@@ -1154,6 +1154,12 @@ void execute_loop()
         vald = fmod(vald1, vald2);
         vald = (vald1-vald) / vald2;
         encode_double(vald, &val0hi, &val0lo);
+        if ((val0hi == 0x0 || val0hi == 0x80000000) && val0lo == 0x0) {
+          /* When the quotient is zero, the sign has been lost in the
+             shuffle. We'll set that by hand, based on the original
+             arguments. */
+          val0hi = (inst[0].value ^ inst[2].value) & 0x80000000;
+        }
         store_operand(inst[4].desttype, inst[4].value, val0lo);
         store_operand(inst[5].desttype, inst[5].value, val0hi);
         break;
