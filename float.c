@@ -165,7 +165,8 @@ gfloat32 decode_float(glui32 val)
 
 #ifdef DOUBLE_SUPPORT   /* Inside FLOAT_SUPPORT! */
 
-//### reinterpret-cast version?
+/* We don't try to implement a reinterpret-cast version of these functions.
+   Just seems too risky, what with endianness and who knows what else. */
 
 void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo)
 {
