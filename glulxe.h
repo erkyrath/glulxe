@@ -399,8 +399,6 @@ typedef double gfloat64;
 extern void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo);
 extern gfloat64 decode_double(glui32 valhi, glui32 vallo);
 
-//### glulx_pow()?
-
 #endif /* DOUBLE_SUPPORT */
 
 #endif /* FLOAT_SUPPORT */
