@@ -1,6 +1,6 @@
 # Glulxe: the Glulx VM interpreter
 
-- Version 0.5.4
+- Version 0.6.0
 - Designed by Andrew Plotkin <erkyrath@eblong.com>
 - [Glulx home page][glulx]
 
@@ -117,7 +117,7 @@ display the update, and then (without delay) exit.
 
 ## Version
 
-0.5.### (###)
+0.6.0 (Jun 25, 2022)
 - Added @hasundo and @discardundo opcodes. (Glulx spec 3.1.3.)
 - Added autosave support to the Unix startup code. (Previously the
   autosave support only existed in the iOS startup code, which was
