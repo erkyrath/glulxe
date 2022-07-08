@@ -21,7 +21,7 @@
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int show)
 {
   /* Attempt to initialise Glk */
-  if (InitGlk(0x00000704) == 0)
+  if (InitGlk(0x00000705) == 0)
     exit(1);
 
   /* Call the Windows specific initialization routine */
@@ -61,20 +61,20 @@ void set_help_file(void)
 
   GetModuleFileName(0,path,sizeof path);
   end = strrchr(path,'.');
-  if (!end)
-    return;
-
-  strcpy(end,".chm");
-  if (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES)
+  if (end)
   {
-    winglk_set_help_file(path);
-    return;
+    strcpy(end+1,"chm");
+    if (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES)
+    {
+      winglk_set_help_file(path);
+      return;
+    }
   }
 
-  end = strrchr(path,'(');
-  if (end > path)
+  end = strrchr(path,'\\');
+  if (end)
   {
-    strcpy(end-1,".chm");
+    strcpy(end+1,"Glulxe.chm");
     if (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES)
     {
       winglk_set_help_file(path);
