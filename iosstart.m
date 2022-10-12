@@ -171,7 +171,7 @@ static void iosglk_game_autorestore()
 	}
 	
 	int res;
-	GlkStreamFile *savefile = [[[GlkStreamFile alloc] initWithMode:filemode_Read rock:1 unicode:NO textmode:NO dirname:dirname pathname:gamepath] autorelease];
+	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Read rock:1 unicode:NO textmode:NO dirname:dirname pathname:gamepath];
 	res = perform_restore(savefile, TRUE);
 	glk_stream_close(savefile, nil);
 	savefile = nil;
@@ -224,7 +224,7 @@ void iosglk_do_autosave(glui32 eventaddr)
 		return;
 	NSString *tmpgamepath = [dirname stringByAppendingPathComponent:@"autosave-tmp.glksave"];
 	
-	GlkStreamFile *savefile = [[[GlkStreamFile alloc] initWithMode:filemode_Write rock:1 unicode:NO textmode:NO dirname:dirname pathname:tmpgamepath] autorelease];
+	GlkStreamFile *savefile = [[GlkStreamFile alloc] initWithMode:filemode_Write rock:1 unicode:NO textmode:NO dirname:dirname pathname:tmpgamepath];
 	
 	/* Push all the necessary arguments for the @glk opcode. */
 	glui32 origstackptr = stackptr;
@@ -332,7 +332,7 @@ static void stash_one_accel_func(glui32 index, glui32 addr)
 {
 	NSMutableArray *arr = (NSMutableArray *)library_state.accel_funcs;
 	
-	GlulxAccelEntry *ent = [[[GlulxAccelEntry alloc] initWithIndex:index addr:addr] autorelease];
+	GlulxAccelEntry *ent = [[GlulxAccelEntry alloc] initWithIndex:index addr:addr];
 	[arr addObject:ent];
 }
 
@@ -349,14 +349,14 @@ static void stash_library_state()
 	
 	glui32 count = accel_get_param_count();
 	NSMutableArray *accel_params = [NSMutableArray arrayWithCapacity:count];
-	library_state.accel_params = [accel_params retain];
+	library_state.accel_params = accel_params;
 	for (int ix=0; ix<count; ix++) {
 		glui32 param = accel_get_param(ix);
 		[accel_params addObject:[NSNumber numberWithUnsignedInt:param]];
 	}
 
 	NSMutableArray *accel_funcs = [NSMutableArray arrayWithCapacity:8];
-	library_state.accel_funcs = [accel_funcs retain];
+	library_state.accel_funcs = accel_funcs;
 	accel_iterate_funcs(&stash_one_accel_func);
 
 	if (gamefile)
@@ -364,18 +364,18 @@ static void stash_library_state()
 	
 	GlkLibrary *library = [GlkLibrary singleton];
 	NSMutableArray *id_map_list = [NSMutableArray arrayWithCapacity:4];
-	library_state.id_map_list = [id_map_list retain];
+	library_state.id_map_list = id_map_list;
 	
 	for (GlkWindow *win in library.windows) {
-		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Window tag:win.tag id:find_id_for_window(win)] autorelease];
+		GlkObjIdEntry *ent = [[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Window tag:win.tag id:find_id_for_window(win)];
 		[id_map_list addObject:ent];
 	}
 	for (GlkStream *str in library.streams) {
-		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Stream tag:str.tag id:find_id_for_stream(str)] autorelease];
+		GlkObjIdEntry *ent = [[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Stream tag:str.tag id:find_id_for_stream(str)];
 		[id_map_list addObject:ent];
 	}
 	for (GlkFileRef *fref in library.filerefs) {
-		GlkObjIdEntry *ent = [[[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Fileref tag:fref.tag id:find_id_for_fileref(fref)] autorelease];
+		GlkObjIdEntry *ent = [[GlkObjIdEntry alloc] initWithClass:gidisp_Class_Fileref tag:fref.tag id:find_id_for_fileref(fref)];
 		[id_map_list addObject:ent];
 	}
 }
@@ -414,7 +414,7 @@ static void recover_library_state()
 						NSLog(@"### Could not find window for tag %d", ent.tag);
 						continue;
 					}
-					win.disprock = glulxe_classtable_register_existing(win, ent.objclass, ent.dispid);
+                    win.disprock = glulxe_classtable_register_existing((__bridge void *)(win), ent.objclass, ent.dispid);
 				}
 				break;
 				case gidisp_Class_Stream: {
@@ -423,7 +423,7 @@ static void recover_library_state()
 						NSLog(@"### Could not find stream for tag %d", ent.tag);
 						continue;
 					}
-					str.disprock = glulxe_classtable_register_existing(str, ent.objclass, ent.dispid);
+                    str.disprock = glulxe_classtable_register_existing((__bridge void *)(str), ent.objclass, ent.dispid);
 				}
 				break;
 				case gidisp_Class_Fileref: {
@@ -432,7 +432,7 @@ static void recover_library_state()
 						NSLog(@"### Could not find fileref for tag %d", ent.tag);
 						continue;
 					}
-					fref.disprock = glulxe_classtable_register_existing(fref, ent.objclass, ent.dispid);
+                    fref.disprock = glulxe_classtable_register_existing((__bridge void *)(fref), ent.objclass, ent.dispid);
 				}
 				break;
 			}
@@ -448,15 +448,12 @@ static void free_library_state()
 	library_state.active = false;
 	
 	if (library_state.accel_params) {
-		[library_state.accel_params release]; // was retained in stash_library_state()
 		library_state.accel_params = nil;
 	}
 	if (library_state.accel_funcs) {
-		[library_state.accel_funcs release]; // was retained in stash_library_state()
 		library_state.accel_funcs = nil;
 	}
 	if (library_state.id_map_list) {
-		[library_state.id_map_list release]; // was retained in stash_library_state()
 		library_state.id_map_list = nil;
 	}
 }
@@ -492,12 +489,12 @@ static void iosglk_library_unarchive(NSCoder *decoder)
 		library_state.iosys_rock = [decoder decodeInt32ForKey:@"glulx_iosys_rock"];
 		library_state.stringtable = [decoder decodeInt32ForKey:@"glulx_stringtable"];
 		arr = [decoder decodeObjectForKey:@"glulx_accel_params"];
-		library_state.accel_params = [arr retain];
+		library_state.accel_params = arr;
 		arr = [decoder decodeObjectForKey:@"glulx_accel_funcs"];
-		library_state.accel_funcs = [arr retain];
+		library_state.accel_funcs = arr;
 		library_state.gamefiletag = [decoder decodeInt32ForKey:@"glulx_gamefiletag"];
 		arr = [decoder decodeObjectForKey:@"glulx_id_map_list"];
-		library_state.id_map_list = [arr retain];
+		library_state.id_map_list = arr;
 	}
 }
 
