@@ -180,7 +180,7 @@ static void iosglk_game_autorestore()
 	}
 	@catch (NSException *ex) {
 		// leave newlib as nil
-		NSLog(@"Unable to restore autosave library: %@", ex);
+		NSLog(@"Unable to restore autosave library: Exception %@ Error %@", ex, error);
 	}
 	[GlkLibrary setExtraUnarchiveHook:nil];
 
