@@ -176,7 +176,7 @@ static void iosglk_game_autorestore()
 	[GlkLibrary setExtraUnarchiveHook:iosglk_library_unarchive];
     NSError *error = nil;
 	@try {
-        newlib = [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithArray:@[[GlkLibrary class], [NSString class], [NSMutableArray class], [NSMutableString class], [GlkWindow class], [GlkStream class], [GlkFileRef class], [NSValue class], [NSNumber class], [GlkStyledLine class], [GlkStyledString class], [GlkGridLine class], [Geometry class], [GlkObjIdEntry class]]] fromData:[NSData dataWithContentsOfURL:[NSURL fileURLWithPath:libpath]] error:&error];
+        newlib = [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithArray:@[[GlkLibrary class], [NSString class], [NSMutableArray class], [NSMutableString class], [GlkWindow class], [GlkStream class], [GlkFileRef class], [NSValue class], [NSNumber class], [GlkStyledLine class], [GlkStyledString class], [GlkGridLine class], [Geometry class], [GlkObjIdEntry class], [GlulxAccelEntry class]]] fromData:[NSData dataWithContentsOfURL:[NSURL fileURLWithPath:libpath]] error:&error];
 	}
 	@catch (NSException *ex) {
 		// leave newlib as nil
