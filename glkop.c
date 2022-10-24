@@ -944,7 +944,11 @@ strid_t find_stream_by_id(glui32 objid)
     return NULL;
 
   /* Recall that class 1 ("b") is streams. */
+#ifdef IOS_GLK
+  return (__bridge strid_t)(classes_get(gidisp_Class_Stream, objid));
+#else
   return classes_get(gidisp_Class_Stream, objid);
+#endif
 }
 
 /* find_id_for_window():
@@ -957,7 +961,11 @@ glui32 find_id_for_window(winid_t win)
   if (!win)
     return 0;
 
+#ifdef IOS_GLK
+  objrock = gidispatch_get_objrock((__bridge void *)(win), gidisp_Class_Window);
+#else
   objrock = gidispatch_get_objrock(win, gidisp_Class_Window);
+#endif
   if (!objrock.ptr)
     return 0;
   return ((classref_t *)objrock.ptr)->id;
@@ -973,7 +981,12 @@ glui32 find_id_for_stream(strid_t str)
   if (!str)
     return 0;
 
+#ifdef IOS_GLK
+  objrock = gidispatch_get_objrock((__bridge void *)(str), gidisp_Class_Stream);
+#else
   objrock = gidispatch_get_objrock(str, gidisp_Class_Stream);
+#endif
+
   if (!objrock.ptr)
     return 0;
   return ((classref_t *)objrock.ptr)->id;
@@ -989,7 +1002,12 @@ glui32 find_id_for_fileref(frefid_t fref)
   if (!fref)
     return 0;
 
+#ifdef IOS_GLK
+  objrock = gidispatch_get_objrock((__bridge void *)(fref), gidisp_Class_Fileref);
+#else
   objrock = gidispatch_get_objrock(fref, gidisp_Class_Fileref);
+#endif
+
   if (!objrock.ptr)
     return 0;
   return ((classref_t *)objrock.ptr)->id;
@@ -1005,7 +1023,12 @@ glui32 find_id_for_schannel(schanid_t schan)
   if (!schan)
     return 0;
 
+#ifdef IOS_GLK
+  objrock = gidispatch_get_objrock((__bridge void *)(schan), gidisp_Class_Schannel);
+#else
   objrock = gidispatch_get_objrock(schan, gidisp_Class_Schannel);
+#endif
+
   if (!objrock.ptr)
     return 0;
   return ((classref_t *)objrock.ptr)->id;
