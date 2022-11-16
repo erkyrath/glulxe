@@ -45,7 +45,7 @@ void execute_loop()
 #ifdef IOS_GLK
     int called_glk_select = 0;
     @autoreleasepool { /* autoreleasepool */
-      while (called_glk_select == 0) { /* Inner loop */
+      while (called_glk_select == 0 && !done_executing) { /* Inner loop */
 #endif /* IOS_GLK */
         profile_tick();
         debugger_tick();
