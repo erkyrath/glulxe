@@ -83,8 +83,9 @@ int glkunix_startup_code(glkunix_startup_t *data)
     if (!strcmp(data->argv[ix], "--undo")) {
       ix++;
       if (ix<data->argc) {
-        int val = atoi(data->argv[ix]);
-        if (val <= 0) {
+        char *endptr = NULL;
+        int val = strtol(data->argv[ix], &endptr, 10);
+        if (*endptr) {
           init_err = "--undo must be a number.";
           return TRUE;
         }
@@ -96,8 +97,9 @@ int glkunix_startup_code(glkunix_startup_t *data)
     if (!strcmp(data->argv[ix], "--rngseed")) {
       ix++;
       if (ix<data->argc) {
-        int val = atoi(data->argv[ix]);
-        if (val <= 0) {
+        char *endptr = NULL;
+        int val = strtol(data->argv[ix], &endptr, 10);
+        if (*endptr) {
           init_err = "--rngseed must be a number.";
           return TRUE;
         }
