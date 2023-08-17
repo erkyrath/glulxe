@@ -117,6 +117,12 @@ display the update, and then (without delay) exit.
 
 ## Version
 
+0.6.1 (###)
+
+- Added a --rngseed argument to fix the RNG setting from the command
+  line.
+- Configuration improvements for Windows.
+
 0.6.0 (Jun 25, 2022):
 
 - Added @hasundo and @discardundo opcodes. (Glulx spec 3.1.3.)
