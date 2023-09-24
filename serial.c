@@ -280,6 +280,9 @@ glui32 perform_restoreundo()
     dest.ptr = NULL;
   }
 
+  if (heapsumarr) 
+    glulx_free(heapsumarr);
+  
   return res;
 }
 
@@ -570,6 +573,9 @@ glui32 perform_restore(strid_t str, int fromshell)
       res = heap_apply_summary(heapsumlen, heapsumarr);
     }
   }
+
+  if (heapsumarr) 
+    glulx_free(heapsumarr);
 
   if (res)
     return 1;
