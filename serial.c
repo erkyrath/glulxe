@@ -262,8 +262,10 @@ glui32 perform_restoreundo()
      cause fatal errors. The stack or main memory may be damaged now. */
 
   if (res == 0) {
-    if (heapsumarr)
+    if (heapsumarr) {
       res = heap_apply_summary(heapsumlen, heapsumarr);
+      glulx_free(heapsumarr);
+    }
   }
 
   if (res == 0) {
