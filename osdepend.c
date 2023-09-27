@@ -69,9 +69,9 @@ void glulx_setrandom(glui32 seed)
 glui32 glulx_random()
 {
 #ifdef COMPILE_RANDOM_CODE
-  return (lo_random() << 16) ^ lo_random();
+  return lo_random();
 #else
-  return (random() << 16) ^ random();
+  return random();
 #endif
 }
 
@@ -105,7 +105,7 @@ void glulx_free(void *ptr)
 /* Return a random number in the range 0 to 2^32-1. */
 glui32 glulx_random()
 {
-  return (lo_random() << 16) ^ lo_random();
+  return lo_random();
 }
 
 /* Set the random-number seed; zero means use as random a source as
@@ -147,7 +147,7 @@ void glulx_free(void *ptr)
 /* Return a random number in the range 0 to 2^32-1. */
 glui32 glulx_random()
 {
-  return (lo_random() << 16) ^ lo_random();
+  return lo_random();
 }
 
 __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
