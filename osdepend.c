@@ -165,39 +165,57 @@ void glulx_setrandom(glui32 seed)
 
 #ifdef COMPILE_RANDOM_CODE
 
-/* Here is a pretty standard random-number generator and seed function. */
+/* Here is the Mersenne Twister MT19937 random-number generator and seed function. */
 static glui32 lo_random(void);
 static void lo_seed_random(glui32 seed);
-static glui32 rand_table[55]; /* State for the RNG. */
-static int rand_index1, rand_index2;
 
-static glui32 lo_random()
-{
-  rand_index1 = (rand_index1 + 1) % 55;
-  rand_index2 = (rand_index2 + 1) % 55;
-  rand_table[rand_index1] = rand_table[rand_index1] - rand_table[rand_index2];
-  return rand_table[rand_index1];
-}
+#define MT_N (624)
+#define MT_M (397)
+#define MT_A (0x9908B0DF)
+#define MT_F (1812433253)
+/* Also width=32 */
+static glui32 mt_table[MT_N]; /* State for the RNG. */
+static int mt_index;
 
 static void lo_seed_random(glui32 seed)
 {
-  glui32 k = 1;
-  int i, loop;
+    int i;
 
-  rand_table[54] = seed;
-  rand_index1 = 0;
-  rand_index2 = 31;
-  
-  for (i = 0; i < 55; i++) {
-    int ii = (21 * i) % 55;
-    rand_table[ii] = k;
-    k = seed - k;
-    seed = rand_table[ii];
-  }
-  for (loop = 0; loop < 4; loop++) {
-    for (i = 0; i < 55; i++)
-      rand_table[i] = rand_table[i] - rand_table[ (1 + i + 30) % 55];
-  }
+    mt_table[0] = seed;
+    for (i=1; i<MT_N; i++) {
+        mt_table[i] = ((MT_F * (mt_table[i-1] ^ (mt_table[i-1] >> 30)) + i));
+    }
+    
+    mt_index = MT_N+1;
+}
+
+static glui32 lo_random()
+{
+    int i;
+    glui32 y;
+    
+    if (mt_index >= MT_N) {
+        /* Do the twist */
+        for (i=0; i<MT_N; i++) {
+            glui32 x, xa;
+            x = (mt_table[i] & 0x80000000) | (mt_table[(i + 1) % MT_N] & 0x7FFFFFFF);
+            xa = x >> 1;
+            if (x % 2) {
+                xa = xa ^ MT_A;
+            }
+            mt_table[i] = mt_table[(i+MT_M) % MT_N] ^ xa;
+        }
+        mt_index = 0;
+    }
+    
+    y = mt_table[mt_index];
+    /* These values are called (u, d, s, b, t, c) in the Mersenne Twister algorithm. */
+    y = y ^ ((y >> 11) & 0xFFFFFFFF);
+    y = y ^ ((y << 7) & 0x9D2C5680);
+    y = y ^ ((y << 15) & 0xEFC60000);
+    y = y ^ (y >> 18);
+    mt_index += 1;
+    return y;
 }
 
 #endif /* COMPILE_RANDOM_CODE */
