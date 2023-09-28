@@ -59,7 +59,7 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
-/* Use POSIX random() as the native RNG. */
+/* Use POSIX random() as the native RNG, seeded from the POSIX clock. */
 #define RAND_SET_SEED() (srandom(time(NULL)))
 #define RAND_GET() (random())
 
@@ -94,7 +94,7 @@ void glulx_free(void *ptr)
 __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
 
 /* Use our Mersenne Twister as the native RNG, but seed it from
-   a couple of different system clocks. */
+   a couple of different Windows system clocks. */
 #define	RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
 #define RAND_GET() (mt_random())
 
