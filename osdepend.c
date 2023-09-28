@@ -23,8 +23,8 @@
 #endif
 
 #ifdef COMPILE_RANDOM_CODE
-static glui32 lo_random(void);
-static void lo_seed_random(glui32 seed);
+static glui32 mt_random(void);
+static void mt_seed_random(glui32 seed);
 #endif
 
 #ifdef OS_UNIX
@@ -59,7 +59,7 @@ void glulx_setrandom(glui32 seed)
   if (seed == 0)
     seed = time(NULL);
 #ifdef COMPILE_RANDOM_CODE
-  lo_seed_random(seed);
+  mt_seed_random(seed);
 #else
   srandom(seed);
 #endif
@@ -69,7 +69,7 @@ void glulx_setrandom(glui32 seed)
 glui32 glulx_random()
 {
 #ifdef COMPILE_RANDOM_CODE
-  return lo_random();
+  return mt_random();
 #else
   return random();
 #endif
@@ -105,7 +105,7 @@ void glulx_free(void *ptr)
 /* Return a random number in the range 0 to 2^32-1. */
 glui32 glulx_random()
 {
-  return lo_random();
+  return mt_random();
 }
 
 __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
@@ -116,7 +116,7 @@ void glulx_setrandom(glui32 seed)
 {
   if (seed == 0)
     seed = GetTickCount() ^ time(NULL);
-  lo_seed_random(seed);
+  mt_seed_random(seed);
 }
 
 #endif /* WIN32 */
@@ -124,8 +124,8 @@ void glulx_setrandom(glui32 seed)
 #ifdef COMPILE_RANDOM_CODE
 
 /* Here is the Mersenne Twister MT19937 random-number generator and seed function. */
-static glui32 lo_random(void);
-static void lo_seed_random(glui32 seed);
+static glui32 mt_random(void);
+static void mt_seed_random(glui32 seed);
 
 #define MT_N (624)
 #define MT_M (397)
@@ -135,7 +135,7 @@ static void lo_seed_random(glui32 seed);
 static glui32 mt_table[MT_N]; /* State for the RNG. */
 static int mt_index;
 
-static void lo_seed_random(glui32 seed)
+static void mt_seed_random(glui32 seed)
 {
     int i;
 
@@ -147,7 +147,7 @@ static void lo_seed_random(glui32 seed)
     mt_index = MT_N+1;
 }
 
-static glui32 lo_random()
+static glui32 mt_random()
 {
     int i;
     glui32 y;
