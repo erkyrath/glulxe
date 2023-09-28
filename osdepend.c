@@ -90,14 +90,11 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
-/* Return a random number in the range 0 to 2^32-1. */
-glui32 glulx_random()
-{
-  return mt_random();
-}
 
 __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
 
+/* Use our Mersenne Twister as the native RNG, but seed it from
+   a couple of different system clocks. */
 #define	RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
 #define RAND_GET() (mt_random())
 
