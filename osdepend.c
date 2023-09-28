@@ -22,7 +22,13 @@
 #define COMPILE_RANDOM_CODE
 #endif
 
-static int rand_use_native = FALSE;
+/* We have a slightly baroque random-number scheme. We can use either
+   a simple Mersenne Twister RNG (provided below), or a platform native
+   RNG. (If no platform native RNG is provided, we fall back to the
+   Mersenne RNG in all cases.
+*/
+
+static int rand_use_native = TRUE;
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
 
@@ -50,6 +56,9 @@ void glulx_free(void *ptr)
 {
   free(ptr);
 }
+
+#define RAND_SET_SEED() (srandom(time(NULL)))
+#define RAND_GET() (random())
 
 #endif /* OS_UNIX */
 
@@ -86,17 +95,16 @@ glui32 glulx_random()
 
 __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
 
-/* Set the random-number seed; zero means use as random a source as
-possible. */
-void glulx_setrandom(glui32 seed)
-{
-  if (seed == 0)
-    seed = GetTickCount() ^ time(NULL);
-  mt_seed_random(seed);
-}
+#define	RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
+#define RAND_GET() (mt_random())
 
 #endif /* WIN32 */
 
+/* If no native RNG is defined above, use the Mersenne implementation. */
+#ifndef RAND_SET_SEED
+#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
+#define RAND_GET() (mt_random())
+#endif /* RAND_SET_SEED */
 
 /* Set the random-number seed.
    Zero means use as random a source as possible, and also use the platform
@@ -108,7 +116,7 @@ void glulx_setrandom(glui32 seed)
     if (seed == 0) {
         seed = time(NULL);
         rand_use_native = TRUE;
-        srandom(seed); //###
+        RAND_SET_SEED();
     }
     else {
         rand_use_native = FALSE;
@@ -120,7 +128,7 @@ void glulx_setrandom(glui32 seed)
 glui32 glulx_random()
 {
     if (rand_use_native) {
-        return random(); //###
+        return RAND_GET();
     }
     else {
         return mt_random();
