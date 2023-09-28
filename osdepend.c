@@ -34,6 +34,38 @@
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
 
+#ifdef OS_STDC
+
+#include <time.h>
+#include <stdlib.h>
+
+/* Allocate a chunk of memory. */
+void *glulx_malloc(glui32 len)
+{
+  return malloc(len);
+}
+
+/* Resize a chunk of memory. This must follow ANSI rules: if the
+   size-change fails, this must return NULL, but the original chunk
+   must remain unchanged. */
+void *glulx_realloc(void *ptr, glui32 len)
+{
+  return realloc(ptr, len);
+}
+
+/* Deallocate a chunk of memory. */
+void glulx_free(void *ptr)
+{
+  free(ptr);
+}
+
+/* Use our Mersenne Twister as the native RNG, seeded
+   from the clock. */
+#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
+#define RAND_GET() (mt_random())
+
+#endif /* OS_STDC */
+
 #ifdef OS_UNIX
 
 #include <time.h>
@@ -46,7 +78,7 @@ void *glulx_malloc(glui32 len)
 }
 
 /* Resize a chunk of memory. This must follow ANSI rules: if the
-   size-change fails, this must return NULL, but the original chunk 
+   size-change fails, this must return NULL, but the original chunk
    must remain unchanged. */
 void *glulx_realloc(void *ptr, glui32 len)
 {
@@ -65,7 +97,11 @@ void glulx_free(void *ptr)
 
 #endif /* OS_UNIX */
 
-#ifdef WIN32
+#ifdef OS_WINDOWS
+
+#ifdef _MSC_VER /* For Visual C++, get rand_s() */
+#define _CRT_RAND_S
+#endif
 
 #include <time.h>
 #include <stdlib.h>
@@ -77,7 +113,7 @@ void *glulx_malloc(glui32 len)
 }
 
 /* Resize a chunk of memory. This must follow ANSI rules: if the
-   size-change fails, this must return NULL, but the original chunk 
+   size-change fails, this must return NULL, but the original chunk
    must remain unchanged. */
 void *glulx_realloc(void *ptr, glui32 len)
 {
@@ -90,15 +126,35 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
+#ifdef _MSC_VER /* Visual C++ */
 
-__declspec(dllimport) unsigned long __stdcall GetTickCount(void);
+/* Do nothing, as rand_s() has no seed. */
+static void msc_srandom()
+{
+}
 
-/* Use our Mersenne Twister as the native RNG, but seed it from
-   a couple of different Windows system clocks. */
-#define RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
+/* Use the Visual C++ function rand_s() as the native RNG.
+   This calls the OS function RtlGetRandom(). */
+static glui32 msc_random()
+{
+  glui32 value;
+  rand_s(&value);
+  return value;
+}
+
+#define RAND_SET_SEED() (msc_srandom())
+#define RAND_GET() (msc_random())
+
+#else /* Other Windows compilers */
+
+/* Use our Mersenne Twister as the native RNG, seeded
+   from the clock. */
+#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
 
-#endif /* WIN32 */
+#endif
+
+#endif /* OS_WINDOWS */
 
 
 /* If no native RNG is defined above, use the Mersenne implementation. */
