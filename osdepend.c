@@ -111,8 +111,8 @@ void glulx_setrandom(glui32 seed)
         srandom(seed); //###
     }
     else {
-        mt_seed_random(seed);
         rand_use_native = FALSE;
+        mt_seed_random(seed);
     }
 }
 
