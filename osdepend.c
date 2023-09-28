@@ -22,10 +22,9 @@
 #define COMPILE_RANDOM_CODE
 #endif
 
-#ifdef COMPILE_RANDOM_CODE
+static int rand_use_native = FALSE;
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
-#endif
 
 #ifdef OS_UNIX
 
@@ -50,29 +49,6 @@ void *glulx_realloc(void *ptr, glui32 len)
 void glulx_free(void *ptr)
 {
   free(ptr);
-}
-
-/* Set the random-number seed; zero means use as random a source as
-   possible. */
-void glulx_setrandom(glui32 seed)
-{
-  if (seed == 0)
-    seed = time(NULL);
-#ifdef COMPILE_RANDOM_CODE
-  mt_seed_random(seed);
-#else
-  srandom(seed);
-#endif
-}
-
-/* Return a random number in the range 0 to 2^32-1. */
-glui32 glulx_random()
-{
-#ifdef COMPILE_RANDOM_CODE
-  return mt_random();
-#else
-  return random();
-#endif
 }
 
 #endif /* OS_UNIX */
@@ -121,9 +97,38 @@ void glulx_setrandom(glui32 seed)
 
 #endif /* WIN32 */
 
-#ifdef COMPILE_RANDOM_CODE
 
-/* Here is the Mersenne Twister MT19937 random-number generator and seed function. */
+/* Set the random-number seed.
+   Zero means use as random a source as possible, and also use the platform
+   RNG if available.
+   Nonzero means to use our provided RNG with the given seed.
+*/
+void glulx_setrandom(glui32 seed)
+{
+    if (seed == 0) {
+        seed = time(NULL);
+        rand_use_native = TRUE;
+        srandom(seed); //###
+    }
+    else {
+        mt_seed_random(seed);
+        rand_use_native = FALSE;
+    }
+}
+
+/* Return a random number in the range 0 to 2^32-1. */
+glui32 glulx_random()
+{
+    if (rand_use_native) {
+        return random(); //###
+    }
+    else {
+        return mt_random();
+    }
+}
+
+
+/* This is the Mersenne Twister MT19937 random-number generator and seed function. */
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
 
@@ -176,7 +181,6 @@ static glui32 mt_random()
     return y;
 }
 
-#endif /* COMPILE_RANDOM_CODE */
 
 #include <stdlib.h>
 
