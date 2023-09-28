@@ -65,7 +65,7 @@ void glulx_free(void *ptr)
 
 #endif /* OS_UNIX */
 
-#ifdef WIN32
+#ifdef OS_WINDOWS
 
 #include <time.h>
 #include <stdlib.h>
@@ -98,7 +98,7 @@ __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
 #define RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
 #define RAND_GET() (mt_random())
 
-#endif /* WIN32 */
+#endif /* OS_WINDOWS */
 
 
 /* If no native RNG is defined above, use the Mersenne implementation. */
