@@ -114,7 +114,6 @@ static int rand_use_native = TRUE;
 void glulx_setrandom(glui32 seed)
 {
     if (seed == 0) {
-        seed = time(NULL);
         rand_use_native = TRUE;
         RAND_SET_SEED();
     }
