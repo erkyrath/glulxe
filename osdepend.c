@@ -67,6 +67,10 @@ void glulx_free(void *ptr)
 
 #ifdef OS_WINDOWS
 
+#ifdef _MSC_VER /* For Visual C++, get rand_s() */
+#define _CRT_RAND_S
+#endif
+
 #include <time.h>
 #include <stdlib.h>
 
@@ -90,13 +94,33 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
+#ifdef _MSC_VER /* Visual C++ */
 
-__declspec(dllimport) unsigned long __stdcall GetTickCount(void);
+/* Do nothing, as rand_s() has no seed. */
+static void msc_srandom()
+{
+}
+
+/* Use the Visual C++ function rand_s() as the native RNG.
+   This calls the OS function RtlGetRandom(). */
+static glui32 msc_random()
+{
+  glui32 value;
+  rand_s(&value);
+  return value;
+}
+
+#define RAND_SET_SEED() (msc_srandom())
+#define RAND_GET() (msc_random())
+
+#else /* Other Windows compilers */
 
 /* Use our Mersenne Twister as the native RNG, but seed it from
-   a couple of different Windows system clocks. */
-#define RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
+   the clock. */
+#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
+
+#endif
 
 #endif /* OS_WINDOWS */
 
