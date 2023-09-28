@@ -34,6 +34,38 @@
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
 
+#ifdef OS_STDC
+
+#include <time.h>
+#include <stdlib.h>
+
+/* Allocate a chunk of memory. */
+void *glulx_malloc(glui32 len)
+{
+  return malloc(len);
+}
+
+/* Resize a chunk of memory. This must follow ANSI rules: if the
+   size-change fails, this must return NULL, but the original chunk
+   must remain unchanged. */
+void *glulx_realloc(void *ptr, glui32 len)
+{
+  return realloc(ptr, len);
+}
+
+/* Deallocate a chunk of memory. */
+void glulx_free(void *ptr)
+{
+  free(ptr);
+}
+
+/* Use our Mersenne Twister as the native RNG, seeded
+   from the clock. */
+#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
+#define RAND_GET() (mt_random())
+
+#endif /* OS_STDC */
+
 #ifdef OS_UNIX
 
 #include <time.h>
@@ -46,7 +78,7 @@ void *glulx_malloc(glui32 len)
 }
 
 /* Resize a chunk of memory. This must follow ANSI rules: if the
-   size-change fails, this must return NULL, but the original chunk 
+   size-change fails, this must return NULL, but the original chunk
    must remain unchanged. */
 void *glulx_realloc(void *ptr, glui32 len)
 {
@@ -81,7 +113,7 @@ void *glulx_malloc(glui32 len)
 }
 
 /* Resize a chunk of memory. This must follow ANSI rules: if the
-   size-change fails, this must return NULL, but the original chunk 
+   size-change fails, this must return NULL, but the original chunk
    must remain unchanged. */
 void *glulx_realloc(void *ptr, glui32 len)
 {
@@ -115,8 +147,8 @@ static glui32 msc_random()
 
 #else /* Other Windows compilers */
 
-/* Use our Mersenne Twister as the native RNG, but seed it from
-   the clock. */
+/* Use our Mersenne Twister as the native RNG, seeded
+   from the clock. */
 #define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
 
