@@ -57,6 +57,7 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
+/* Use POSIX random() as the native RNG. */
 #define RAND_SET_SEED() (srandom(time(NULL)))
 #define RAND_GET() (random())
 
