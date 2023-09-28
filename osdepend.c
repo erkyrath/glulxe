@@ -14,21 +14,23 @@
    symbol. Code contributions welcome. 
 */
 
-/* Always use Glulxe's random number generator for Windows.
-   For Unix and anything else, it is optional: define
-   COMPILE_RANDOM_CODE to use it.
-*/
-#if (defined (WIN32)) && !defined(COMPILE_RANDOM_CODE)
-#define COMPILE_RANDOM_CODE
-#endif
 
-/* We have a slightly baroque random-number scheme. We can use either
-   a simple Mersenne Twister RNG (provided below), or a platform native
-   RNG. (If no platform native RNG is provided, we fall back to the
-   Mersenne RNG in all cases.
+/* We have a slightly baroque random-number scheme. If the Glulx
+   @setrandom opcode is given seed 0, we use "true" randomness, from a
+   platform native RNG if possible. If @setrandom is given a nonzero
+   seed, we use a simple Mersenne Twister RNG (provided below). The
+   use of a provided algorithm aids cross-platform testing and debugging.
+   (Those being the cases where you'd set a nonzero seed.)
+
+   To define a native RNG, define the macros RAND_SET_SEED() (seed the
+   RNG with the clock or some other truly random source) and RAND_GET()
+   (grab a number). Note that RAND_SET_SEED() does not take an argument;
+   it is only called when seed=0.
+
+   If RAND_SET_SEED/RAND_GET are not provided, we call back to the same
+   Mersenne RNG as before, but seeded from the system clock.
 */
 
-static int rand_use_native = TRUE;
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
 
@@ -101,16 +103,16 @@ __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
 
 #endif /* WIN32 */
 
+
 /* If no native RNG is defined above, use the Mersenne implementation. */
 #ifndef RAND_SET_SEED
 #define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
 #endif /* RAND_SET_SEED */
 
-/* Set the random-number seed.
-   Zero means use as random a source as possible, and also use the platform
-   RNG if available.
-   Nonzero means to use our provided RNG with the given seed.
+static int rand_use_native = TRUE;
+
+/* Set the random-number seed, and also select which RNG to use.
 */
 void glulx_setrandom(glui32 seed)
 {
