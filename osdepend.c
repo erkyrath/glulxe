@@ -95,7 +95,7 @@ __declspec(dllimport) unsigned long __stdcall GetTickCount(void);
 
 /* Use our Mersenne Twister as the native RNG, but seed it from
    a couple of different Windows system clocks. */
-#define	RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
+#define RAND_SET_SEED() (mt_seed_random(GetTickCount() ^ time(NULL)))
 #define RAND_GET() (mt_random())
 
 #endif /* WIN32 */
