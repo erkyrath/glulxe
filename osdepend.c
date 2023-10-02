@@ -33,6 +33,7 @@
 
 static glui32 xo_random(void);
 static void xo_seed_random(glui32 seed);
+static void xo_seed_random_4(glui32 seed0, glui32 seed1, glui32 seed2, glui32 seed3);
 
 #ifdef OS_STDC
 
@@ -198,12 +199,22 @@ static void xo_seed_random(glui32 seed);
 
 static uint32_t xo_table[4];
 
+static void xo_seed_random_4(glui32 seed0, glui32 seed1, glui32 seed2, glui32 seed3)
+{
+    /* Set up the 128-bit state from four integers. Use this if you can get
+       four high-quality random values. */
+    xo_table[0] = seed0;
+    xo_table[1] = seed1;
+    xo_table[2] = seed2;
+    xo_table[3] = seed3;
+}
+
 static void xo_seed_random(glui32 seed)
 {
     int ix;
-    /* We set up the 128-bit state using a different RNG, SplitMix32.
-       This isn't high-quality, but we just need to get a bunch of
-       bits into xo_table. */
+    /* Set up the 128-bit state from a single 32-bit integer. We rely
+       on a different RNG, SplitMix32. This isn't high-quality, but we
+       just need to get a bunch of bits into xo_table. */
     for (ix=0; ix<4; ix++) {
         seed += 0x9E3779B9;
         glui32 s = seed;
