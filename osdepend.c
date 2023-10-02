@@ -18,7 +18,7 @@
 /* We have a slightly baroque random-number scheme. If the Glulx
    @setrandom opcode is given seed 0, we use "true" randomness, from a
    platform native RNG if possible. If @setrandom is given a nonzero
-   seed, we use a simple Mersenne Twister RNG (provided below). The
+   seed, we use a simple xoshiro128** RNG (provided below). The
    use of a provided algorithm aids cross-platform testing and debugging.
    (Those being the cases where you'd set a nonzero seed.)
 
@@ -28,7 +28,7 @@
    it is only called when seed=0.
 
    If RAND_SET_SEED/RAND_GET are not provided, we call back to the same
-   Mersenne RNG as before, but seeded from the system clock.
+   xoshiro128** RNG as before, but seeded from the system clock.
 */
 
 static glui32 mt_random(void);
@@ -59,8 +59,7 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
-/* Use our Mersenne Twister as the native RNG, seeded
-   from the clock. */
+/* Use our xoshiro128** as the native RNG, seeded from the clock. */
 #define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
 
@@ -147,8 +146,7 @@ static glui32 msc_random()
 
 #else /* Other Windows compilers */
 
-/* Use our Mersenne Twister as the native RNG, seeded
-   from the clock. */
+/* Use our xoshiro128** as the native RNG, seeded from the clock. */
 #define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
 
@@ -157,7 +155,7 @@ static glui32 msc_random()
 #endif /* OS_WINDOWS */
 
 
-/* If no native RNG is defined above, use the Mersenne implementation. */
+/* If no native RNG is defined above, use the xoshiro128** implementation. */
 #ifndef RAND_SET_SEED
 #define RAND_SET_SEED() (mt_seed_random(time(NULL)))
 #define RAND_GET() (mt_random())
@@ -191,57 +189,44 @@ glui32 glulx_random()
 }
 
 
-/* This is the Mersenne Twister MT19937 random-number generator and seed function. */
+/* This is the "xoshiro128**" random-number generator and seed function.
+   Adapted from: https://prng.di.unimi.it/xoshiro128starstar.c
+   About this algorithm: https://prng.di.unimi.it/
+*/
 static glui32 mt_random(void);
 static void mt_seed_random(glui32 seed);
 
-#define MT_N (624)
-#define MT_M (397)
-#define MT_A (0x9908B0DF)
-#define MT_F (1812433253)
-/* Also width=32 */
-static glui32 mt_table[MT_N]; /* State for the RNG. */
-static int mt_index;
+static uint32_t mt_table[4];
 
 static void mt_seed_random(glui32 seed)
 {
-    int i;
-
+    //###
     mt_table[0] = seed;
-    for (i=1; i<MT_N; i++) {
-        mt_table[i] = ((MT_F * (mt_table[i-1] ^ (mt_table[i-1] >> 30)) + i));
-    }
-    
-    mt_index = MT_N+1;
+    mt_table[1] = seed;
+    mt_table[2] = seed;
+    mt_table[3] = seed;
 }
 
-static glui32 mt_random()
+static uint32_t rotl(const uint32_t x, int k) {
+	return (x << k) | (x >> (32 - k));
+}
+
+uint32_t mt_random(void)
 {
-    int i;
-    glui32 y;
-    
-    if (mt_index >= MT_N) {
-        /* Do the twist */
-        for (i=0; i<MT_N; i++) {
-            glui32 x, xa;
-            x = (mt_table[i] & 0x80000000) | (mt_table[(i + 1) % MT_N] & 0x7FFFFFFF);
-            xa = x >> 1;
-            if (x % 2) {
-                xa = xa ^ MT_A;
-            }
-            mt_table[i] = mt_table[(i+MT_M) % MT_N] ^ xa;
-        }
-        mt_index = 0;
-    }
-    
-    y = mt_table[mt_index];
-    /* These values are called (u, d, s, b, t, c) in the Mersenne Twister algorithm. */
-    y = y ^ ((y >> 11) & 0xFFFFFFFF);
-    y = y ^ ((y << 7) & 0x9D2C5680);
-    y = y ^ ((y << 15) & 0xEFC60000);
-    y = y ^ (y >> 18);
-    mt_index += 1;
-    return y;
+	const uint32_t result = rotl(mt_table[1] * 5, 7) * 9;
+
+	const uint32_t t = mt_table[1] << 9;
+
+	mt_table[2] ^= mt_table[0];
+	mt_table[3] ^= mt_table[1];
+	mt_table[1] ^= mt_table[2];
+	mt_table[0] ^= mt_table[3];
+
+	mt_table[2] ^= t;
+
+	mt_table[3] = rotl(mt_table[3], 11);
+
+	return result;
 }
 
 
