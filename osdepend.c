@@ -97,6 +97,36 @@ void glulx_free(void *ptr)
 
 #endif /* OS_UNIX */
 
+#ifdef OS_MAC
+
+#include <stdlib.h>
+
+/* Allocate a chunk of memory. */
+void *glulx_malloc(glui32 len)
+{
+  return malloc(len);
+}
+
+/* Resize a chunk of memory. This must follow ANSI rules: if the
+   size-change fails, this must return NULL, but the original chunk
+   must remain unchanged. */
+void *glulx_realloc(void *ptr, glui32 len)
+{
+  return realloc(ptr, len);
+}
+
+/* Deallocate a chunk of memory. */
+void glulx_free(void *ptr)
+{
+  free(ptr);
+}
+
+/* Use arc4random() as the native RNG. It doesn't need to be seeded. */
+#define RAND_SET_SEED() (0)
+#define RAND_GET() (arc4random())
+
+#endif /* OS_MAC */
+
 #ifdef OS_WINDOWS
 
 #ifdef _MSC_VER /* For Visual C++, get rand_s() */
