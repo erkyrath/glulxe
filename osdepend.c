@@ -205,12 +205,12 @@ static void mt_seed_random(glui32 seed)
        This isn't high-quality, but we just need to get a bunch of
        bits into mt_table. */
     for (ix=0; ix<4; ix++) {
-        seed += 2654435769;
+        seed += 0x9E3779B9;
         glui32 s = seed;
-        s ^= s >> 16;
-        s *= 0x85ebca6b;
+        s ^= s >> 15;
+        s *= 0x85EBCA6B;
         s ^= s >> 13;
-        s *= 0xc2b2ae35;
+        s *= 0xC2B2AE35;
         s ^= s >> 16;
         mt_table[ix] = s;
     }
