@@ -31,8 +31,8 @@
    xoshiro128** RNG as before, but seeded from the system clock.
 */
 
-static glui32 mt_random(void);
-static void mt_seed_random(glui32 seed);
+static glui32 xo_random(void);
+static void xo_seed_random(glui32 seed);
 
 #ifdef OS_STDC
 
@@ -60,8 +60,8 @@ void glulx_free(void *ptr)
 }
 
 /* Use our xoshiro128** as the native RNG, seeded from the clock. */
-#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
-#define RAND_GET() (mt_random())
+#define RAND_SET_SEED() (xo_seed_random(time(NULL)))
+#define RAND_GET() (xo_random())
 
 #endif /* OS_STDC */
 
@@ -147,8 +147,8 @@ static glui32 msc_random()
 #else /* Other Windows compilers */
 
 /* Use our xoshiro128** as the native RNG, seeded from the clock. */
-#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
-#define RAND_GET() (mt_random())
+#define RAND_SET_SEED() (xo_seed_random(time(NULL)))
+#define RAND_GET() (xo_random())
 
 #endif
 
@@ -157,8 +157,8 @@ static glui32 msc_random()
 
 /* If no native RNG is defined above, use the xoshiro128** implementation. */
 #ifndef RAND_SET_SEED
-#define RAND_SET_SEED() (mt_seed_random(time(NULL)))
-#define RAND_GET() (mt_random())
+#define RAND_SET_SEED() (xo_seed_random(time(NULL)))
+#define RAND_GET() (xo_random())
 #endif /* RAND_SET_SEED */
 
 static int rand_use_native = TRUE;
@@ -173,7 +173,7 @@ void glulx_setrandom(glui32 seed)
     }
     else {
         rand_use_native = FALSE;
-        mt_seed_random(seed);
+        xo_seed_random(seed);
     }
 }
 
@@ -184,7 +184,7 @@ glui32 glulx_random()
         return RAND_GET();
     }
     else {
-        return mt_random();
+        return xo_random();
     }
 }
 
@@ -193,17 +193,17 @@ glui32 glulx_random()
    Adapted from: https://prng.di.unimi.it/xoshiro128starstar.c
    About this algorithm: https://prng.di.unimi.it/
 */
-static glui32 mt_random(void);
-static void mt_seed_random(glui32 seed);
+static glui32 xo_random(void);
+static void xo_seed_random(glui32 seed);
 
-static uint32_t mt_table[4];
+static uint32_t xo_table[4];
 
-static void mt_seed_random(glui32 seed)
+static void xo_seed_random(glui32 seed)
 {
     int ix;
     /* We set up the 128-bit state using a different RNG, SplitMix32.
        This isn't high-quality, but we just need to get a bunch of
-       bits into mt_table. */
+       bits into xo_table. */
     for (ix=0; ix<4; ix++) {
         seed += 0x9E3779B9;
         glui32 s = seed;
@@ -212,7 +212,7 @@ static void mt_seed_random(glui32 seed)
         s ^= s >> 13;
         s *= 0xC2B2AE35;
         s ^= s >> 16;
-        mt_table[ix] = s;
+        xo_table[ix] = s;
     }
 }
 
@@ -220,20 +220,20 @@ static uint32_t rotl(const uint32_t x, int k) {
 	return (x << k) | (x >> (32 - k));
 }
 
-uint32_t mt_random(void)
+uint32_t xo_random(void)
 {
-	const uint32_t result = rotl(mt_table[1] * 5, 7) * 9;
+	const uint32_t result = rotl(xo_table[1] * 5, 7) * 9;
 
-	const uint32_t t = mt_table[1] << 9;
+	const uint32_t t = xo_table[1] << 9;
 
-	mt_table[2] ^= mt_table[0];
-	mt_table[3] ^= mt_table[1];
-	mt_table[1] ^= mt_table[2];
-	mt_table[0] ^= mt_table[3];
+	xo_table[2] ^= xo_table[0];
+	xo_table[3] ^= xo_table[1];
+	xo_table[1] ^= xo_table[2];
+	xo_table[0] ^= xo_table[3];
 
-	mt_table[2] ^= t;
+	xo_table[2] ^= t;
 
-	mt_table[3] = rotl(mt_table[3], 11);
+	xo_table[3] = rotl(xo_table[3], 11);
 
 	return result;
 }
