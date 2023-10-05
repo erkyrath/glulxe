@@ -31,6 +31,11 @@ GLKMAKEFILE = Make.cheapglk
 CC = cc
 #CC = gcc
 
+# Set an appropriate OS config in OPTIONS:
+# -DOS_MAC for MacOS
+# -DOS_WINDOWS for Windows
+# -DOS_UNIX for Unix/Linux
+
 OPTIONS = -g -Wall -Wmissing-prototypes -Wno-unused -DOS_MAC
 
 # Locate the libxml2 library. You only need these lines if you are using
