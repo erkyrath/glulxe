@@ -289,25 +289,25 @@ static void xo_seed_random(glui32 seed)
 }
 
 static uint32_t rotl(const uint32_t x, int k) {
-	return (x << k) | (x >> (32 - k));
+    return (x << k) | (x >> (32 - k));
 }
 
 uint32_t xo_random(void)
 {
-	const uint32_t result = rotl(xo_table[1] * 5, 7) * 9;
+    const uint32_t result = rotl(xo_table[1] * 5, 7) * 9;
 
-	const uint32_t t = xo_table[1] << 9;
+    const uint32_t t = xo_table[1] << 9;
 
-	xo_table[2] ^= xo_table[0];
-	xo_table[3] ^= xo_table[1];
-	xo_table[1] ^= xo_table[2];
-	xo_table[0] ^= xo_table[3];
+    xo_table[2] ^= xo_table[0];
+    xo_table[3] ^= xo_table[1];
+    xo_table[1] ^= xo_table[2];
+    xo_table[0] ^= xo_table[3];
 
-	xo_table[2] ^= t;
+    xo_table[2] ^= t;
 
-	xo_table[3] = rotl(xo_table[3], 11);
+    xo_table[3] = rotl(xo_table[3], 11);
 
-	return result;
+    return result;
 }
 
 
