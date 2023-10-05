@@ -14,8 +14,11 @@ the [Glk home page][glk].
 
 The Unix Makefile that comes with this package is designed to link any
 of the Unix libraries (CheapGlk, GlkTerm, RemGlk, etc.) You'll have to go
-into the Makefile and set three variables to find the library. There are
-instructions at the top of the Makefile. Then just type
+into the Makefile and set three variables to find the library. You'll also
+want to set the appropriate OS_* constants on the OPTIONS line. There are
+instructions at the top of the Makefile.
+
+Then just type
 
     make glulxe
 
