@@ -19,7 +19,7 @@
    @setrandom opcode is given seed 0, we use "true" randomness, from a
    platform native RNG if possible. If @setrandom is given a nonzero
    seed, we use a simple xoshiro128** RNG (provided below). The
-   use of a provided algorithm aids cross-platform testing and debugging.
+   use of a known algorithm aids cross-platform testing and debugging.
    (Those being the cases where you'd set a nonzero seed.)
 
    To define a native RNG, define the macros RAND_SET_SEED() (seed the
@@ -91,9 +91,20 @@ void glulx_free(void *ptr)
   free(ptr);
 }
 
-/* Use POSIX random() as the native RNG, seeded from the POSIX clock. */
-#define RAND_SET_SEED() (srandom(time(NULL)))
-#define RAND_GET() (random())
+#ifdef UNIX_RAND_ARC4
+
+/* Use arc4random() as the native RNG. It doesn't need to be seeded. */
+#define RAND_SET_SEED() (0)
+#define RAND_GET() (arc4random())
+
+#else /* UNIX_RAND_... */
+
+/* Use our xoshiro128** as the native RNG, seeded from the clock. */
+#define RAND_SET_SEED() (xo_seed_random(time(NULL)))
+#define RAND_GET() (xo_random())
+#pragma message("### UNIX_RAND_OTHER")
+
+#endif /* UNIX_RAND_... */
 
 #endif /* OS_UNIX */
 
