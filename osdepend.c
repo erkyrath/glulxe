@@ -97,6 +97,28 @@ void glulx_free(void *ptr)
 #define RAND_SET_SEED() (0)
 #define RAND_GET() (arc4random())
 
+#elif UNIX_RAND_GETRANDOM
+
+/* Use xoshiro128** as the native RNG, seeded from getrandom(). */
+#include <sys/random.h>
+
+static void rand_set_seed(void)
+{
+    glui32 seeds[4];
+    int res = getrandom(seeds, 4*sizeof(glui32), 0);
+    if (res < 0) {
+        /* Error; fall back to the clock. */
+        xo_seed_random(time(NULL));
+    }
+    else {
+        xo_seed_random_4(seeds[0], seeds[1], seeds[2], seeds[3]);
+    }
+}
+
+#define RAND_SET_SEED() (rand_set_seed())
+#define RAND_GET() (xo_random())
+#pragma message("### UNIX_RAND_GETRANDOM")
+
 #else /* UNIX_RAND_... */
 
 /* Use our xoshiro128** as the native RNG, seeded from the clock. */
