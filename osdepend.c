@@ -292,7 +292,7 @@ static uint32_t rotl(const uint32_t x, int k) {
     return (x << k) | (x >> (32 - k));
 }
 
-uint32_t xo_random(void)
+static glui32 xo_random(void)
 {
     const uint32_t result = rotl(xo_table[1] * 5, 7) * 9;
 
