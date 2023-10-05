@@ -25,7 +25,8 @@
    To define a native RNG, define the macros RAND_SET_SEED() (seed the
    RNG with the clock or some other truly random source) and RAND_GET()
    (grab a number). Note that RAND_SET_SEED() does not take an argument;
-   it is only called when seed=0.
+   it is only called when seed=0. If RAND_GET() calls a non-seeded RNG
+   API (such as arc4random()), then RAND_SET_SEED() should be a no-op.
 
    If RAND_SET_SEED/RAND_GET are not provided, we call back to the same
    xoshiro128** RNG as before, but seeded from the system clock.
