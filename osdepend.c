@@ -117,14 +117,12 @@ static void rand_set_seed(void)
 
 #define RAND_SET_SEED() (rand_set_seed())
 #define RAND_GET() (xo_random())
-#pragma message("### UNIX_RAND_GETRANDOM")
 
 #else /* UNIX_RAND_... */
 
 /* Use our xoshiro128** as the native RNG, seeded from the clock. */
 #define RAND_SET_SEED() (xo_seed_random(time(NULL)))
 #define RAND_GET() (xo_random())
-#pragma message("### UNIX_RAND_OTHER")
 
 #endif /* UNIX_RAND_... */
 
