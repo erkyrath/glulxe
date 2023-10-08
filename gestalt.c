@@ -25,7 +25,9 @@ glui32 do_gestalt(glui32 val, glui32 val2)
 #endif /* FIXED_MEMSIZE */
 
   case gestulx_Undo:
-    return 1; /* We can handle saveundo and restoreundo. */
+    if (max_undo_level > 0)
+      return 1; /* We can handle saveundo and restoreundo. */
+    return 0; /* Got "--undo 0", so nope. */
 
   case gestulx_IOSystem:
     switch (val2) {
