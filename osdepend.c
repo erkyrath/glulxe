@@ -325,7 +325,6 @@ void glulx_sort(void *addr, int count, int size,
 #ifdef FLOAT_SUPPORT
 #include <math.h>
 
-
 /* This wrapper handles all special cases, even if the underlying
    powf() function doesn't. */
 gfloat32 glulx_powf(gfloat32 val1, gfloat32 val2)
@@ -339,5 +338,20 @@ gfloat32 glulx_powf(gfloat32 val1, gfloat32 val2)
   return powf(val1, val2);
 }
 
-
 #endif /* FLOAT_SUPPORT */
+
+#ifdef DOUBLE_SUPPORT
+
+/* Same for pow(). */
+extern gfloat64 glulx_pow(gfloat64 val1, gfloat64 val2)
+{
+  if (val1 == 1.0)
+    return 1.0;
+  else if ((val2 == 0.0) || (val2 == -0.0))
+    return 1.0;
+  else if ((val1 == -1.0) && isinf(val2))
+    return 1.0;
+  return pow(val1, val2);
+}
+
+#endif /* DOUBLE_SUPPORT */
