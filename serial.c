@@ -63,10 +63,14 @@ static int reposition_write(dest_t *dest, glui32 pos);
 int init_serial()
 {
   undo_chain_num = 0;
-  undo_chain_size = max_undo_level;
-  undo_chain = (unsigned char **)glulx_malloc(sizeof(unsigned char *) * undo_chain_size);
-  if (!undo_chain)
-    return FALSE;
+  undo_chain_size = 0;
+  undo_chain = NULL;
+  if (max_undo_level > 0) {
+    undo_chain_size = max_undo_level;
+    undo_chain = (unsigned char **)glulx_malloc(sizeof(unsigned char *) * undo_chain_size);
+    if (!undo_chain)
+      return FALSE;
+  }
 
 #ifdef SERIALIZE_CACHE_RAM
   {
