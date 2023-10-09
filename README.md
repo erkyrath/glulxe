@@ -126,6 +126,7 @@ display the update, and then (without delay) exit.
   line.
 - Changed the built-in RNG to xoshiro**. Added configuration defs to
   use a native OS RNG where possible.
+- Fixed obscure corner case in pow(), powf() on some platforms.
 - Configuration improvements for Windows.
 
 0.6.0 (Jun 25, 2022):
