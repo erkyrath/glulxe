@@ -288,7 +288,7 @@ display the update, and then (without delay) exit.
 
 ## Permissions
 
-The source code in this package is copyright 1999-2016 by Andrew Plotkin.
+The source code in this package is copyright 1999-2023 by Andrew Plotkin.
 It is distributed under the MIT license; see the "[LICENSE][]" file.
 
 [LICENSE]: ./LICENSE
