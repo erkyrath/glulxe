@@ -64,6 +64,7 @@ static void extra_state_data_free(extra_state_data_t *);
 static int extra_state_serialize(glkunix_serialize_context_t, void *);
 static int extra_state_serialize_accel_param(glkunix_serialize_context_t, void *);
 static int extra_state_serialize_accel_func(glkunix_serialize_context_t, void *);
+static int extra_state_serialize_rand_detstate(glkunix_serialize_context_t, void *);
 static int extra_state_serialize_obj_id_entry(glkunix_serialize_context_t, void *);
 static int extra_state_unserialize(glkunix_unserialize_context_t, void *);
 static int extra_state_unserialize_accel_param(glkunix_unserialize_context_t, void *);
@@ -614,6 +615,15 @@ static int extra_state_serialize(glkunix_serialize_context_t ctx, void *rock)
             glkunix_serialize_object_list(ctx, "glulx_accel_funcs", extra_state_serialize_accel_func, state->accel_func_count, sizeof(extra_glulx_accel_entry_t), state->accel_funcs);
         }
 
+        int usenative = FALSE;
+        glui32 *randarray = NULL;
+        int randcount = 0;
+        glulx_random_get_detstate(&usenative, &randarray, &randcount);
+        glkunix_serialize_uint32(ctx, "glulx_rand_use_native", usenative);
+        if (randarray && randcount) {
+            glkunix_serialize_object_list(ctx, "glulx_rand_detstate", extra_state_serialize_rand_detstate, randcount, sizeof(glui32), randarray);
+        }
+
         glkunix_serialize_uint32(ctx, "glulx_gamefiletag", state->gamefiletag);
         
         if (state->id_map_list) {
@@ -637,6 +647,13 @@ static int extra_state_serialize_accel_func(glkunix_serialize_context_t ctx, voi
     extra_glulx_accel_entry_t *entry = rock;
     glkunix_serialize_uint32(ctx, "index", entry->index);
     glkunix_serialize_uint32(ctx, "addr", entry->addr);
+    return TRUE;
+}
+
+static int extra_state_serialize_rand_detstate(glkunix_serialize_context_t ctx, void *rock)
+{
+    glui32 *param = rock;
+    glkunix_serialize_uint32(ctx, "param", *param);
     return TRUE;
 }
 

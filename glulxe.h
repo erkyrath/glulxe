@@ -292,6 +292,7 @@ extern void *glulx_realloc(void *ptr, glui32 len);
 extern void glulx_free(void *ptr);
 extern void glulx_setrandom(glui32 seed);
 extern glui32 glulx_random(void);
+extern void glulx_random_get_detstate(int *usenative, glui32 **arr, int *count);
 extern void glulx_sort(void *addr, int count, int size, 
   int (*comparefunc)(void *p1, void *p2));
 

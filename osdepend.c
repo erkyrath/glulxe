@@ -256,7 +256,14 @@ glui32 glulx_random()
    Adapted from: https://prng.di.unimi.it/xoshiro128starstar.c
    About this algorithm: https://prng.di.unimi.it/
 */
-static uint32_t xo_table[4];
+static uint32_t xo_table[4] = { 0, 0, 0, 0 };
+
+void glulx_random_get_detstate(int *usenative, glui32 **arr, int *count)
+{
+    *usenative = rand_use_native;
+    *arr = xo_table;
+    *count = 4;
+}
 
 static void xo_seed_random_4(glui32 seed0, glui32 seed1, glui32 seed2, glui32 seed3)
 {
