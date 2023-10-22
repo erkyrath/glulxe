@@ -258,6 +258,8 @@ glui32 glulx_random()
 */
 static uint32_t xo_table[4] = { 0, 0, 0, 0 };
 
+/* The get_detstate() and set_detstate() routines save and restore the
+   entire RNG state. These are used only by autorestore. */
 void glulx_random_get_detstate(int *usenative, glui32 **arr, int *count)
 {
     *usenative = rand_use_native;
