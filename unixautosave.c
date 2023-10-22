@@ -69,6 +69,7 @@ static int extra_state_serialize_obj_id_entry(glkunix_serialize_context_t, void 
 static int extra_state_unserialize(glkunix_unserialize_context_t, void *);
 static int extra_state_unserialize_accel_param(glkunix_unserialize_context_t, void *);
 static int extra_state_unserialize_accel_func(glkunix_unserialize_context_t, void *);
+static int extra_state_unserialize_rand_detstate(glkunix_unserialize_context_t, void *);
 static int extra_state_unserialize_obj_id_entry(glkunix_unserialize_context_t, void *);
 
 static char *game_signature = NULL;
@@ -705,7 +706,23 @@ static int extra_state_unserialize(glkunix_unserialize_context_t ctx, void *rock
                 return FALSE;
         }
     }
-    
+
+    glui32 usenative;
+    glui32 *temprandstate = NULL;
+    glkunix_unserialize_uint32(ctx, "glulx_rand_use_native", &usenative);
+    if (glkunix_unserialize_list(ctx, "glulx_rand_detstate", &array, &count)) {
+        if (count) {
+            temprandstate = glulx_malloc(count * sizeof(glui32));
+            if (!glkunix_unserialize_object_list_entries(array, extra_state_unserialize_rand_detstate, count, sizeof(glui32), temprandstate))
+                return FALSE;
+            glulx_random_set_detstate(usenative, temprandstate, count);
+        }
+    }
+    if (temprandstate) {
+        glulx_free(temprandstate);
+        temprandstate = NULL;
+    }
+
     glkunix_unserialize_uint32(ctx, "glulx_gamefiletag", &state->gamefiletag);
 
     if (glkunix_unserialize_list(ctx, "glulx_id_map_list", &array, &count)) {
@@ -735,6 +752,13 @@ static int extra_state_unserialize_accel_func(glkunix_unserialize_context_t ctx,
     extra_glulx_accel_entry_t *entry = rock;
     glkunix_unserialize_uint32(ctx, "index", &entry->index);
     glkunix_unserialize_uint32(ctx, "addr", &entry->addr);
+    return TRUE;
+}
+
+static int extra_state_unserialize_rand_detstate(glkunix_unserialize_context_t ctx, void *rock)
+{
+    glui32 *param = rock;
+    glkunix_unserialize_uint32(ctx, "param", param);
     return TRUE;
 }
 

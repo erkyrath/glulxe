@@ -265,6 +265,14 @@ void glulx_random_get_detstate(int *usenative, glui32 **arr, int *count)
     *count = 4;
 }
 
+void glulx_random_set_detstate(int usenative, glui32 *arr, int count)
+{
+    rand_use_native = usenative;
+    if (count == 4) {
+        xo_seed_random_4(arr[0], arr[1], arr[2], arr[3]);
+    }
+}
+
 static void xo_seed_random_4(glui32 seed0, glui32 seed1, glui32 seed2, glui32 seed3)
 {
     /* Set up the 128-bit state from four integers. Use this if you can get
