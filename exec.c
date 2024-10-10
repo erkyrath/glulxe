@@ -154,8 +154,6 @@ void execute_loop()
         vals1 = inst[1].value;
         if (vals1 == 0)
           fatal_error("Division by zero doing remainder.");
-        if (vals1 == -1 && (glui32)vals0 == 0x80000000)
-          fatal_error("Division overflow doing remainder.");
         if (vals1 < 0) {
             val1 = -(glui32)vals1;
         }
