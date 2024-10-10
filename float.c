@@ -252,7 +252,7 @@ void encode_double(gfloat64 val, glui32 *reshi, glui32 *reslo)
 
  NotANumber:
     *reshi = sign | 0x7FF80000;
-    *reslo = 0x00000001;
+    *reslo = 0x00000000;
     return;
 }
 
