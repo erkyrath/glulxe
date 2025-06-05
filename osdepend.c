@@ -3,6 +3,8 @@
     http://eblong.com/zarf/glulx/index.html
 */
 
+#include <time.h>
+
 #include "glk.h"
 #include "glulxe.h"
 
@@ -38,7 +40,6 @@ static void xo_seed_random_4(glui32 seed0, glui32 seed1, glui32 seed2, glui32 se
 
 #ifdef OS_STDC
 
-#include <time.h>
 #include <stdlib.h>
 
 /* Allocate a chunk of memory. */
@@ -69,7 +70,6 @@ void glulx_free(void *ptr)
 
 #ifdef OS_UNIX
 
-#include <time.h>
 #include <stdlib.h>
 
 /* Allocate a chunk of memory. */
@@ -165,7 +165,6 @@ void glulx_free(void *ptr)
 #define _CRT_RAND_S
 #endif
 
-#include <time.h>
 #include <stdlib.h>
 
 /* Allocate a chunk of memory. */
