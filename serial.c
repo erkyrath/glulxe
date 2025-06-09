@@ -71,10 +71,15 @@ int init_serial()
   undo_chain_size = 0;
   undo_chain = NULL;
   if (max_undo_level > 0) {
+    int ix;
     undo_chain_size = max_undo_level;
     undo_chain = (undo_chain_t *)glulx_malloc(sizeof(undo_chain_t) * undo_chain_size);
     if (!undo_chain)
       return FALSE;
+    for (ix=0; ix<undo_chain_size; ix++) {
+      undo_chain[ix].ptr = NULL;
+      undo_chain[ix].size = 0;
+    }
   }
 
 #ifdef SERIALIZE_CACHE_RAM
@@ -247,8 +252,8 @@ glui32 perform_restoreundo()
     return 1;
 
   dest.ismem = TRUE;
-  dest.size = 0;
-  dest.pos = 0;
+  dest.size = undo_chain[0].size;
+  dest.pos = undo_chain[0].size;
   dest.ptr = undo_chain[0].ptr;
   dest.str = NULL;
 
@@ -281,7 +286,9 @@ glui32 perform_restoreundo()
   }
 
   if (res == 0) {
-    /* It worked. */
+    /* It worked. Discard the undo record. */
+    undo_chain[0].ptr = NULL;
+    undo_chain[0].size = 0;
     if (undo_chain_size > 1)
       memmove(undo_chain, undo_chain+1,
         (undo_chain_size-1) * sizeof(undo_chain_t));
@@ -319,6 +326,8 @@ void discard_undo()
     return;
 
   unsigned char *destptr = undo_chain[0].ptr;
+  undo_chain[0].ptr = NULL;
+  undo_chain[0].size = 0;
 
   if (undo_chain_size > 1)
     memmove(undo_chain, undo_chain+1,
