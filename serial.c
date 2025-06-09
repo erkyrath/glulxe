@@ -252,8 +252,8 @@ glui32 perform_restoreundo()
     return 1;
 
   dest.ismem = TRUE;
+  dest.pos = 0;
   dest.size = undo_chain[0].size;
-  dest.pos = undo_chain[0].size;
   dest.ptr = undo_chain[0].ptr;
   dest.str = NULL;
 
