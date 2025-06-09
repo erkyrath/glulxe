@@ -31,9 +31,14 @@ typedef struct dest_struct {
    code -- that is, preference code. */
 int max_undo_level = 8;
 
+typedef struct undo_chain_struct {
+  unsigned char *ptr;
+  glui32 size;
+} undo_chain_t;
+
 static int undo_chain_size = 0;
 static int undo_chain_num = 0;
-static unsigned char **undo_chain = NULL;
+static undo_chain_t *undo_chain = NULL;
 
 #ifdef SERIALIZE_CACHE_RAM
 /* This will contain a copy of RAM (ramstate to endmem) as it exists
@@ -67,7 +72,7 @@ int init_serial()
   undo_chain = NULL;
   if (max_undo_level > 0) {
     undo_chain_size = max_undo_level;
-    undo_chain = (unsigned char **)glulx_malloc(sizeof(unsigned char *) * undo_chain_size);
+    undo_chain = (undo_chain_t *)glulx_malloc(sizeof(undo_chain_t) * undo_chain_size);
     if (!undo_chain)
       return FALSE;
   }
@@ -97,7 +102,9 @@ void final_serial()
   if (undo_chain) {
     int ix;
     for (ix=0; ix<undo_chain_num; ix++) {
-      glulx_free(undo_chain[ix]);
+      glulx_free(undo_chain[ix].ptr);
+      undo_chain[ix].ptr = NULL;
+      undo_chain[ix].size = 0;
     }
     glulx_free(undo_chain);
   }
@@ -192,13 +199,15 @@ glui32 perform_saveundo()
   if (res == 0) {
     /* It worked. */
     if (undo_chain_num >= undo_chain_size) {
-      glulx_free(undo_chain[undo_chain_num-1]);
-      undo_chain[undo_chain_num-1] = NULL;
+      glulx_free(undo_chain[undo_chain_num-1].ptr);
+      undo_chain[undo_chain_num-1].ptr = NULL;
+      undo_chain[undo_chain_num-1].size = 0;
     }
     if (undo_chain_size > 1)
       memmove(undo_chain+1, undo_chain, 
-        (undo_chain_size-1) * sizeof(unsigned char *));
-    undo_chain[0] = dest.ptr;
+        (undo_chain_size-1) * sizeof(undo_chain_t));
+    undo_chain[0].ptr = dest.ptr;
+    undo_chain[0].size = dest.pos;
     if (undo_chain_num < undo_chain_size)
       undo_chain_num += 1;
     dest.ptr = NULL;
@@ -239,7 +248,7 @@ glui32 perform_restoreundo()
   dest.ismem = TRUE;
   dest.size = 0;
   dest.pos = 0;
-  dest.ptr = undo_chain[0];
+  dest.ptr = undo_chain[0].ptr;
   dest.str = NULL;
 
   val = 0;
@@ -274,7 +283,7 @@ glui32 perform_restoreundo()
     /* It worked. */
     if (undo_chain_size > 1)
       memmove(undo_chain, undo_chain+1,
-        (undo_chain_size-1) * sizeof(unsigned char *));
+        (undo_chain_size-1) * sizeof(undo_chain_t));
     undo_chain_num -= 1;
     glulx_free(dest.ptr);
     dest.ptr = NULL;
@@ -308,12 +317,13 @@ void discard_undo()
   if (undo_chain_size == 0 || undo_chain_num == 0)
     return;
 
-  unsigned char *destptr = undo_chain[0];
+  unsigned char *destptr = undo_chain[0].ptr;
 
   if (undo_chain_size > 1)
     memmove(undo_chain, undo_chain+1,
-      (undo_chain_size-1) * sizeof(unsigned char *));
+      (undo_chain_size-1) * sizeof(undo_chain_t));
   undo_chain_num -= 1;
+  
   glulx_free(destptr);
 }
 
