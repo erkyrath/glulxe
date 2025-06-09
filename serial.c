@@ -176,6 +176,7 @@ glui32 perform_saveundo()
     dest.ptr = glulx_realloc(dest.ptr, dest.pos);
     if (!dest.ptr)
       res = 1;
+    dest.size = dest.pos;
   }
   if (res == 0) {
     res = reposition_write(&dest, memstart-4);
