@@ -277,6 +277,9 @@ glui32 perform_restoreundo()
   if (res == 0) {
     res = read_stackstate(&dest, val, FALSE);
   }
+  if (dest.pos != dest.size) {
+    res = TRUE;
+  }
   /* ### really, many of the failure modes of those calls ought to
      cause fatal errors. The stack or main memory may be damaged now. */
 
