@@ -213,7 +213,7 @@ glui32 perform_saveundo()
       memmove(undo_chain+1, undo_chain, 
         (undo_chain_size-1) * sizeof(undo_chain_t));
     undo_chain[0].ptr = dest.ptr;
-    undo_chain[0].size = dest.pos;
+    undo_chain[0].size = dest.size;
     if (undo_chain_num < undo_chain_size)
       undo_chain_num += 1;
     dest.ptr = NULL;
