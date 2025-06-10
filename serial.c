@@ -376,6 +376,11 @@ int write_undo_chain(strid_t str)
   return 0;
 }
 
+int read_undo_chain(strid_t str)
+{
+  return 0;
+}
+
 /* perform_save():
    Write the state to the output stream. This returns 0 on success,
    1 on failure.

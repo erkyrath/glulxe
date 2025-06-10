@@ -350,7 +350,24 @@ int glkunix_do_autorestore()
         glulx_free(pathname);
         return FALSE;
     }
-    
+
+    /* This one is optional. */
+    sprintf(pathname, "%s.undos", basepath);
+    strid_t usavefile = glkunix_stream_open_pathname_gen(pathname, FALSE, FALSE, 1);
+    if (usavefile) {
+        int res = read_undo_chain(usavefile);
+        if (res) {
+            glk_stream_close(usavefile, NULL);
+            glkunix_library_state_free(library_state);
+            extra_state_data_free(extra_state);
+            glulx_free(pathname);
+            return FALSE;
+        }
+
+        glk_stream_close(usavefile, NULL);
+        usavefile = NULL;
+    }
+
     sprintf(pathname, "%s.glksave", basepath);
     strid_t savefile = glkunix_stream_open_pathname_gen(pathname, FALSE, FALSE, 1);
     if (!savefile) {

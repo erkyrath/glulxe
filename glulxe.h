@@ -275,6 +275,7 @@ extern glui32 has_undo(void);
 extern void discard_undo(void);
 extern glui32 perform_verify(void);
 extern int write_undo_chain(strid_t str);
+extern int read_undo_chain(strid_t str);
 
 /* search.c */
 extern glui32 linear_search(glui32 key, glui32 keysize, 
