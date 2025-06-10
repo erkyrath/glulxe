@@ -122,7 +122,7 @@ display the update, and then (without delay) exit.
 
 0.6.2 (###)
 
-- Added autosave/autorestore support for the undo state.
+- Added autosave/autorestore support for the undo history.
 - Added autosave/autorestore support for the new RNG.
 
 0.6.1 (Oct 9, 2023)
