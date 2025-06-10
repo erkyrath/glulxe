@@ -61,6 +61,7 @@ static int read_long(dest_t *dest, glui32 *val);
 static int write_byte(dest_t *dest, unsigned char val);
 static int read_byte(dest_t *dest, unsigned char *val);
 static int reposition_write(dest_t *dest, glui32 pos);
+static int write_buffer(dest_t *dest, unsigned char *ptr, glui32 len);
 
 /* init_serial():
    Set up the undo chain and anything else that needs to be set up.
@@ -342,8 +343,31 @@ void discard_undo()
 
 int write_undo_chain(strid_t str)
 {
-  //###
-  return TRUE;
+  dest_t dest;
+  int ix, res;
+
+  dest.ismem = FALSE;
+  dest.size = 0;
+  dest.pos = 0;
+  dest.ptr = NULL;
+  dest.str = str;
+
+  if (undo_chain_size == 0 || undo_chain_num == 0) {
+    res = write_long(&dest, 0);
+    return res;
+  }
+
+  res = write_long(&dest, undo_chain_num);
+  if (res) return res;
+
+  for (ix=0; ix<undo_chain_num; ix++) {
+    res = write_long(&dest, undo_chain[ix].size);
+    if (res) return res;
+    res = write_buffer(&dest, undo_chain[ix].ptr, undo_chain[ix].size);
+    if (res) return res;
+  }
+  
+  return 0;
 }
 
 /* perform_save():

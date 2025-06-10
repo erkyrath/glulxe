@@ -278,7 +278,7 @@ void glkunix_do_autosave(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2)
     }
 
     res = write_undo_chain(usavefile);
-    if (!res) {
+    if (res) {
         glk_stream_close(usavefile, NULL);
         glulx_free(pathname);
         return;
