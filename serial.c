@@ -62,6 +62,7 @@ static int write_byte(dest_t *dest, unsigned char val);
 static int read_byte(dest_t *dest, unsigned char *val);
 static int reposition_write(dest_t *dest, glui32 pos);
 static int write_buffer(dest_t *dest, unsigned char *ptr, glui32 len);
+static int read_buffer(dest_t *dest, unsigned char *ptr, glui32 len);
 
 /* init_serial():
    Set up the undo chain and anything else that needs to be set up.
@@ -378,6 +379,46 @@ int write_undo_chain(strid_t str)
 
 int read_undo_chain(strid_t str)
 {
+  dest_t dest;
+  int ix, res;
+  glui32 count, size;
+  
+  /* We shouldn't have any undos at this point, but just in case. */
+  for (ix=0; ix<undo_chain_num; ix++) {
+    glulx_free(undo_chain[ix].ptr);
+    undo_chain[ix].ptr = NULL;
+    undo_chain[ix].size = 0;
+  }
+
+  undo_chain_num = 0;
+
+  dest.ismem = FALSE;
+  dest.size = 0;
+  dest.pos = 0;
+  dest.ptr = NULL;
+  dest.str = str;
+
+  res = read_long(&dest, &count);
+  if (res) return res;
+
+  /* Don't read in more states than our configured chain size. */
+  
+  for (ix=0; ix<count && ix<undo_chain_size; ix++) {
+    res = read_long(&dest, &size);
+    if (res) return res;
+
+    unsigned char *ptr = glulx_malloc(size);
+    if (!ptr)
+      return 1;
+
+    res = read_buffer(&dest, ptr, size);
+    if (res) return res;
+
+    undo_chain[ix].ptr = ptr;
+    undo_chain[ix].size = size;
+    undo_chain_num++;
+  }
+
   return 0;
 }
 
