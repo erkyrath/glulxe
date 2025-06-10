@@ -341,6 +341,12 @@ void discard_undo()
   glulx_free(destptr);
 }
 
+/* write_undo_chain():
+   Write out the current undo states to a (binary) file. The format
+   is dirt-simple: the number of states, then each state as a length/data
+   pair.
+   This is used only for autosave.
+*/
 int write_undo_chain(strid_t str)
 {
   dest_t dest;
