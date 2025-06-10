@@ -270,6 +270,23 @@ void glkunix_do_autosave(glui32 selector, glui32 arg0, glui32 arg1, glui32 arg2)
         return;
     }
 
+    sprintf(pathname, "%s.undos", basepath);
+    strid_t usavefile = glkunix_stream_open_pathname_gen(pathname, TRUE, FALSE, 1);
+    if (!usavefile) {
+        glulx_free(pathname);
+        return;
+    }
+
+    res = write_undo_chain(usavefile);
+    if (!res) {
+        glk_stream_close(usavefile, NULL);
+        glulx_free(pathname);
+        return;
+    }
+
+    glk_stream_close(usavefile, NULL);
+    usavefile = NULL;
+    
     extra_state_data_t *extra_state = extra_state_data_alloc();
     if (!extra_state) {
         glulx_free(pathname);

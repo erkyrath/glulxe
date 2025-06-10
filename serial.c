@@ -340,6 +340,12 @@ void discard_undo()
   glulx_free(destptr);
 }
 
+int write_undo_chain(strid_t str)
+{
+  //###
+  return TRUE;
+}
+
 /* perform_save():
    Write the state to the output stream. This returns 0 on success,
    1 on failure.
