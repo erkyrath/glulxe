@@ -194,7 +194,9 @@ int glkunix_startup_code(glkunix_startup_t *data)
     init_err = "You must supply the name of a game file.";
     return TRUE;
   }
-    
+
+  glkunix_set_base_file(filename);
+  
   gamefile = glkunix_stream_open_pathname(filename, FALSE, 1);
   if (!gamefile) {
     init_err = "The game file could not be opened.";
