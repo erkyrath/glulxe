@@ -113,7 +113,10 @@ void setup_vm()
   /* Initialize various other things in the terp. */
   init_operands(); 
   init_accel();
-  init_serial();
+  if (!init_serial()) {
+    finalize_vm();
+    fatal_error("Unable to initialize serialization.");
+  }
 
   /* Set up the initial machine state. */
   vm_restart();
