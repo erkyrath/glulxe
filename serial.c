@@ -88,13 +88,14 @@ int init_serial()
   {
     glui32 len = (endmem - ramstart);
     glui32 res;
-    ramcache = (unsigned char *)glulx_malloc(sizeof(unsigned char *) * len);
-    if (!ramcache)
-      return FALSE;
-    glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
-    res = glk_get_buffer_stream(gamefile, (char *)ramcache, len);
-    if (res != len)
-      return FALSE;
+    /* If alloc fails, will just fall back to reading game stream */
+    ramcache = (unsigned char *)glulx_malloc(sizeof(unsigned char) * len);
+    if (ramcache) {
+      glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
+      res = glk_get_buffer_stream(gamefile, (char *)ramcache, len);
+      if (res != len)
+        return FALSE;
+    }
   }
 #endif /* SERIALIZE_CACHE_RAM */
 
@@ -809,7 +810,11 @@ static glui32 write_memstate(dest_t *dest)
   runlen = 0;
 
 #ifdef SERIALIZE_CACHE_RAM
-  cachepos = 0;
+  if (ramcache) {
+    cachepos = 0;
+  } else {
+    glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
+  }
 #else /* SERIALIZE_CACHE_RAM */
   glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
 #endif /* SERIALIZE_CACHE_RAM */
@@ -818,8 +823,15 @@ static glui32 write_memstate(dest_t *dest)
     ch = Mem1(pos);
     if (pos < endgamefile) {
 #ifdef SERIALIZE_CACHE_RAM
-      val = ramcache[cachepos];
-      cachepos++;
+      if (ramcache) {
+        val = ramcache[cachepos];
+        cachepos++;
+      } else {
+        val = glk_get_char_stream(gamefile);
+        if (val == -1) {
+          fatal_error("The game file ended unexpectedly while saving.");
+        }
+      }
 #else /* SERIALIZE_CACHE_RAM */
       val = glk_get_char_stream(gamefile);
       if (val == -1) {
@@ -882,7 +894,11 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
   runlen = 0;
 
 #ifdef SERIALIZE_CACHE_RAM
-  cachepos = 0;
+  if (ramcache) {
+    cachepos = 0;
+  } else {
+    glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
+  }
 #else /* SERIALIZE_CACHE_RAM */
   glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
 #endif /* SERIALIZE_CACHE_RAM */
@@ -890,8 +906,15 @@ static glui32 read_memstate(dest_t *dest, glui32 chunklen)
   for (pos=ramstart; pos<endmem; pos++) {
     if (pos < endgamefile) {
 #ifdef SERIALIZE_CACHE_RAM
-      val = ramcache[cachepos];
-      cachepos++;
+      if (ramcache) {
+        val = ramcache[cachepos];
+        cachepos++;
+      } else {
+        val = glk_get_char_stream(gamefile);
+        if (val == -1) {
+          fatal_error("The game file ended unexpectedly while restoring.");
+        }
+      }
 #else /* SERIALIZE_CACHE_RAM */
       val = glk_get_char_stream(gamefile);
       if (val == -1) {
