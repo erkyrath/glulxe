@@ -124,6 +124,8 @@ display the update, and then (without delay) exit.
 
 - Added autosave/autorestore support for the undo history.
 - Added autosave/autorestore support for the new RNG.
+- Avoid a bug that could occur if cache space could not be allocated
+  for VM memory. (Unlikely except on very old computers.)
 
 0.6.1 (Oct 9, 2023)
 
