@@ -86,15 +86,18 @@ int init_serial()
 
 #ifdef SERIALIZE_CACHE_RAM
   {
-    glui32 len = (endmem - ramstart);
+    glui32 ramlen = (endmem - ramstart);
+    glui32 readlen = (endgamefile - ramstart);
     glui32 res;
-    ramcache = (unsigned char *)glulx_malloc(sizeof(unsigned char *) * len);
+    ramcache = (unsigned char *)glulx_malloc(sizeof(unsigned char *) * ramlen);
     if (!ramcache)
       return FALSE;
     glk_stream_set_position(gamefile, gamefile_start+ramstart, seekmode_Start);
-    res = glk_get_buffer_stream(gamefile, (char *)ramcache, len);
-    if (res != len)
+    res = glk_get_buffer_stream(gamefile, (char *)ramcache, readlen);
+    if (res != readlen)
       return FALSE;
+    if (readlen < ramlen)
+      memset(ramcache+readlen, 0, ramlen-readlen);
   }
 #endif /* SERIALIZE_CACHE_RAM */
 
